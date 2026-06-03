@@ -50,9 +50,786 @@
   </div>
 </div>
 
-<!-- SEU HTML ORIGINAL CONTINUA AQUI -->
-<!-- (cole o resto do seu index.html a partir daqui) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Simulador de Pesca">
+  <meta name="theme-color" content="#0a1628">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Simulador de Pesca</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
 
+  <style>
+    :root {
+      --bg:      #0a1628;
+      --bg2:     #0f2040;
+      --bg3:     #162a50;
+      --accent:  #00b4d8;
+      --accent2: #0077b6;
+      --gold:    #f4a261;
+      --green:   #2dc653;
+      --red:     #e63946;
+      --yellow:  #ffd166;
+      --purple:  #9b5de5;
+      --text:    #e8f4fd;
+      --muted:   #7b9bb8;
+      --card:    rgba(255,255,255,0.05);
+      --border:  rgba(0,180,216,0.2);
+      --shadow:  0 8px 32px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,119,182,0.3) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,180,216,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 50px; }
+
+    /* ── Header ── */
+    .header { padding: 24px 20px 16px; text-align: center; border-bottom: 1px solid var(--border); }
+    .header-icon { font-size: 32px; margin-bottom: 2px; }
+    .header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px; letter-spacing: 3px;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(0,180,216,0.4);
+    }
+
+    /* ── Status ESP32 ── */
+    .esp-status { display: flex; align-items: center; gap: 6px; padding: 8px 20px; font-size: 12px; color: var(--muted); justify-content: center; }
+    .esp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+    .esp-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .esp-dot.error     { background: var(--red); }
+
+    .offline-banner {
+      margin: 0 16px 4px; padding: 10px 14px; border-radius: 10px;
+      background: rgba(244,162,97,0.1); border: 1px solid rgba(244,162,97,0.3);
+      font-size: 12px; color: var(--gold); display: none;
+    }
+    .offline-banner.show { display: block; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 1; min-width: 0; padding: 10px 6px;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted);
+      font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1px;
+      cursor: pointer; transition: all 0.2s; text-align: center; white-space: nowrap;
+    }
+    .tab .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-color: var(--accent); color: white;
+      box-shadow: 0 4px 14px rgba(0,180,216,0.3);
+    }
+    .tab.tab-custom.active {
+      background: linear-gradient(135deg, #6a1fa0, var(--purple));
+      border-color: var(--purple);
+      box-shadow: 0 4px 14px rgba(155,93,229,0.3);
+    }
+
+    /* ── Painel ── */
+    .sim-panel { padding: 0 16px; }
+
+    /* ── Vídeo ── */
+    .video-wrapper {
+      position: relative; background: #000;
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+    video { width: 100%; display: block; max-height: 230px; object-fit: contain; background: #000; }
+
+    .video-overlay {
+      position: absolute; inset: 0;
+      background: rgba(10,22,40,0.88);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.4s;
+    }
+    .video-overlay.hidden { opacity: 0; pointer-events: none; }
+    .overlay-icon  { font-size: 36px; }
+    .overlay-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--accent); }
+    .overlay-sub   { font-size: 12px; color: var(--muted); text-align: center; padding: 0 20px; }
+
+    .load-bar-wrap { width: 78%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; display: none; }
+    .load-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+    .load-pct      { font-size: 11px; color: var(--muted); }
+
+    .timeline { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: rgba(0,0,0,0.5); }
+    .timeline-progress { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
+    .timeline-markers  { position: absolute; inset: 0; }
+    .timeline-marker   { position: absolute; top: 0; bottom: 0; background: rgba(244,162,97,0.75); min-width: 2px; }
+
+    /* ── Controles ── */
+    .controls { display: flex; gap: 10px; margin-bottom: 12px; }
+    .btn-main {
+      flex: 2; padding: 15px; border-radius: 12px; border: none;
+      font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 2px;
+      cursor: pointer; transition: all 0.2s;
+      background: linear-gradient(135deg, #1a8a3a, var(--green));
+      color: white; box-shadow: 0 4px 14px rgba(45,198,83,0.3);
+    }
+    .btn-main.paused { background: linear-gradient(135deg, #c47a1a, var(--gold)); box-shadow: 0 4px 14px rgba(244,162,97,0.3); }
+    .btn-main:disabled { background: rgba(255,255,255,0.08); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+    .btn-main:active:not(:disabled) { transform: scale(0.97); }
+    .btn-reset {
+      flex: 1; padding: 15px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--text); font-family: 'Bebas Neue', sans-serif;
+      font-size: 17px; letter-spacing: 1.5px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-reset:active { transform: scale(0.97); background: rgba(255,255,255,0.1); }
+
+    /* ── Motor ── */
+    .motor-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; margin-bottom: 12px;
+    }
+    .motor-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .motor-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+    .motor-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: rgba(255,255,255,0.08); color: var(--muted); }
+    .motor-badge.on   { background: rgba(45,198,83,0.2);   color: var(--green); }
+    .motor-badge.ramp { background: rgba(255,209,102,0.2); color: var(--yellow); }
+    .motor-badge.off  { background: rgba(230,57,70,0.15);  color: var(--red); }
+    .motor-value { font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1; color: var(--text); transition: color 0.3s; }
+    .motor-value.on   { color: var(--green);  text-shadow: 0 0 20px rgba(45,198,83,0.4); }
+    .motor-value.ramp { color: var(--yellow); }
+    .motor-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 6px; margin-top: 8px; overflow: hidden; }
+    .motor-bar-fill { height: 100%; width: 0%; border-radius: 6px; background: var(--green); transition: width 0.4s, background 0.3s; }
+    .motor-time { font-size: 12px; color: var(--muted); margin-top: 7px; }
+
+    /* ── Chips gatilhos ── */
+    .sim-info {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 13px 15px; margin-bottom: 12px;
+    }
+    .sim-info-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
+    .trigger-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--muted);
+      background: rgba(255,255,255,0.03);
+    }
+    .chip.active-chip { border-color: var(--gold); color: var(--gold); background: rgba(244,162,97,0.1); }
+
+    /* ── Seção Personalizado ── */
+    .custom-section { display: none; }
+    .custom-section.show { display: block; }
+
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: 14px;
+      padding: 24px 20px; text-align: center; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 12px;
+    }
+    .upload-area:hover { border-color: var(--purple); background: rgba(155,93,229,0.05); }
+    .upload-area .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-area p { font-size: 13px; color: var(--muted); }
+    .upload-area strong { color: var(--purple); }
+    input[type="file"] { display: none; }
+
+    .triggers-editor {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; margin-bottom: 12px;
+    }
+    .triggers-editor-title {
+      font-size: 11px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 1.5px; margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .triggers-editor-title span { color: var(--purple); font-size: 10px; }
+    .trigger-edit-row {
+      display: grid; grid-template-columns: 28px 1fr 1fr 1fr 1fr;
+      gap: 6px; align-items: center; margin-bottom: 8px;
+      background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px;
+    }
+    .trigger-edit-row .t-num { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--purple); text-align: center; }
+    .t-field { display: flex; flex-direction: column; gap: 2px; }
+    .t-field label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .t-field input {
+      width: 100%; padding: 5px 4px; text-align: center;
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 13px; font-weight: 600; outline: none;
+    }
+    .t-field input:focus { border-color: var(--purple); }
+    .t-field.t-pwr input { border-color: rgba(45,198,83,0.4); }
+    .t-field.t-rmp input { border-color: rgba(255,209,102,0.4); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; color: var(--text); box-shadow: var(--shadow);
+      transition: transform 0.3s; z-index: 100; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-icon">🎣</div>
+    <h1>Simulador de Pesca</h1>
+  </div>
+
+  <div class="esp-status">
+    <div class="esp-dot" id="espDot"></div>
+    <span id="espTxt">Verificando ESP32...</span>
+  </div>
+  <div class="offline-banner" id="offlineBanner">
+    ⚠️ Sem conexão com o ESP32. O vídeo toca normalmente, mas o motor não será acionado.
+  </div>
+
+  <div class="tabs">
+    <div class="tab active"     data-sim="0" onclick="trocarSim(0)"><span class="tab-icon">🪶</span>LEVE</div>
+    <div class="tab"            data-sim="1" onclick="trocarSim(1)"><span class="tab-icon">🎯</span>MÉDIA</div>
+    <div class="tab"            data-sim="2" onclick="trocarSim(2)"><span class="tab-icon">💪</span>PESADA</div>
+    <div class="tab tab-custom" data-sim="3" onclick="trocarSim(3)"><span class="tab-icon">✏️</span>CUSTOM</div>
+  </div>
+
+  <div class="sim-panel">
+
+    <div class="video-wrapper">
+      <video id="pescaVideo" preload="auto" playsinline webkit-playsinline></video>
+      <div class="video-overlay" id="videoOverlay">
+        <div class="overlay-icon"  id="overlayIcon">⏳</div>
+        <div class="overlay-title" id="overlayTitle">Carregando...</div>
+        <div class="overlay-sub"   id="overlaySub"></div>
+        <div class="load-bar-wrap" id="loadBarWrap"><div class="load-bar-fill" id="loadBarFill"></div></div>
+        <div class="load-pct"      id="loadPct"></div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-progress" id="timelineProgress"></div>
+        <div class="timeline-markers"  id="timelineMarkers"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-main" id="btnIniciar" disabled onclick="togglePlay()">⏳ AGUARDE...</button>
+      <button class="btn-reset" onclick="reiniciar()">↺ RESET</button>
+    </div>
+
+    <div class="motor-card">
+      <div class="motor-card-header">
+        <span class="motor-label">Motor</span>
+        <span class="motor-badge off" id="motorBadge">LIVRE</span>
+      </div>
+      <div class="motor-value" id="motorValue">0<span style="font-size:22px;color:var(--muted)">%</span></div>
+      <div class="motor-bar-wrap"><div class="motor-bar-fill" id="motorBarFill"></div></div>
+      <div class="motor-time" id="motorTime">Tempo: 0s  |  Gatilho: —</div>
+    </div>
+
+    <div class="sim-info" id="simInfoBox">
+      <div class="sim-info-title">Gatilhos da simulação</div>
+      <div class="trigger-chips" id="triggerChips"></div>
+    </div>
+
+    <div class="custom-section" id="customSection">
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">🎬</div>
+        <p><strong>Selecionar vídeo</strong></p>
+        <p style="margin-top:4px;font-size:11px;">MP4, MOV, WebM</p>
+      </div>
+      <input type="file" id="fileInput" accept="video/*">
+
+      <div class="triggers-editor">
+        <div class="triggers-editor-title">
+          Gatilhos editáveis
+          <span>Ini / Fim (s) · Força (%) · Rampa (ms)</span>
+        </div>
+        <div id="triggersEditorRows"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ═══════════════════════════════════════════════════════
+  //  URL BASE — vídeos servidos pelo GitHub Pages
+  // ═══════════════════════════════════════════════════════
+  const BASE_URL = 'https://guilhermeogera-beep.github.io/SImulador-de-pesca';
+
+  // ═══════════════════════════════════════════════════════
+  //  SIMULAÇÕES PRÉ-DEFINIDAS
+  // ═══════════════════════════════════════════════════════
+  const SIMULACOES = [
+    {
+      nome: 'Pesca Leve', icone: '🪶',
+      video: BASE_URL + '/leve.mp4',
+      gatilhos: [
+        { start:  5, stop: 10, force: 30, ramp: 80 },
+        { start: 20, stop: 25, force: 25, ramp: 80 },
+        { start: 35, stop: 40, force: 35, ramp: 80 },
+        { start: 50, stop: 55, force: 28, ramp: 80 },
+      ]
+    },
+    {
+      nome: 'Pesca Média', icone: '🎯',
+      video: BASE_URL + '/media.mp4',
+      gatilhos: [
+        { start:  5, stop: 12, force: 55, ramp: 50 },
+        { start: 18, stop: 24, force: 60, ramp: 40 },
+        { start: 30, stop: 35, force: 50, ramp: 50 },
+        { start: 42, stop: 48, force: 65, ramp: 40 },
+        { start: 54, stop: 59, force: 58, ramp: 45 },
+      ]
+    },
+    {
+      nome: 'Pesca Pesada', icone: '💪',
+      video: BASE_URL + '/pesada.mp4',
+      gatilhos: [
+        { start:  3, stop:  9, force: 80, ramp: 20 },
+        { start: 14, stop: 20, force: 90, ramp: 15 },
+        { start: 25, stop: 30, force: 75, ramp: 20 },
+        { start: 35, stop: 42, force: 95, ramp: 10 },
+        { start: 47, stop: 52, force: 85, ramp: 15 },
+        { start: 55, stop: 59, force: 100, ramp: 10 },
+      ]
+    }
+  ];
+
+  const GATILHOS_CUSTOM_PADRAO = [
+    { start: 5,  stop: 10, force: 50, ramp: 50 },
+    { start: 20, stop: 25, force: 60, ramp: 40 },
+    { start: 40, stop: 45, force: 70, ramp: 30 },
+    { start: 0,  stop: 0,  force: 0,  ramp: 50 },
+    { start: 0,  stop: 0,  force: 0,  ramp: 50 },
+  ];
+
+  // ═══════════════════════════════════════════════════════
+  //  ESTADO
+  // ═══════════════════════════════════════════════════════
+  let simAtual        = 0;
+  let ultimoSeg       = -1;
+  let ultimaForca     = -1;
+  let fetchOcupado    = false;
+  let proximoCmd      = null;
+  let statusOcupado   = false;
+  let espConectado    = false;
+  let videoCustomBlob = null;
+
+  // ── Elementos ──
+  const video            = document.getElementById('pescaVideo');
+  const videoOverlay     = document.getElementById('videoOverlay');
+  const overlayIcon      = document.getElementById('overlayIcon');
+  const overlayTitle     = document.getElementById('overlayTitle');
+  const overlaySub       = document.getElementById('overlaySub');
+  const loadBarWrap      = document.getElementById('loadBarWrap');
+  const loadBarFill      = document.getElementById('loadBarFill');
+  const loadPct          = document.getElementById('loadPct');
+  const btnIniciar       = document.getElementById('btnIniciar');
+  const motorBadge       = document.getElementById('motorBadge');
+  const motorValue       = document.getElementById('motorValue');
+  const motorBarFill     = document.getElementById('motorBarFill');
+  const motorTime        = document.getElementById('motorTime');
+  const timelineProgress = document.getElementById('timelineProgress');
+  const timelineMarkers  = document.getElementById('timelineMarkers');
+  const triggerChips     = document.getElementById('triggerChips');
+  const simInfoBox       = document.getElementById('simInfoBox');
+  const customSection    = document.getElementById('customSection');
+  const uploadArea       = document.getElementById('uploadArea');
+  const fileInput        = document.getElementById('fileInput');
+  const espDot           = document.getElementById('espDot');
+  const espTxt           = document.getElementById('espTxt');
+  const offlineBanner    = document.getElementById('offlineBanner');
+  const toastEl          = document.getElementById('toast');
+
+  // ═══════════════════════════════════════════════════════
+  //  GATILHOS EDITÁVEIS
+  // ═══════════════════════════════════════════════════════
+  function buildTriggersEditor() {
+    const container = document.getElementById('triggersEditorRows');
+    container.innerHTML = '';
+    GATILHOS_CUSTOM_PADRAO.forEach((g, i) => {
+      const row = document.createElement('div');
+      row.className = 'trigger-edit-row';
+      row.innerHTML = `
+        <div class="t-num">${i+1}</div>
+        <div class="t-field"><label>Ini (s)</label><input type="number" id="ce${i}_ini" value="${g.start}" min="0"></div>
+        <div class="t-field"><label>Fim (s)</label><input type="number" id="ce${i}_fim" value="${g.stop}"  min="0"></div>
+        <div class="t-field t-pwr"><label>Força %</label><input type="number" id="ce${i}_pwr" value="${g.force}" min="0" max="100"></div>
+        <div class="t-field t-rmp"><label>Rampa ms</label><input type="number" id="ce${i}_rmp" value="${g.ramp}" min="5"></div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function lerGatilhosCustom() {
+    return GATILHOS_CUSTOM_PADRAO.map((_, i) => ({
+      start: parseInt(document.getElementById(`ce${i}_ini`).value) || 0,
+      stop:  parseInt(document.getElementById(`ce${i}_fim`).value) || 0,
+      force: parseInt(document.getElementById(`ce${i}_pwr`).value) || 0,
+      ramp:  parseInt(document.getElementById(`ce${i}_rmp`).value) || 50,
+    }));
+  }
+
+  buildTriggersEditor();
+
+  // ═══════════════════════════════════════════════════════
+  //  TROCA DE SIMULAÇÃO
+  // ═══════════════════════════════════════════════════════
+  function trocarSim(idx) {
+    if (idx === simAtual) return;
+    video.pause();
+    resetUI();
+    simAtual = idx;
+
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+
+    const isCustom = idx === 3;
+    simInfoBox.style.display = isCustom ? 'none' : 'block';
+    customSection.classList.toggle('show', isCustom);
+
+    if (isCustom) {
+      if (videoCustomBlob) {
+        carregarVideoNaTag(videoCustomBlob);
+      } else {
+        mostrarOverlay('📂', 'Sem vídeo', 'Selecione um vídeo abaixo');
+        setBtnDisabled('✏️ SELECIONE O VÍDEO');
+      }
+      desenharMarcadores(lerGatilhosCustom());
+    } else {
+      atualizarChips(SIMULACOES[idx].gatilhos);
+      carregarVideoFixo(SIMULACOES[idx].video);
+      desenharMarcadores(SIMULACOES[idx].gatilhos);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  CARREGAMENTO DE VÍDEO FIXO (GitHub Pages)
+  // ═══════════════════════════════════════════════════════
+  function carregarVideoFixo(src) {
+    mostrarOverlay('⏳', 'Carregando vídeo...', 'Aguarde...');
+    loadBarWrap.style.display = 'block';
+    loadBarFill.style.width   = '0%';
+    setBtnDisabled('⏳ CARREGANDO...');
+
+    video.src = src;
+
+    video.onprogress = function () {
+      if (video.buffered.length > 0 && video.duration > 0) {
+        const pct = Math.round((video.buffered.end(0) / video.duration) * 100);
+        loadBarFill.style.width = Math.min(pct, 95) + '%';
+        loadPct.textContent     = pct + '%';
+      }
+    };
+
+    video.oncanplaythrough = liberarBotao;
+    video.onloadeddata     = () => setTimeout(liberarBotao, 1500);
+    video.onerror          = () => {
+      mostrarOverlay('❌', 'Erro ao carregar vídeo', 'Verifique sua conexão com a internet');
+      setBtnDisabled('❌ ERRO NO VÍDEO');
+      loadBarWrap.style.display = 'none';
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  UPLOAD (modo Personalizado)
+  // ═══════════════════════════════════════════════════════
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    mostrarOverlay('⏳', 'Carregando...', '');
+    loadBarWrap.style.display = 'block';
+    loadBarFill.style.width   = '0%';
+    setBtnDisabled('⏳ PREPARANDO...');
+
+    const reader = new FileReader();
+    reader.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        loadBarFill.style.width = pct + '%';
+        loadPct.textContent     = pct + '%';
+      }
+    };
+    reader.onload = e => {
+      const blob = new Blob([e.target.result], { type: file.type });
+      videoCustomBlob = URL.createObjectURL(blob);
+      carregarVideoNaTag(videoCustomBlob);
+      desenharMarcadores(lerGatilhosCustom());
+    };
+    reader.readAsArrayBuffer(file);
+    this.value = '';
+  });
+
+  function carregarVideoNaTag(url) {
+    video.src    = url;
+    video.muted  = false;
+    video.volume = 1.0;
+    mostrarOverlay('⏳', 'Processando...', '');
+    loadBarWrap.style.display = 'block';
+    loadBarFill.style.width   = '90%';
+    video.oncanplaythrough = liberarBotao;
+    video.onloadeddata     = () => setTimeout(liberarBotao, 1500);
+  }
+
+  function liberarBotao() {
+    videoOverlay.classList.add('hidden');
+    loadBarWrap.style.display = 'none';
+    btnIniciar.disabled       = false;
+    btnIniciar.textContent    = '▶ INICIAR PESCARIA';
+    btnIniciar.classList.remove('paused');
+    const g = simAtual === 3 ? lerGatilhosCustom() : SIMULACOES[simAtual].gatilhos;
+    desenharMarcadores(g);
+    mostrarToast('Vídeo pronto! 🎣');
+  }
+
+  function setBtnDisabled(txt) {
+    btnIniciar.disabled    = true;
+    btnIniciar.textContent = txt;
+    btnIniciar.classList.remove('paused');
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  CONTROLES
+  // ═══════════════════════════════════════════════════════
+  function togglePlay() {
+    if (video.paused || video.ended) {
+      if (video.ended) video.currentTime = 0;
+      video.play()
+        .then(() => { btnIniciar.textContent = '⏸ PAUSAR'; btnIniciar.classList.add('paused'); })
+        .catch(() => {});
+    } else {
+      video.pause();
+      btnIniciar.textContent = '▶ RETOMAR';
+      btnIniciar.classList.remove('paused');
+      enviarParaESP32(0, 50);
+    }
+  }
+
+  function reiniciar() {
+    video.pause();
+    video.currentTime = 0;
+    resetUI();
+    enviarParaESP32(0, 50);
+    mostrarToast('Reiniciado ↺');
+  }
+
+  function resetUI() {
+    ultimoSeg   = -1;
+    ultimaForca = -1;
+    btnIniciar.textContent = '▶ INICIAR PESCARIA';
+    btnIniciar.classList.remove('paused');
+    timelineProgress.style.width = '0%';
+    atualizarDisplayMotor(0, 0);
+    motorTime.textContent = 'Tempo: 0s  |  Gatilho: —';
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active-chip'));
+  }
+
+  video.onended = () => {
+    resetUI();
+    enviarParaESP32(0, 50);
+    mostrarToast('Pescaria concluída! 🏆');
+  };
+
+  // ═══════════════════════════════════════════════════════
+  //  TIME UPDATE
+  // ═══════════════════════════════════════════════════════
+  video.ontimeupdate = function () {
+    if (video.paused || video.ended || video.currentTime < 0.1) return;
+
+    if (video.duration > 0)
+      timelineProgress.style.width = (video.currentTime / video.duration * 100) + '%';
+
+    const t = Math.floor(video.currentTime);
+    if (t === ultimoSeg) return;
+    ultimoSeg = t;
+
+    const gatilhos = simAtual === 3 ? lerGatilhosCustom() : SIMULACOES[simAtual].gatilhos;
+    let forca = 0, rampa = 50, gatilhoAtivo = -1;
+
+    for (let i = 0; i < gatilhos.length; i++) {
+      const g = gatilhos[i];
+      if (g.stop > g.start && t >= g.start && t < g.stop) {
+        forca = g.force; rampa = g.ramp; gatilhoAtivo = i + 1;
+        break;
+      }
+    }
+
+    motorTime.textContent = `Tempo: ${t}s  |  Gatilho: ${gatilhoAtivo > 0 ? gatilhoAtivo : '—'}`;
+    atualizarChipAtivo(gatilhoAtivo);
+
+    if (forca !== ultimaForca) {
+      ultimaForca = forca;
+      enviarParaESP32(forca, rampa);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════
+  //  DISPLAY DO MOTOR
+  // ═══════════════════════════════════════════════════════
+  function atualizarDisplayMotor(atual, alvo) {
+    const n = Math.round(atual);
+    motorValue.innerHTML = `${n}<span style="font-size:22px;color:var(--muted)">%</span>`;
+    motorBarFill.style.width = n + '%';
+    if (n === 0) {
+      motorValue.className          = 'motor-value';
+      motorBarFill.style.background = 'var(--muted)';
+      motorBadge.className          = 'motor-badge off';
+      motorBadge.textContent        = 'LIVRE';
+    } else if (atual !== alvo) {
+      motorValue.className          = 'motor-value ramp';
+      motorBarFill.style.background = 'var(--yellow)';
+      motorBadge.className          = 'motor-badge ramp';
+      motorBadge.textContent        = '⬆ SUBINDO';
+    } else {
+      motorValue.className          = 'motor-value on';
+      motorBarFill.style.background = 'var(--green)';
+      motorBadge.className          = 'motor-badge on';
+      motorBadge.textContent        = '● ATIVO';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  FILA ÚNICA DE FETCH
+  // ═══════════════════════════════════════════════════════
+  function enviarParaESP32(pct, rampa) {
+    proximoCmd = { pct, rampa };
+    escalonarEnvio();
+  }
+  function escalonarEnvio() {
+    if (fetchOcupado || proximoCmd === null) return;
+    fetchOcupado = true;
+    const { pct, rampa } = proximoCmd;
+    proximoCmd = null;
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 800);
+    fetch('/setDAC?value=' + pct + '&rampa=' + rampa, { signal: ctrl.signal })
+      .catch(() => {})
+      .finally(() => { clearTimeout(timer); fetchOcupado = false; escalonarEnvio(); });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  POLLING STATUS ESP32
+  // ═══════════════════════════════════════════════════════
+  setInterval(() => {
+    if (video.paused || video.ended) { atualizarDisplayMotor(0, 0); return; }
+    if (statusOcupado || fetchOcupado || proximoCmd !== null) return;
+    statusOcupado = true;
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 800);
+    fetch('/getStatus', { signal: ctrl.signal })
+      .then(r => r.json())
+      .then(d => {
+        if (!espConectado) {
+          espConectado = true;
+          espDot.className   = 'esp-dot connected';
+          espTxt.textContent = 'ESP32 conectado';
+          offlineBanner.classList.remove('show');
+        }
+        atualizarDisplayMotor(d.atual, d.alvo);
+      })
+      .catch(() => {
+        if (espConectado) {
+          espConectado = false;
+          espDot.className   = 'esp-dot error';
+          espTxt.textContent = 'ESP32 desconectado';
+          offlineBanner.classList.add('show');
+        }
+      })
+      .finally(() => { clearTimeout(timer); statusOcupado = false; });
+  }, 1000);
+
+  setTimeout(() => {
+    fetch('/getStatus', { signal: AbortSignal.timeout(2000) })
+      .then(r => r.json())
+      .then(() => { espConectado = true; espDot.className = 'esp-dot connected'; espTxt.textContent = 'ESP32 conectado'; })
+      .catch(() => { espDot.className = 'esp-dot error'; espTxt.textContent = 'ESP32 não encontrado'; offlineBanner.classList.add('show'); });
+  }, 500);
+
+  // ═══════════════════════════════════════════════════════
+  //  CHIPS E MARCADORES
+  // ═══════════════════════════════════════════════════════
+  function atualizarChips(gatilhos) {
+    triggerChips.innerHTML = '';
+    gatilhos.forEach((g, i) => {
+      const c = document.createElement('div');
+      c.className   = 'chip';
+      c.id          = `chip_${i}`;
+      c.textContent = `G${i+1}: ${g.start}s–${g.stop}s @ ${g.force}%`;
+      triggerChips.appendChild(c);
+    });
+  }
+  function atualizarChipAtivo(idx) {
+    document.querySelectorAll('.chip').forEach((c, i) => c.classList.toggle('active-chip', i === idx - 1));
+  }
+  function desenharMarcadores(gatilhos) {
+    timelineMarkers.innerHTML = '';
+    const dur = video.duration || 60;
+    (gatilhos || []).forEach(g => {
+      if (g.stop <= g.start) return;
+      const m = document.createElement('div');
+      m.className     = 'timeline-marker';
+      m.style.left    = (g.start / dur * 100).toFixed(2) + '%';
+      m.style.width   = Math.max((g.stop - g.start) / dur * 100, 0.5).toFixed(2) + '%';
+      m.style.opacity = (g.force / 100).toFixed(2);
+      timelineMarkers.appendChild(m);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  TOAST
+  // ═══════════════════════════════════════════════════════
+  let toastTimer;
+  function mostrarToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+  }
+  function mostrarOverlay(icon, titulo, sub) {
+    overlayIcon.textContent  = icon;
+    overlayTitle.textContent = titulo;
+    overlaySub.textContent   = sub;
+    videoOverlay.classList.remove('hidden');
+    loadBarWrap.style.display = 'none';
+    loadPct.textContent       = '';
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  INIT
+  // ═══════════════════════════════════════════════════════
+  atualizarChips(SIMULACOES[0].gatilhos);
+  carregarVideoFixo(SIMULACOES[0].video);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW ativo'))
+      .catch(e => console.warn('SW falhou:', e));
+  }
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    setTimeout(() => mostrarToast('💡 Adicione à tela inicial para usar offline!'), 3000);
+  });
+</script>
+</body>
+</html>
 <script>
 // ════════════════════════════════════════════════════════════
 // DETECÇÃO INTELIGENTE DE MODO ONLINE/OFFLINE
