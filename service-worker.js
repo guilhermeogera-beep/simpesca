@@ -1,67 +1,44 @@
-const CACHE_NAME = 'simulador-pesca-v1';
-const BASE_URL   = 'https://guilhermeogera-beep.github.io/SImulador-de-pesca';
-
-// Arquivos cacheados na primeira abertura
-const ASSETS = [
-  BASE_URL + '/index.html',
-  BASE_URL + '/manifest.json',
-  BASE_URL + '/sw.js',
-  BASE_URL + '/icon-192.png',
-  BASE_URL + '/icon-512.png',
-  BASE_URL + '/leve.mp4',
-  BASE_URL + '/media.mp4',
-  BASE_URL + '/pesada.mp4',
+const CACHE_NAME = 'simulador-pesca-v2';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
-// Instala e cacheia tudo na primeira vez
-self.addEventListener('install', event => {
-  event.waitUntil(
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      // allSettled: se um vídeo falhar, não impede o resto
-      return Promise.allSettled(ASSETS.map(url =>
-        cache.add(new Request(url, { mode: 'cors' }))
-      ));
+      return cache.addAll(urlsToCache);
     })
   );
-  self.skipWaiting();
 });
 
-// Remove caches antigos
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
+self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  const url = event.request.url;
-
-  // Requisições ao ESP32 — nunca cacheia
-  if (url.includes('/setDAC') || url.includes('/getStatus')) {
-    event.respondWith(
-      fetch(event.request).catch(() => new Response('offline', { status: 503 }))
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  
+  // Se a requisição for para o IP do ESP32, NÃO tenta buscar no cache, vai direto pra rede
+  if (url.hostname === '192.168.4.1') {
+    e.respondWith(
+      fetch(e.request).catch(() => new Response('{"error": "offline"}', {
+        status: 503, 
+        headers: {'Content-Type': 'application/json'}
+      }))
     );
     return;
   }
 
-  // Blobs locais (vídeo personalizado) — deixa o browser tratar
-  if (url.startsWith('blob:')) return;
-
-  // Tudo mais: Cache First, atualiza em background
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      const network = fetch(event.request).then(response => {
-        if (response.ok) {
-          caches.open(CACHE_NAME).then(cache =>
-            cache.put(event.request, response.clone())
-          );
-        }
-        return response;
-      }).catch(() => null);
-      return cached || network;
+  // Se não for pro ESP32 (ex: os arquivos do GitHub), tenta buscar no cache primeiro
+  e.respondWith(
+    caches.match(e.request).then(cachedResponse => {
+      return cachedResponse || fetch(e.request);
+    }).catch(() => {
+      // Retorna algo genérico se falhar offline
+      return new Response('');
     })
   );
 });
