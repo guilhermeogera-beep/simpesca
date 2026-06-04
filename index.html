@@ -1,403 +1,63 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Simulador de Pesca</title>
+<base href="/simpesca/">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#00b4d8">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#0077b6">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SimPesca">
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Teko:wght@300;400;600&display=swap');
-  :root {
-    --bg:      #060d12;
-    --surface: #0d1a24;
-    --border:  #0e2a40;
-    --accent:  #00b4d8;
-    --accent2: #0077b6;
-    --green:   #2dc653;
-    --red:     #e63946;
-    --text:    #ccd6f6;
-    --dim:     #3a5570;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse 80% 40% at 50% 110%, rgba(0,119,182,0.18) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-  }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 36px 28px;
-    width: 100%;
-    max-width: 380px;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 0 60px rgba(0,180,216,0.06);
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  }
-  .logo { text-align: center; margin-bottom: 28px; }
-  .logo-icon {
-    font-size: 3.5rem;
-    display: block;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 0 16px rgba(0,180,216,0.5));
-    animation: float 3s ease-in-out infinite;
-  }
-  @keyframes float {
-    0%,100% { transform: translateY(0); }
-    50%      { transform: translateY(-8px); }
-  }
-  .logo h1 {
-    font-family: 'Teko', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 600;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .logo p { font-size: 0.65rem; color: var(--dim); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
-
-  /* TELAS */
-  .tela { display: none; flex-direction: column; gap: 16px; }
-  .tela.ativa { display: flex; }
-
-  .info-box {
-    background: rgba(0,180,216,0.05);
-    border: 1px solid rgba(0,180,216,0.12);
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-size: 0.72rem;
-    line-height: 1.7;
-    color: var(--dim);
-  }
-  .info-box strong { color: var(--text); }
-
-  .steps { display: flex; flex-direction: column; gap: 10px; }
-  .step { display: flex; align-items: flex-start; gap: 12px; font-size: 0.75rem; line-height: 1.5; }
-  .step-num {
-    min-width: 24px; height: 24px;
-    border-radius: 50%;
-    background: var(--accent2);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.65rem; font-weight: bold; margin-top: 1px;
-  }
-  .step p { color: var(--dim); }
-  .step p strong { color: var(--text); }
-
-  /* Botão instalar — sempre visível, muda comportamento por plataforma */
-  #btnInstalar {
-    width: 100%;
-    padding: 16px;
-    border-radius: 10px;
-    border: none;
-    background: linear-gradient(135deg, #0077b6, #00b4d8);
-    color: #fff;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.85rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    box-shadow: 0 4px 24px rgba(0,180,216,0.3);
-    transition: all 0.2s;
-  }
-  #btnInstalar:hover { filter: brightness(1.1); box-shadow: 0 4px 32px rgba(0,180,216,0.45); }
-  #btnInstalar:active { transform: scale(0.97); }
-
-  /* Dica iOS (aparece só no iPhone/iPad) */
-  #dicaIOS {
-    display: none;
-    background: rgba(0,180,216,0.07);
-    border: 1px solid rgba(0,180,216,0.2);
-    border-radius: 10px;
-    padding: 14px;
-    font-size: 0.72rem;
-    line-height: 1.8;
-    color: var(--dim);
-    text-align: center;
-  }
-  #dicaIOS strong { color: var(--accent); }
-
-  .btn {
-    width: 100%;
-    padding: 13px;
-    border-radius: 10px;
-    border: 1px solid;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.78rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    text-decoration: none;
-    display: block;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn-outline { background: transparent; border-color: var(--border); color: var(--dim); }
-  .btn-outline:hover { border-color: var(--accent2); color: var(--text); }
-  .btn-primary {
-    background: var(--accent2); border-color: var(--accent); color: #fff;
-    box-shadow: 0 0 20px rgba(0,180,216,0.2);
-  }
-  .btn-primary:hover { background: var(--accent); }
-
-  .divider {
-    display: flex; align-items: center; gap: 12px;
-    color: var(--dim); font-size: 0.65rem; letter-spacing: 1px;
-  }
-  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  .status-wifi {
-    text-align: center; padding: 20px;
-    border: 1px solid var(--border); border-radius: 12px;
-    background: rgba(0,0,0,0.2);
-  }
-  .status-wifi .wifi-icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
-  .status-wifi p { font-size: 0.7rem; color: var(--dim); line-height: 1.6; }
-  .ssid-badge {
-    display: inline-block;
-    background: rgba(0,180,216,0.1);
-    border: 1px solid rgba(0,180,216,0.3);
-    border-radius: 6px;
-    padding: 4px 12px;
-    font-size: 0.8rem; color: var(--accent);
-    letter-spacing: 1px; margin: 6px 0;
-  }
-
-  .spinner {
-    width: 48px; height: 48px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 10px auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .ip-row { display: flex; gap: 8px; }
-  .ip-row input {
-    flex: 1;
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text);
-    font-family: 'Space Mono', monospace; font-size: 0.8rem;
-    padding: 10px 12px; outline: none;
-  }
-  .ip-row input:focus { border-color: var(--accent2); }
-  .ip-row .btn { width: auto; padding: 10px 16px; }
-
-  .central { text-align: center; }
-  .txt-dim { font-size: 0.72rem; color: var(--dim); line-height: 1.6; }
-  .versao { text-align: center; font-size: 0.6rem; color: var(--dim); margin-top: 16px; opacity: 0.5; }
+    #btnInstalar {
+        display: none; /* Só aparece se o navegador permitir a instalação */
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-weight: bold;
+        border-radius: 20px;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 15px rgba(39,174,96,0.4);
+    }
 </style>
-</head>
-<body>
 
-<div class="card">
-  <div class="logo">
-    <span class="logo-icon">🎣</span>
-    <h1>SimPesca</h1>
-    <p>Simulador de Pesca</p>
-  </div>
-
-  <!-- TELA 1: Instalação -->
-  <div id="telaInstalar" class="tela ativa">
-    <div class="info-box">
-      <strong>Como funciona:</strong><br>
-      Instale este app, conecte no Wi-Fi do simulador e controle o motor direto pelo celular.
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <p><strong>Instale o app</strong> clicando no botão abaixo</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <p>Conecte no Wi-Fi <strong>SimuladorPesca</strong></p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <p>Abra o app — ele conecta <strong>automaticamente</strong></p>
-      </div>
-    </div>
-
-    <!-- Botão principal de instalar -->
-    <button id="btnInstalar" onclick="instalarPWA()">⬇ Instalar App</button>
-
-    <!-- Dica que aparece só no iOS -->
-    <div id="dicaIOS">
-      No iPhone/iPad, toque em <strong>Compartilhar</strong> (□↑)<br>
-      depois em <strong>"Adicionar à Tela de Início"</strong>
-    </div>
-
-    <div class="divider">ou</div>
-    <button class="btn btn-outline" onclick="mostrarTela('telaConectar')">
-      Continuar sem instalar →
-    </button>
-  </div>
-
-  <!-- TELA 2: Wi-Fi -->
-  <div id="telaConectar" class="tela">
-    <div class="status-wifi">
-      <span class="wifi-icon">📶</span>
-      <p>Conecte na rede Wi-Fi do simulador</p>
-      <div class="ssid-badge">SimuladorPesca</div>
-      <p>Senha: <strong style="color:var(--accent)">pesca1234</strong></p>
-    </div>
-    <button class="btn btn-primary" onclick="verificarConexao()">
-      Já conectei → Abrir Simulador
-    </button>
-    <div class="divider">IP personalizado</div>
-    <div class="ip-row">
-      <input type="text" id="ipCustom" placeholder="192.168.4.1" value="192.168.4.1">
-      <button class="btn btn-outline" onclick="abrirIP()">Ir</button>
-    </div>
-    <button class="btn btn-outline" onclick="mostrarTela('telaInstalar')">← Voltar</button>
-  </div>
-
-  <!-- TELA 3: Verificando -->
-  <div id="telaVerificando" class="tela central">
-    <div class="spinner"></div>
-    <p class="txt-dim">Conectando com o simulador em<br>
-      <strong style="color:var(--accent)">192.168.4.1</strong>...
-    </p>
-    <button class="btn btn-outline" onclick="mostrarTela('telaConectar')">Cancelar</button>
-  </div>
-
-  <!-- TELA 4: Erro -->
-  <div id="telaErro" class="tela central">
-    <div style="font-size:3rem">⚠️</div>
-    <p class="txt-dim">
-      <strong style="color:var(--red)">Simulador não encontrado</strong><br><br>
-      Verifique se está conectado na rede<br>
-      <span class="ssid-badge">SimuladorPesca</span><br>
-      e se o ESP32 está ligado.
-    </p>
-    <button class="btn btn-primary" onclick="verificarConexao()">Tentar novamente</button>
-    <button class="btn btn-outline" onclick="mostrarTela('telaConectar')">← Voltar</button>
-  </div>
-</div>
-
-<p class="versao">v1.0 · ESP32-C3 + MCP4725</p>
+<button id="btnInstalar">📥 Instalar Jogo</button>
 
 <script>
-// ── Detecta plataforma ──
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-                  || window.navigator.standalone === true;
+    // Lógica de instalação do PWA
+    let deferredPrompt;
 
-// ── Se já está instalado (standalone), pula direto para Wi-Fi ──
-if (isStandalone) {
-  mostrarTela('telaConectar');
-}
-
-// ── iOS: esconde botão normal, mostra dica ──
-if (isIOS && !isStandalone) {
-  document.getElementById('btnInstalar').style.display = 'none';
-  document.getElementById('dicaIOS').style.display = 'block';
-}
-
-// ── Captura evento de instalação (Android/Chrome/Edge) ──
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Garante que o botão está visível
-  document.getElementById('btnInstalar').style.display = 'block';
-});
-
-async function instalarPWA() {
-  if (deferredPrompt) {
-    // Android/Chrome: mostra o prompt nativo
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    if (outcome === 'accepted') {
-      mostrarTela('telaConectar');
-    }
-  } else if (!isIOS) {
-    // Browser não suporta instalação automática
-    // Redireciona direto para o simulador
-    mostrarTela('telaConectar');
-  }
-}
-
-// ── Navegação ──
-function mostrarTela(id) {
-  document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
-  document.getElementById(id).classList.add('ativa');
-}
-
-// ── Verificação de conexão com o ESP32 ──
-const IP_ESP32 = '192.168.4.1';
-
-async function verificarConexao() {
-  mostrarTela('telaVerificando');
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    // no-cors: não lê a resposta mas detecta se o servidor respondeu
-    await fetch(`http://${IP_ESP32}/`, {
-      signal: controller.signal,
-      mode: 'no-cors',
-      cache: 'no-store'
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Mostra o botão de instalação na tela do jogo
+        document.getElementById('btnInstalar').style.display = 'block';
     });
-    clearTimeout(timeout);
-    // Respondeu → redireciona
-    window.location.href = `http://${IP_ESP32}/`;
-  } catch {
-    mostrarTela('telaErro');
-  }
-}
 
-function abrirIP() {
-  const ip = document.getElementById('ipCustom').value.trim() || IP_ESP32;
-  window.location.href = `http://${ip}/`;
-}
+    document.getElementById('btnInstalar').addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            document.getElementById('btnInstalar').style.display = 'none';
+        }
+        deferredPrompt = null;
+    });
 
-// ── Service Worker ──
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .catch(e => console.warn('[SW]', e));
-}
+    window.addEventListener('appinstalled', () => {
+        document.getElementById('btnInstalar').style.display = 'none';
+        deferredPrompt = null;
+    });
+
+    // Registra o Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('✅ Simulador pronto para uso offline!', reg.scope))
+                .catch(err => console.log('⚠️ Erro ao registrar SW:', err));
+        });
+    }
 </script>
-</body>
-</html>
