@@ -1,385 +1,524 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Simulador de Pesca">
-  <meta name="theme-color" content="#0a1628">
-  <link rel="manifest" href="./manifest.json">
-  <title>Simulador de Pesca</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#0a1628; --bg2:#0f2040; --accent:#00b4d8; --accent2:#0077b6; --gold:#f4a261;
-      --green:#2dc653; --red:#e63946; --yellow:#ffd166; --text:#e8f4fd; --muted:#7b9bb8;
-      --card:rgba(255,255,255,0.05); --border:rgba(0,180,216,0.2); --shadow:0 8px 32px rgba(0,0,0,0.4);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-    body::before { content: ''; position: fixed; inset: 0; z-index: 0;
-      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,119,182,0.3) 0%, transparent 70%),
-                  radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,180,216,0.15) 0%, transparent 60%);
-      pointer-events: none; }
-    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 50px; }
-    .header { padding: 20px 20px 16px; text-align: center; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .header-title { flex: 1; }
-    .header-icon { font-size: 28px; }
-    .header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; color: var(--accent); text-shadow: 0 0 20px rgba(0,180,216,0.4); }
-    .install-btn { background: linear-gradient(135deg, #0288d1, var(--accent)); border: none; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; display: none; transition: all 0.2s; }
-    .install-btn.show { display: block; }
-    .install-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,180,216,0.4); }
-    .esp-status { display: flex; align-items: center; gap: 6px; padding: 8px 20px; font-size: 12px; color: var(--muted); justify-content: center; }
-    .esp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
-    .esp-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .esp-dot.error { background: var(--red); }
-    .tabs { display: flex; gap: 6px; padding: 12px 16px; }
-    .tab { flex: 1; padding: 10px 6px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: 'Bebas Neue', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; text-align: center; }
-    .tab .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
-    .tab.active { background: linear-gradient(135deg, var(--accent2), var(--accent)); border-color: var(--accent); color: white; box-shadow: 0 4px 14px rgba(0,180,216,0.3); }
-    .sim-panel { padding: 0 16px; }
-    .upload-box { background: var(--bg2); border: 2px dashed var(--border); border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
-    .upload-box:hover { border-color: var(--accent); background: rgba(0,180,216,0.05); }
-    .upload-icon { font-size: 32px; margin-bottom: 8px; }
-    .upload-text { font-size: 13px; color: var(--muted); }
-    .upload-text strong { color: var(--accent); }
-    .uploaded { color: var(--green); }
-    input[type="file"] { display: none; }
-    .video-wrapper { position: relative; background: #000; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 12px; }
-    video { width: 100%; display: block; max-height: 230px; object-fit: contain; background: #000; }
-    .controls { display: flex; gap: 10px; margin-bottom: 12px; }
-    .btn-main { flex: 2; padding: 15px; border-radius: 12px; border: none; font-family: 'Bebas Neue', sans-serif; font-size: 19px; cursor: pointer; background: linear-gradient(135deg, #1a8a3a, var(--green)); color: white; }
-    .btn-main:disabled { background: rgba(255,255,255,0.08); color: var(--muted); cursor: not-allowed; }
-    .btn-reset { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 17px; cursor: pointer; }
-    .motor-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
-    .motor-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .motor-label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
-    .motor-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: rgba(255,255,255,0.08); color: var(--muted); }
-    .motor-badge.on { background: rgba(45,198,83,0.2); color: var(--green); }
-    .motor-badge.ramp { background: rgba(255,209,102,0.2); color: var(--yellow); }
-    .motor-badge.off { background: rgba(230,57,70,0.15); color: var(--red); }
-    .motor-value { font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1; color: var(--text); }
-    .motor-value.on { color: var(--green); text-shadow: 0 0 20px rgba(45,198,83,0.4); }
-    .motor-value.ramp { color: var(--yellow); }
-    .motor-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 6px; margin-top: 8px; overflow: hidden; }
-    .motor-bar-fill { height: 100%; width: 0%; background: var(--green); transition: width 0.4s; }
-    .motor-time { font-size: 12px; color: var(--muted); margin-top: 7px; }
-    .sim-info { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 13px 15px; margin-bottom: 12px; }
-    .sim-info-title { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 9px; }
-    .trigger-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); background: rgba(255,255,255,0.03); }
-    .chip.active-chip { border-color: var(--gold); color: var(--gold); background: rgba(244,162,97,0.1); }
-    .timeline { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: rgba(0,0,0,0.5); }
-    .timeline-progress { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
-    .timeline-markers { position: absolute; inset: 0; }
-    .timeline-marker { position: absolute; top: 0; bottom: 0; background: rgba(244,162,97,0.75); min-width: 2px; }
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a2942; border: 1px solid var(--border); padding: 10px 20px; border-radius: 20px; font-size: 13px; color: var(--text); box-shadow: var(--shadow); transition: transform 0.3s; z-index: 100; white-space: nowrap; }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Simulador de Pesca</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00b4d8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SimPesca">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Teko:wght@300;400;600&display=swap');
+
+  :root {
+    --bg:       #060d12;
+    --surface:  #0d1a24;
+    --border:   #0e2a40;
+    --accent:   #00b4d8;
+    --accent2:  #0077b6;
+    --green:    #2dc653;
+    --red:      #e63946;
+    --yellow:   #f4a261;
+    --text:     #ccd6f6;
+    --dim:      #3a5570;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Fundo animado com ondas */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 40% at 50% 110%, rgba(0,119,182,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 30% at 20% 80%, rgba(0,180,216,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* Grid de linhas no fundo */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 28px;
+    width: 100%;
+    max-width: 380px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 60px rgba(0,180,216,0.06), 0 0 0 1px rgba(0,180,216,0.04);
+  }
+
+  /* Linha decorativa no topo do card */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .logo {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .logo-icon {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 16px rgba(0,180,216,0.5));
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
+  }
+
+  .logo h1 {
+    font-family: 'Teko', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .logo p {
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  /* ── TELA 1: Instalação ── */
+  #telaInstalar { display: flex; flex-direction: column; gap: 20px; }
+
+  .info-box {
+    background: rgba(0,180,216,0.05);
+    border: 1px solid rgba(0,180,216,0.12);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--dim);
+  }
+  .info-box strong { color: var(--text); }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .step-num {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: bold;
+    margin-top: 1px;
+  }
+  .step p { color: var(--dim); }
+  .step p strong { color: var(--text); }
+
+  /* ── TELA 2: Conectar ── */
+  #telaConectar { display: none; flex-direction: column; gap: 16px; }
+
+  .status-wifi {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.2);
+  }
+  .status-wifi .wifi-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .status-wifi p {
+    font-size: 0.7rem;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .status-wifi strong { color: var(--accent); font-size: 0.9rem; }
+
+  .ssid-badge {
+    display: inline-block;
+    background: rgba(0,180,216,0.1);
+    border: 1px solid rgba(0,180,216,0.3);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin: 6px 0;
+  }
+
+  /* ── TELA 3: Verificando conexão ── */
+  #telaVerificando { display: none; flex-direction: column; gap: 16px; text-align: center; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 10px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .verif-txt {
+    font-size: 0.72rem;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  /* ── TELA 4: Erro de conexão ── */
+  #telaErro { display: none; flex-direction: column; gap: 16px; text-align: center; }
+
+  .erro-icon { font-size: 3rem; }
+  .erro-msg {
+    font-size: 0.72rem;
+    color: var(--dim);
+    line-height: 1.7;
+  }
+  .erro-msg strong { color: var(--red); }
+
+  /* ── BOTÕES ── */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--accent2);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0,180,216,0.2);
+  }
+  .btn-primary:hover { background: var(--accent); box-shadow: 0 0 30px rgba(0,180,216,0.35); }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--dim);
+  }
+  .btn-outline:hover { border-color: var(--accent2); color: var(--text); }
+
+  .btn-green {
+    background: transparent;
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .btn-green:hover { background: rgba(45,198,83,0.1); }
+
+  /* Botão de instalar PWA (aparece só quando disponível) */
+  #btnInstalar {
+    display: none;
+    background: linear-gradient(135deg, #0077b6, #00b4d8);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0,180,216,0.3);
+    font-size: 0.85rem;
+  }
+  #btnInstalar.visivel { display: block; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--dim);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* IP personalizado */
+  .ip-row {
+    display: flex;
+    gap: 8px;
+  }
+  .ip-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .ip-row input:focus { border-color: var(--accent2); }
+  .ip-row .btn {
+    width: auto;
+    padding: 10px 16px;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+
+  .versao {
+    text-align: center;
+    font-size: 0.6rem;
+    color: var(--dim);
+    margin-top: 16px;
+    opacity: 0.5;
+  }
+</style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="header-title">
-      <div class="header-icon">🎣</div>
-      <h1>Pesca</h1>
+
+<div class="card">
+  <div class="logo">
+    <span class="logo-icon">🎣</span>
+    <h1>SimPesca</h1>
+    <p>Simulador de Pesca</p>
+  </div>
+
+  <!-- ══ TELA 1: Instalação ══ -->
+  <div id="telaInstalar">
+    <div class="info-box">
+      <strong>Como funciona:</strong><br>
+      Instale este app, conecte no Wi-Fi do simulador e controle o motor direto pelo celular.
     </div>
-    <button class="install-btn" id="installBtn" onclick="instalarPWA()">⬇️ INSTALAR</button>
-  </div>
-  <div class="esp-status">
-    <div class="esp-dot" id="espDot"></div>
-    <span id="espTxt">Verificando ESP32...</span>
-  </div>
-  <div class="tabs">
-    <div class="tab active" data-sim="0" onclick="trocarSim(0)"><span class="tab-icon">🪶</span>LEVE</div>
-    <div class="tab" data-sim="1" onclick="trocarSim(1)"><span class="tab-icon">🎯</span>MÉDIA</div>
-    <div class="tab" data-sim="2" onclick="trocarSim(2)"><span class="tab-icon">💪</span>PESADA</div>
-  </div>
-  <div class="sim-panel">
-    <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
-      <div class="upload-icon">📁</div>
-      <div class="upload-text"><strong>Selecione o vídeo</strong></div>
-      <div class="upload-text" style="font-size:11px;margin-top:4px;" id="uploadStatus">Clique para escolher</div>
-    </div>
-    <input type="file" id="fileInput" accept="video/*">
-    <div class="video-wrapper">
-      <video id="pescaVideo" preload="auto" playsinline webkit-playsinline></video>
-      <div class="timeline">
-        <div class="timeline-progress" id="timelineProgress"></div>
-        <div class="timeline-markers" id="timelineMarkers"></div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <p><strong>Instale o app</strong> clicando no botão abaixo</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Conecte no Wi-Fi <strong>SimuladorPesca</strong> (senha: pesca1234)</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Abra o app instalado — ele conecta <strong>automaticamente</strong></p>
       </div>
     </div>
-    <div class="controls">
-      <button class="btn-main" id="btnIniciar" disabled onclick="togglePlay()">▶ INICIAR</button>
-      <button class="btn-reset" onclick="reiniciar()">↺ RESET</button>
-    </div>
-    <div class="motor-card">
-      <div class="motor-card-header">
-        <span class="motor-label">Motor</span>
-        <span class="motor-badge off" id="motorBadge">LIVRE</span>
-      </div>
-      <div class="motor-value" id="motorValue">0<span style="font-size:22px;color:var(--muted)">%</span></div>
-      <div class="motor-bar-wrap"><div class="motor-bar-fill" id="motorBarFill"></div></div>
-      <div class="motor-time" id="motorTime">Tempo: 0s | Gatilho: —</div>
-    </div>
-    <div class="sim-info">
-      <div class="sim-info-title">Gatilhos da simulação</div>
-      <div class="trigger-chips" id="triggerChips"></div>
-    </div>
+
+    <!-- Botão de instalar PWA (aparece automaticamente no Android/Chrome) -->
+    <button id="btnInstalar" class="btn" onclick="instalarPWA()">
+      ⬇ Instalar App
+    </button>
+
+    <div class="divider">ou acesse direto</div>
+
+    <!-- Acesso direto sem instalar -->
+    <button class="btn btn-outline" onclick="irParaConectar()">
+      Continuar sem instalar →
+    </button>
   </div>
+
+  <!-- ══ TELA 2: Instruções de Wi-Fi ══ -->
+  <div id="telaConectar">
+    <div class="status-wifi">
+      <span class="wifi-icon">📶</span>
+      <p>Conecte seu celular na rede Wi-Fi do simulador</p>
+      <div class="ssid-badge">SimuladorPesca</div>
+      <p style="margin-top:6px">Senha: <strong>pesca1234</strong></p>
+    </div>
+
+    <button class="btn btn-primary" onclick="verificarConexao()">
+      Já conectei → Abrir Simulador
+    </button>
+
+    <div class="divider">IP personalizado</div>
+
+    <div class="ip-row">
+      <input type="text" id="ipCustom" placeholder="192.168.4.1" value="192.168.4.1">
+      <button class="btn btn-outline" onclick="abrirIP()">Ir</button>
+    </div>
+
+    <button class="btn btn-outline" onclick="mostrarTela('telaInstalar')">
+      ← Voltar
+    </button>
+  </div>
+
+  <!-- ══ TELA 3: Verificando ══ -->
+  <div id="telaVerificando">
+    <div class="spinner"></div>
+    <p class="verif-txt">Verificando conexão com o simulador em<br>
+      <strong style="color:var(--accent)">192.168.4.1</strong>...
+    </p>
+    <button class="btn btn-outline" onclick="mostrarTela('telaConectar')" style="margin-top:8px">
+      Cancelar
+    </button>
+  </div>
+
+  <!-- ══ TELA 4: Erro ══ -->
+  <div id="telaErro">
+    <div class="erro-icon">⚠️</div>
+    <p class="erro-msg">
+      <strong>Simulador não encontrado</strong><br><br>
+      Verifique se você está conectado na rede<br>
+      <span class="ssid-badge">SimuladorPesca</span><br>
+      e se o ESP32 está ligado.
+    </p>
+    <button class="btn btn-primary" onclick="verificarConexao()">
+      Tentar novamente
+    </button>
+    <button class="btn btn-outline" onclick="mostrarTela('telaConectar')">
+      ← Voltar
+    </button>
+  </div>
+
 </div>
-<div class="toast" id="toast"></div>
+
+<p class="versao">v1.0 · ESP32-C3 + MCP4725</p>
 
 <script>
-// IP do ESP32 (Hardcoded para facilitar a comunicação offline)
-const ESP_IP = 'http://192.168.4.1';
-
-// Registro do Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log("Service Worker Registrado!"))
-    .catch(err => console.error("Erro no Service Worker:", err));
-}
-
-// PWA Install
+// ============================================================
+//  PWA — INSTALAÇÃO
+// ============================================================
 let deferredPrompt = null;
-const installBtn = document.getElementById('installBtn');
 
-window.addEventListener('beforeinstallprompt', (e) => {
+// Captura o evento de instalação do browser
+window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  installBtn.classList.add('show');
+  // Mostra o botão de instalar
+  document.getElementById('btnInstalar').classList.add('visivel');
 });
 
 async function instalarPWA() {
-  if (!deferredPrompt) return;
+  if (!deferredPrompt) {
+    // iOS não suporta beforeinstallprompt — mostra instrução manual
+    alert('No iPhone/iPad:\n1. Toque em Compartilhar (□↑)\n2. Role e toque em "Adicionar à Tela de Início"');
+    return;
+  }
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('btnInstalar').classList.remove('visivel');
   if (outcome === 'accepted') {
-    mostrarToast(`Instalado! Agora você pode usar offline.`);
-    deferredPrompt = null;
-    installBtn.classList.remove('show');
+    // Após instalar, vai direto para tela de conectar
+    irParaConectar();
   }
 }
 
-const SIMULACOES = [
-  { nome: 'Pesca Leve', gatilhos: [
-    { start: 2,  stop:5,  force:40, ramp:50 },
-    { start: 5,  stop:11,  force:100,  ramp:250 },
-    { start:11,  stop:15, force:60, ramp:20 },
-    { start:15, stop:16, force:40, ramp:25 },
-    { start:16, stop:30, force:100,  ramp:500 }
-  ]},
-  { nome: 'Pesca Média', gatilhos: [
-    { start:2,  stop:6,  force:90, ramp:5 },
-    { start:6,  stop:10, force:10, ramp:80 },
-    { start:10, stop:15, force:60, ramp:40 },
-    { start:20, stop:24, force:80, ramp:20 },
-    { start:24, stop:30, force:1,  ramp:100 }
-  ]},
-  { nome: 'Pesca Pesada', gatilhos: [
-    { start:2,  stop:7,  force:100, ramp:2 },
-    { start:7,  stop:12, force:20,  ramp:60 },
-    { start:12, stop:18, force:80,  ramp:30 },
-    { start:22, stop:28, force:95,  ramp:10 },
-    { start:30, stop:35, force:100, ramp:5 }
-  ]}
-];
-
-let simAtual=0, ultimoSeg=-1, ultimaForca=-1, fetchOcupado=false, proximoCmd=null, statusOcupado=false, espConectado=false;
-const videosBlob = [null, null, null];
-const video=document.getElementById('pescaVideo'), uploadBox=document.getElementById('uploadBox'), uploadStatus=document.getElementById('uploadStatus'),
-      fileInput=document.getElementById('fileInput'), btnIniciar=document.getElementById('btnIniciar'), motorBadge=document.getElementById('motorBadge'),
-      motorValue=document.getElementById('motorValue'), motorBarFill=document.getElementById('motorBarFill'), motorTime=document.getElementById('motorTime'),
-      timelineProgress=document.getElementById('timelineProgress'), timelineMarkers=document.getElementById('timelineMarkers'),
-      triggerChips=document.getElementById('triggerChips'), espDot=document.getElementById('espDot'), espTxt=document.getElementById('espTxt'), toastEl=document.getElementById('toast');
-
-fileInput.addEventListener('change', function() {
-  const file = this.files[0];
-  if (!file) return;
-  uploadStatus.textContent = 'Processando...';
-  const reader = new FileReader();
-  reader.onload = e => {
-    const blob = new Blob([e.target.result], { type: file.type });
-    videosBlob[simAtual] = URL.createObjectURL(blob);
-    video.src = videosBlob[simAtual];
-    video.oncanplaythrough = () => {
-      btnIniciar.disabled = false;
-      btnIniciar.textContent = '▶ INICIAR PESCARIA';
-      uploadStatus.innerHTML = '✅ Vídeo carregado';
-      uploadStatus.className = 'upload-text uploaded';
-      desenharMarcadores(SIMULACOES[simAtual].gatilhos);
-      mostrarToast('Vídeo salvo em cache local! 📦');
-    };
-  };
-  reader.readAsArrayBuffer(file);
-  this.value = '';
-});
-
-function trocarSim(idx) {
-  if (idx === simAtual) return;
-  video.pause(); resetUI(); simAtual = idx;
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
-  atualizarChips(SIMULACOES[idx].gatilhos);
-  if (videosBlob[idx]) {
-    video.src = videosBlob[idx];
-    btnIniciar.disabled = false;
-    uploadStatus.innerHTML = '✅ Vídeo em cache';
-    uploadStatus.className = 'upload-text uploaded';
-  } else {
-    video.src = '';
-    btnIniciar.disabled = true;
-    uploadStatus.textContent = 'Clique para escolher vídeo';
-    uploadStatus.className = 'upload-text';
-  }
-  desenharMarcadores(SIMULACOES[idx].gatilhos);
+// Se já está instalado (standalone), pula direto para conectar
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  irParaConectar();
 }
 
-function togglePlay() {
-  if (video.paused || video.ended) {
-    if (video.ended) video.currentTime = 0;
-    video.play().then(() => { btnIniciar.textContent = '⏸ PAUSAR'; }).catch(() => {});
-  } else {
-    video.pause();
-    btnIniciar.textContent = '▶ RETOMAR';
-    enviarParaESP32(0, 50);
-  }
-}
-
-function reiniciar() {
-  video.pause(); video.currentTime = 0; resetUI(); enviarParaESP32(0, 50); mostrarToast('Reiniciado ↺');
-}
-
-function resetUI() {
-  ultimoSeg = -1; ultimaForca = -1;
-  btnIniciar.textContent = '▶ INICIAR PESCARIA';
-  timelineProgress.style.width = '0%';
-  atualizarDisplayMotor(0, 0);
-  motorTime.textContent = 'Tempo: 0s | Gatilho: —';
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active-chip'));
-}
-
-video.onended = () => { resetUI(); enviarParaESP32(0, 50); mostrarToast('Pescaria concluída! 🏆'); };
-
-video.ontimeupdate = function () {
-  if (video.paused || video.ended || video.currentTime < 0.1) return;
-  if (video.duration > 0) timelineProgress.style.width = (video.currentTime / video.duration * 100) + '%';
-  const t = Math.floor(video.currentTime);
-  if (t === ultimoSeg) return;
-  ultimoSeg = t;
-  const g = SIMULACOES[simAtual].gatilhos;
-  let forca = 0, rampa = 50, gatilhoAtivo = -1;
-  for (let i = 0; i < g.length; i++) {
-    if (g[i].stop > g[i].start && t >= g[i].start && t < g[i].stop) {
-      forca = g[i].force; rampa = g[i].ramp; gatilhoAtivo = i + 1; break;
-    }
-  }
-  motorTime.textContent = `Tempo: ${t}s | Gatilho: ${gatilhoAtivo > 0 ? gatilhoAtivo : '—'}`;
-  atualizarChipAtivo(gatilhoAtivo);
-  if (forca !== ultimaForca) { ultimaForca = forca; enviarParaESP32(forca, rampa); }
-};
-
-function atualizarDisplayMotor(atual, alvo) {
-  const n = Math.round(atual);
-  motorValue.innerHTML = `${n}<span style="font-size:22px;color:var(--muted)">%</span>`;
-  motorBarFill.style.width = n + '%';
-  if (n === 0) {
-    motorValue.className = 'motor-value';
-    motorBarFill.style.background = 'var(--muted)';
-    motorBadge.className = 'motor-badge off';
-    motorBadge.textContent = 'LIVRE';
-  } else if (atual !== alvo) {
-    motorValue.className = 'motor-value ramp';
-    motorBarFill.style.background = 'var(--yellow)';
-    motorBadge.className = 'motor-badge ramp';
-    motorBadge.textContent = '⬆ SUBINDO';
-  } else {
-    motorValue.className = 'motor-value on';
-    motorBarFill.style.background = 'var(--green)';
-    motorBadge.className = 'motor-badge on';
-    motorBadge.textContent = '● ATIVO';
-  }
-}
-
-// Alterado para buscar a URL completa do ESP32
-function enviarParaESP32(pct, rampa) {
-  proximoCmd = { pct, rampa }; escalonarEnvio();
-}
-
-function escalonarEnvio() {
-  if (fetchOcupado || proximoCmd === null) return;
-  fetchOcupado = true;
-  const { pct, rampa } = proximoCmd;
-  proximoCmd = null;
-  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 800);
-  
-  fetch(`${ESP_IP}/setDAC?value=${pct}&rampa=${rampa}`, {signal: ctrl.signal})
-    .catch(() => {})
-    .finally(() => { clearTimeout(timer); fetchOcupado = false; escalonarEnvio(); });
-}
-
-setInterval(() => {
-  if (video.paused || video.ended) { atualizarDisplayMotor(0, 0); return; }
-  if (statusOcupado || fetchOcupado || proximoCmd !== null) return;
-  statusOcupado = true;
-  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 800);
-  
-  fetch(`${ESP_IP}/getStatus`, {signal: ctrl.signal})
-    .then(r => r.json())
-    .then(d => {
-      if (!espConectado) { espConectado = true; espDot.className = 'esp-dot connected'; espTxt.textContent = 'ESP32 conectado'; }
-      atualizarDisplayMotor(d.atual, d.alvo);
-    }).catch(() => {
-      if (espConectado) { espConectado = false; espDot.className = 'esp-dot error'; espTxt.textContent = 'ESP32 desconectado'; }
-    }).finally(() => { clearTimeout(timer); statusOcupado = false; });
-}, 1000);
-
-setTimeout(() => {
-  fetch(`${ESP_IP}/getStatus`, {signal: AbortSignal.timeout(2000)})
-    .then(r => r.json())
-    .then(() => { espConectado = true; espDot.className = 'esp-dot connected'; espTxt.textContent = 'ESP32 conectado'; })
-    .catch(() => { espDot.className = 'esp-dot error'; espTxt.textContent = 'Aguardando ESP32...'; });
-}, 500);
-
-function atualizarChips(gatilhos) {
-  triggerChips.innerHTML = '';
-  gatilhos.forEach((g, i) => {
-    const c = document.createElement('div');
-    c.className = 'chip';
-    c.textContent = `G${i+1}: ${g.start}s–${g.stop}s @ ${g.force}%`;
-    triggerChips.appendChild(c);
+// ============================================================
+//  NAVEGAÇÃO ENTRE TELAS
+// ============================================================
+function mostrarTela(id) {
+  ['telaInstalar','telaConectar','telaVerificando','telaErro'].forEach(t => {
+    document.getElementById(t).style.display = 'none';
   });
+  document.getElementById(id).style.display = 'flex';
 }
 
-function atualizarChipAtivo(idx) {
-  document.querySelectorAll('.chip').forEach((c, i) => c.classList.toggle('active-chip', i === idx - 1));
+function irParaConectar() {
+  mostrarTela('telaConectar');
 }
 
-function desenharMarcadores(gatilhos) {
-  timelineMarkers.innerHTML = '';
-  const dur = video.duration || 60;
-  (gatilhos || []).forEach(g => {
-    if (g.stop <= g.start) return;
-    const m = document.createElement('div');
-    m.className = 'timeline-marker';
-    m.style.left = (g.start / dur * 100).toFixed(2) + '%';
-    m.style.width = Math.max((g.stop - g.start) / dur * 100, 0.5).toFixed(2) + '%';
-    m.style.opacity = (g.force / 100).toFixed(2);
-    timelineMarkers.appendChild(m);
-  });
+// ============================================================
+//  VERIFICAÇÃO DE CONEXÃO COM O ESP32
+// ============================================================
+const IP_ESP32 = '192.168.4.1';
+
+async function verificarConexao() {
+  mostrarTela('telaVerificando');
+
+  try {
+    // Tenta buscar a raiz do ESP32 com timeout de 5 segundos
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const resp = await fetch(`http://${IP_ESP32}/`, {
+      signal: controller.signal,
+      mode: 'no-cors'  // ESP32 não tem CORS, mas no-cors ainda detecta se responde
+    });
+
+    clearTimeout(timeout);
+    // Se chegou aqui, o ESP32 respondeu — redireciona!
+    window.location.href = `http://${IP_ESP32}/`;
+
+  } catch (err) {
+    // ESP32 não respondeu
+    mostrarTela('telaErro');
+  }
 }
 
-let toastTimer;
-function mostrarToast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+function abrirIP() {
+  const ip = document.getElementById('ipCustom').value.trim() || IP_ESP32;
+  window.location.href = `http://${ip}/`;
 }
 
-atualizarChips(SIMULACOES[0].gatilhos);
-desenharMarcadores(SIMULACOES[0].gatilhos);
+// ============================================================
+//  SERVICE WORKER
+// ============================================================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log('[SW] Registrado'))
+    .catch(e => console.warn('[SW] Erro:', e));
+}
 </script>
 </body>
 </html>
