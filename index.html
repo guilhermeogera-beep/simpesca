@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <base href="/simpesca/">
+    <base href="/simulador-pesca/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Simulador de Pesca - PWA</title>
+    <title>Simulador de Pesca</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon-192.png">
-    <meta name="theme-color" content="#0077b6">
+    <meta name="theme-color" content="#050a0f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SimPesca">
     <style>
         * { box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #121b29;
-            color: #E0E0E0;
+            background: #050a0f;
+            color: #e0e6ed;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -25,39 +27,86 @@
             justify-content: center;
             min-height: 100vh;
             text-align: center;
+            /* Fundo com grade sutil */
+            background-image:
+                linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
+
         .logo {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 20px;
+            font-size: 5rem;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 20px rgba(0,180,216,0.5));
+            animation: float 3s ease-in-out infinite;
         }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+        }
+
         h1 {
-            font-weight: 300;
-            color: #00b4d8;
-            letter-spacing: 3px;
-            margin: 0 0 8px 0;
-            font-size: 24px;
+            font-weight: 800;
+            color: #00d4ff;
+            letter-spacing: 4px;
+            margin: 0 0 6px 0;
+            font-size: 26px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(0,212,255,0.4);
         }
+
         .subtitulo {
-            color: #aaa;
+            color: #7b8d9e;
             font-size: 13px;
-            margin-bottom: 10px;
+            margin-bottom: 28px;
+            letter-spacing: 1px;
         }
+
         .instrucao {
-            background: #1a2636;
-            border: 1px solid #2a3b54;
-            border-radius: 12px;
-            padding: 15px 20px;
+            background: #0d151d;
+            border: 1px solid #1a2736;
+            border-radius: 14px;
+            padding: 16px 20px;
             font-size: 13px;
-            color: #aaa;
+            color: #7b8d9e;
             max-width: 320px;
-            margin-bottom: 30px;
-            line-height: 1.6;
+            margin-bottom: 28px;
+            line-height: 1.8;
+            text-align: left;
         }
-        .instrucao span {
-            color: #00b4d8;
-            font-weight: bold;
+
+        .instrucao strong {
+            color: #e0e6ed;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
         }
+
+        .instrucao span { color: #00d4ff; font-weight: bold; }
+
+        /* Cartão com o nome da rede */
+        .rede-card {
+            background: rgba(0,180,216,0.06);
+            border: 1px solid rgba(0,180,216,0.2);
+            border-radius: 10px;
+            padding: 10px 18px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #7b8d9e;
+        }
+        .rede-card .ssid {
+            display: inline-block;
+            color: #00d4ff;
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+        .rede-card .senha {
+            color: #e0e6ed;
+            font-weight: 600;
+        }
+
         .btn {
             border: none;
             padding: 15px 30px;
@@ -68,56 +117,104 @@
             font-size: 14px;
             width: 85%;
             max-width: 320px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             letter-spacing: 1px;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s, transform 0.1s;
         }
-        .btn:active { opacity: 0.8; }
+        .btn:active { opacity: 0.8; transform: scale(0.97); }
+
         #btnInstalar {
-            background: #27ae60;
+            background: linear-gradient(135deg, #0077b6, #00d4ff);
             color: white;
             display: none;
-            box-shadow: 0 4px 20px rgba(39,174,96,0.4);
+            box-shadow: 0 4px 20px rgba(0,180,216,0.4);
         }
+
         #btnConectar {
-            background: #00b4d8;
-            color: #121212;
-            box-shadow: 0 4px 20px rgba(0,180,216,0.3);
+            background: #00d4ff;
+            color: #050a0f;
+            font-weight: 900;
+            box-shadow: 0 4px 20px rgba(0,212,255,0.35);
         }
+
+        /* Dica iOS — aparece só no iPhone */
+        #dicaIOS {
+            display: none;
+            background: rgba(0,180,216,0.07);
+            border: 1px solid rgba(0,180,216,0.2);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 12px;
+            color: #7b8d9e;
+            max-width: 300px;
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+        #dicaIOS span { color: #00d4ff; font-weight: bold; }
+
         .status {
             font-size: 12px;
-            color: #555;
+            color: #3a5570;
             margin-top: 20px;
+            letter-spacing: 0.5px;
         }
-        .status.ok { color: #27ae60; }
+        .status.ok { color: #00e676; }
+        .status.err { color: #ff1744; }
     </style>
 </head>
 <body>
 
-    <img src="icons/icon-192.png" class="logo" alt="Logo SimPesca">
-    <h1>SIMULADOR DE PESCA</h1>
-    <p class="subtitulo">Painel de Controle e Telemetria</p>
+    <div class="logo">🎣</div>
+    <h1>SimPesca</h1>
+    <p class="subtitulo">Simulador de Pesca · ESP32-C3</p>
 
     <div class="instrucao">
-        <strong>Como usar:</strong><br>
-        1. <span>Instale</span> o app no seu smartphone<br>
-        2. Conecte-se na mesma rede Wi-Fi do simulador<br>
-        3. Clique abaixo para abrir o painel do hardware.
+        <strong>Como usar:</strong>
+        1. <span>Instale</span> o app no seu celular<br>
+        2. Conecte no Wi-Fi do simulador<br>
+        3. Toque em <span>Abrir Painel</span> para controlar
     </div>
 
-    <button id="btnInstalar" class="btn">📥 Instalar Simulador</button>
-    <button id="btnConectar" class="btn" onclick="conectarSimulador()">🔌 Abrir Painel do ESP</button>
+    <!-- Cartão com dados da rede -->
+    <div class="rede-card">
+        📶 Wi-Fi: <span class="ssid">SimuladorPesca</span><br>
+        🔑 Senha: <span class="senha">pesca1234</span>
+    </div>
+
+    <!-- Dica para iOS (Compartilhar → Adicionar à Tela de Início) -->
+    <div id="dicaIOS">
+        No iPhone, toque em <span>Compartilhar</span> (□↑)<br>
+        depois em <span>"Adicionar à Tela de Início"</span>
+    </div>
+
+    <button id="btnInstalar" class="btn">📥 Instalar Aplicativo</button>
+    <button id="btnConectar" class="btn" onclick="abrirPainel()">🎣 Abrir Painel</button>
 
     <p class="status" id="statusSW">Carregando...</p>
 
     <script>
-        // Mude aqui se o ESP32 do simulador de pesca usar outro IP!
+        // IP do ESP32 em modo AP — fixo
         const ESP_IP = "http://192.168.4.1";
 
-        function conectarSimulador() {
+        function abrirPainel() {
             window.location.href = ESP_IP + "/";
         }
 
+        // ── iOS: mostra dica de instalação manual ──
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isStandalone = window.navigator.standalone === true
+                          || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isIOS && !isStandalone) {
+            document.getElementById('dicaIOS').style.display = 'block';
+        }
+
+        // Se já está instalado (standalone), abre o painel direto
+        if (isStandalone) {
+            abrirPainel();
+        }
+
+        // ── Android/Chrome: botão de instalar PWA ──
         let deferredPrompt;
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -141,14 +238,16 @@
             deferredPrompt = null;
         });
 
+        // ── Service Worker ──
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(() => {
-                    document.getElementById('statusSW').textContent = '✅ Simulador pronto para uso offline';
+                    document.getElementById('statusSW').textContent = '✅ App pronto para uso offline';
                     document.getElementById('statusSW').className = 'status ok';
                 })
                 .catch(() => {
                     document.getElementById('statusSW').textContent = '⚠️ Erro ao registrar service worker';
+                    document.getElementById('statusSW').className = 'status err';
                 });
         }
     </script>
