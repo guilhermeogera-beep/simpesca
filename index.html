@@ -194,7 +194,7 @@
 
         // Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
+            navigator.serviceWorker.register('/simpesca/service-worker.js')
                 .then(() => {
                     document.getElementById('statusSW').textContent = '✅ App pronto para uso offline';
                     document.getElementById('statusSW').className = 'status ok';
