@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimPesca — Config</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050a0f">
+<style>
+:root{--bg:#050a0f;--card:#0d151d;--surface:#121d28;--border:#1a2736;--accent:#00d4ff;--accent2:#0077b6;--green:#00e676;--red:#ff1744;--text:#e0e6ed;--dim:#7b8d9e;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;padding:20px;max-width:760px;margin:0 auto;line-height:1.6;}
+header{display:flex;align-items:center;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:16px;flex-wrap:wrap;}
+header h1{font-size:1.3rem;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+.btn{padding:10px 18px;border:1px solid;border-radius:8px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:1px;background:transparent;}
+.btn-accent{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.btn-accent.conectado{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.1);}
+.btn-green{border-color:var(--green);color:var(--green);}
+.btn-dim{border-color:var(--dim);color:var(--dim);}
+.btn:disabled{opacity:.5;cursor:default;}
+.spacer{margin-left:auto;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;}
+.titulo{font-size:.72rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;font-weight:600;}
+#gaugePct{font-size:3rem;font-weight:800;color:var(--accent);text-align:center;}
+#gaugeVolt{text-align:center;color:var(--dim);font-family:monospace;margin-bottom:6px;}
+#gaugeBar{height:12px;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--border);margin:10px 0;}
+#gaugeFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .1s;}
+input[type=range]{width:100%;margin-top:10px;}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+select,.fileLabel{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.85rem;cursor:pointer;}
+.info{font-size:.8rem;color:var(--dim);margin-top:8px;}
+.nota{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:12px 16px;font-size:.8rem;color:var(--dim);}
+.nota b{color:var(--text);}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.6rem">🎣</span>
+  <h1>SimPesca · Config</h1>
+  <button id="btnBT" class="btn btn-accent spacer" onclick="conectarBLE()">🔵 Conectar</button>
+  <a href="player.html" class="btn btn-dim" style="text-decoration:none;">▶ Player</a>
+</header>
+
+<div class="card">
+  <div class="titulo">⚙️ Teste manual do motor (Bluetooth)</div>
+  <div id="gaugePct">0%</div>
+  <div id="gaugeVolt">1.00 V</div>
+  <div id="gaugeBar"><div id="gaugeFill"></div></div>
+  <input type="range" id="slider" min="0" max="100" value="0">
+  <div class="info">Conecte por Bluetooth e arraste o slider para testar o motor em tempo real.</div>
+</div>
+
+<div class="card">
+  <div class="titulo">💾 Perfis de gatilhos (A / B / C)</div>
+  <div class="linha">
+    <select id="selSim">
+      <option value="A">Sim A</option>
+      <option value="B">Sim B</option>
+      <option value="C">Sim C</option>
+    </select>
+    <label class="fileLabel">⬆ Importar JSON<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
+    <button class="btn btn-green" onclick="exportarJSON()">⬇ Exportar</button>
+    <button class="btn btn-dim" onclick="restaurarPadrao()">↺ Padrão</button>
+  </div>
+  <div class="info" id="infoPerfil">—</div>
+</div>
+
+<div class="card">
+  <div class="nota">
+    <b>Como funciona:</b> os perfis ficam salvos neste aparelho (localStorage) e são usados pelo Player.
+    Os 3 perfis já vêm embutidos como padrão. Para criar/editar visualmente na timeline,
+    a versão completa do editor pode ser portada — peça quando quiser.
+  </div>
+</div>
+
+<script>
+// ══ BLUETOOTH ═════════════════════════════════════════════════
+const SERVICE_UUID = "a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
+const CHAR_MOTOR_UUID = "a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null;
+
+function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className='btn btn-accent spacer '+cls; b.textContent=txt; }
+async function conectarBLE(){
+  if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
+  try{
+    btUI('','🔵 Procurando...');
+    bleDevice = await navigator.bluetooth.requestDevice({ filters:[{ services:[SERVICE_UUID] }] });
+    await ligar(bleDevice);
+  }catch(e){ btUI('','🔵 Conectar'); }
+}
+async function ligar(device){
+  bleDevice=device;
+  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; btUI('','🔵 Reconectar'); });
+  const server=await device.gatt.connect();
+  const service=await server.getPrimaryService(SERVICE_UUID);
+  motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
+  btUI('conectado','🟢 Conectado');
+}
+async function reconectar(){
+  if(navigator.bluetooth && navigator.bluetooth.getDevices){
+    try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){}
+  }
+}
+function escreverMotor(pct){
+  if(!motorChar) return;
+  const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]);
+  try{ motorChar.writeValueWithoutResponse ? motorChar.writeValueWithoutResponse(b) : motorChar.writeValue(b); }catch(e){}
+}
+
+// ══ SLIDER / GAUGE ════════════════════════════════════════════
+const slider=document.getElementById('slider');
+function atualizarGauge(p){
+  document.getElementById('gaugePct').textContent=p+'%';
+  document.getElementById('gaugeVolt').textContent=(1.0+2.5*(p/100)).toFixed(2)+' V';
+  document.getElementById('gaugeFill').style.width=p+'%';
+}
+slider.addEventListener('input',e=>{ const p=parseInt(e.target.value); atualizarGauge(p); escreverMotor(p); });
+
+// ══ PERFIS ════════════════════════════════════════════════════
+const PADRAO = {
+  A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
+  B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
+  C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
+};
+function chave(){ return 'simpesca_gatilhos_'+document.getElementById('selSim').value; }
+function lerPerfil(letra){
+  try{ const r=localStorage.getItem('simpesca_gatilhos_'+letra); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) return d; } }catch(e){}
+  return PADRAO[letra];
+}
+function mostrarInfo(){
+  const letra=document.getElementById('selSim').value;
+  const g=lerPerfil(letra);
+  const fonte = localStorage.getItem('simpesca_gatilhos_'+letra) ? 'salvo neste aparelho' : 'padrão embutido';
+  document.getElementById('infoPerfil').textContent = `Sim ${letra}: ${g.length} gatilhos (${fonte}).`;
+}
+document.getElementById('selSim').addEventListener('change',mostrarInfo);
+
+function exportarJSON(){
+  const letra=document.getElementById('selSim').value;
+  const payload={ versao:1, duracao:60, criado:new Date().toISOString(), gatilhos:lerPerfil(letra) };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='simulacao_'+letra+'.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function importarJSON(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      const lista=d.gatilhos||d;
+      if(!Array.isArray(lista)) throw 0;
+      localStorage.setItem(chave(),JSON.stringify(lista));
+      mostrarInfo(); alert('Perfil importado: '+lista.length+' gatilhos.');
+    }catch(err){ alert('JSON inválido.'); }
+    ev.target.value='';
+  };
+  r.readAsText(f);
+}
+function restaurarPadrao(){
+  const letra=document.getElementById('selSim').value;
+  if(!confirm('Restaurar o perfil padrão da Sim '+letra+'?')) return;
+  localStorage.removeItem('simpesca_gatilhos_'+letra);
+  mostrarInfo();
+}
+
+window.addEventListener('load',()=>{
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  mostrarInfo(); atualizarGauge(0); reconectar();
+});
+</script>
+</body>
+</html>
