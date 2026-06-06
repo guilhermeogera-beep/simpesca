@@ -9,13 +9,13 @@
 <style>
 :root{--bg:#040810;--card:#080f18;--border:#0e1e30;--accent:#00d4ff;--green:#00e676;--red:#ff1744;--text:#c8d8e8;--dim:#2a4060;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100dvh;display:flex;flex-direction:column;padding:16px;gap:16px;overflow-x:hidden;}
-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100dvh;display:flex;flex-direction:column;padding:16px;gap:14px;overflow-x:hidden;}
+header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;}
 header h1{font-size:1rem;letter-spacing:4px;color:var(--accent);text-transform:uppercase;}
-.header-right{display:flex;align-items:center;gap:10px;}
-#motorBadge{font-size:0.7rem;padding:4px 10px;border-radius:20px;border:1px solid var(--dim);color:var(--dim);transition:all .15s;}
-#motorBadge.ativo{color:var(--accent);border-color:var(--accent);}
-#motorBadge.alto{color:var(--red);border-color:var(--red);}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.badge{font-size:0.7rem;padding:4px 10px;border-radius:20px;border:1px solid var(--dim);color:var(--dim);}
+#motorBadge.ativo{color:var(--accent);border-color:var(--accent);} #motorBadge.alto{color:var(--red);border-color:var(--red);}
+#linhaBadge{color:var(--green);border-color:var(--green);}
 #btnBT{font-size:0.7rem;padding:6px 14px;border:1px solid var(--accent);border-radius:20px;background:rgba(0,212,255,0.08);color:var(--accent);cursor:pointer;font-family:inherit;letter-spacing:1px;}
 #btnBT.conectado{border-color:var(--green);color:var(--green);background:rgba(0,230,118,0.1);}
 #btnBT.erro{border-color:var(--red);color:var(--red);}
@@ -26,31 +26,34 @@ header h1{font-size:1rem;letter-spacing:4px;color:var(--accent);text-transform:u
 .sim-badge-a{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.25);}
 .sim-badge-b{background:rgba(255,214,0,0.08);color:#ffd600;border:1px solid rgba(255,214,0,0.2);}
 .sim-badge-c{background:rgba(0,230,118,0.08);color:#00e676;border:1px solid rgba(0,230,118,0.25);}
-.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex:1;min-height:160px;cursor:pointer;}
+.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex:1;min-height:150px;cursor:pointer;}
 video{width:100%;height:100%;object-fit:cover;display:block;}
 .video-progress{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(0,212,255,0.2);z-index:20;}
 .video-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#00a8cc);transition:width .1s linear;}
 .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(4,8,16,0.7);backdrop-filter:blur(3px);transition:opacity .3s;}
 .overlay.oculto{opacity:0;pointer-events:none;}
-.btn-play{width:64px;height:64px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,212,255,0.5);transition:transform .15s;flex-shrink:0;}
-.btn-play:hover{transform:scale(1.08);}
-.btn-play:active{transform:scale(0.95);}
-.btn-play svg{fill:#040810;margin-left:4px;}
-.btn-play:disabled{background:var(--dim);box-shadow:none;cursor:not-allowed;}
+.btn-play{width:60px;height:60px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,212,255,0.5);}
+.btn-play:active{transform:scale(0.95);} .btn-play svg{fill:#040810;margin-left:4px;}
 .sim-nome-overlay{font-size:0.7rem;letter-spacing:2px;color:var(--text);text-transform:uppercase;opacity:0.7;}
-.countdown-overlay{display:none;position:fixed;inset:0;background:#040810;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
-.countdown-overlay.visivel{display:flex;}
+/* contador, pausa, linha ao vivo */
+.fs-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.92);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px;}
+.fs-overlay.visivel{display:flex;}
 .countdown-num{font-size:8rem;font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;}
 @keyframes pulse{0%{transform:scale(1.3);opacity:0;}50%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
-.countdown-label{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
-.pause-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.85);backdrop-filter:blur(8px);z-index:50;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
-.pause-overlay.visivel{display:flex;}
-.pause-titulo{font-size:1rem;letter-spacing:4px;color:var(--text);text-transform:uppercase;}
-.pause-btns{display:flex;gap:14px;}
-.btn-pausa{padding:12px 28px;border-radius:30px;border:1px solid;font-family:inherit;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:transparent;transition:all .2s;}
-.btn-continuar{border-color:var(--green);color:var(--green);}
-.btn-reiniciar{border-color:var(--red);color:var(--red);}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;letter-spacing:1px;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
+.lbl{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
+.titulo-grande{font-size:1.1rem;letter-spacing:3px;color:var(--text);text-transform:uppercase;}
+.metros-grande{font-size:3.4rem;font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,230,118,0.4);}
+.posicao-grande{font-size:1.7rem;font-weight:800;color:var(--accent);letter-spacing:1px;}
+.recorde{font-size:0.95rem;font-weight:800;color:#ffd700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 20px rgba(255,215,0,0.4);display:none;}
+input[type=text]{background:#0d1722;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 16px;font-family:inherit;font-size:1rem;text-align:center;width:min(320px,80vw);outline:none;}
+input[type=text]:focus{border-color:var(--accent);}
+.fs-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+.btn-fs{padding:12px 26px;border-radius:30px;border:1px solid;font-family:inherit;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:transparent;}
+.btn-ok{border-color:var(--green);color:var(--green);} .btn-sec{border-color:var(--dim);color:var(--dim);} .btn-red{border-color:var(--red);color:var(--red);}
+/* HUD de linha ao vivo durante o vídeo (fullscreen) */
+#hudLinha{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.55);border:1px solid var(--green);border-radius:20px;padding:6px 16px;color:var(--green);font-size:1rem;font-weight:700;letter-spacing:1px;display:none;}
+#hudLinha.visivel{display:block;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
 </style>
 </head>
@@ -58,8 +61,10 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 <header>
   <h1>🎣 SimPesca</h1>
   <div class="header-right">
-    <div id="motorBadge">MOTOR 0%</div>
+    <div id="linhaBadge" class="badge">LINHA 0.0 m</div>
+    <div id="motorBadge" class="badge">MOTOR 0%</div>
     <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
+    <a href="ranking.html" class="btn-dash">🏆 RANKING</a>
     <a href="dashboard.html" class="btn-dash">⚙ CONFIG</a>
   </div>
 </header>
@@ -69,284 +74,268 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
   <div class="video-wrapper" id="wrapperA">
     <video id="videoA" preload="metadata" playsinline><source src="video0.mp4" type="video/mp4"></video>
     <div class="video-progress"><div class="video-progress-bar" id="progA"></div></div>
-    <div class="overlay" id="overlayA">
-      <button class="btn-play" onclick="iniciarContagem('A')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação A</span>
-    </div>
+    <div class="overlay" id="overlayA"><button class="btn-play" onclick="pedirNome('A')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação A</span></div>
   </div>
 </div>
-
 <div class="sim-bloco">
   <div class="sim-titulo"><span class="sim-badge sim-badge-b">SIM B</span> Simulação B</div>
   <div class="video-wrapper" id="wrapperB">
     <video id="videoB" preload="metadata" playsinline><source src="video1.mp4" type="video/mp4"></video>
     <div class="video-progress"><div class="video-progress-bar" id="progB"></div></div>
-    <div class="overlay" id="overlayB">
-      <button class="btn-play" onclick="iniciarContagem('B')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação B</span>
-    </div>
+    <div class="overlay" id="overlayB"><button class="btn-play" onclick="pedirNome('B')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação B</span></div>
   </div>
 </div>
-
 <div class="sim-bloco">
   <div class="sim-titulo"><span class="sim-badge sim-badge-c">SIM C</span> Simulação C</div>
   <div class="video-wrapper" id="wrapperC">
     <video id="videoC" preload="metadata" playsinline><source src="video2.mp4" type="video/mp4"></video>
     <div class="video-progress"><div class="video-progress-bar" id="progC"></div></div>
-    <div class="overlay" id="overlayC">
-      <button class="btn-play" onclick="iniciarContagem('C')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação C</span>
-    </div>
+    <div class="overlay" id="overlayC"><button class="btn-play" onclick="pedirNome('C')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação C</span></div>
   </div>
 </div>
 
-<div class="countdown-overlay" id="countdownOverlay">
-  <div class="countdown-num" id="countdownNum">5</div>
-  <div class="countdown-label">Preparando simulação</div>
-</div>
-<div class="pause-overlay" id="pauseOverlay">
-  <div class="pause-titulo">⏸ Pausado</div>
-  <div class="pause-btns">
-    <button class="btn-pausa btn-continuar" onclick="continuarSim()">▶ Continuar</button>
-    <button class="btn-pausa btn-reiniciar" onclick="reiniciarSim()">↺ Reiniciar</button>
+<!-- HUD linha ao vivo -->
+<div id="hudLinha">🎣 0.0 m</div>
+
+<!-- Modal: nome do jogador -->
+<div class="fs-overlay" id="nomeOverlay">
+  <div class="lbl">Quem vai pescar?</div>
+  <input type="text" id="inputNome" maxlength="20" placeholder="Nome do jogador" autocomplete="off">
+  <div class="fs-btns">
+    <button class="btn-fs btn-ok" onclick="confirmarNome()">▶ Começar</button>
+    <button class="btn-fs btn-sec" onclick="fecharNome()">Cancelar</button>
   </div>
 </div>
+
+<!-- Contador -->
+<div class="fs-overlay" id="countdownOverlay">
+  <div class="countdown-num" id="countdownNum">5</div>
+  <div class="lbl">Preparando simulação</div>
+</div>
+
+<!-- Pausa -->
+<div class="fs-overlay" id="pauseOverlay">
+  <div class="titulo-grande">⏸ Pausado</div>
+  <div class="fs-btns">
+    <button class="btn-fs btn-ok" onclick="continuarSim()">▶ Continuar</button>
+    <button class="btn-fs btn-red" onclick="reiniciarSim()">↺ Reiniciar</button>
+  </div>
+</div>
+
+<!-- Resultado -->
+<div class="fs-overlay" id="resultadoOverlay">
+  <div class="recorde" id="resultadoRecorde">🏆 Novo recorde!</div>
+  <div class="lbl">Linha recolhida</div>
+  <div class="metros-grande" id="resultadoMetros">0.0 m</div>
+  <div class="posicao-grande" id="resultadoPos">—</div>
+  <div class="lbl" id="resultadoNome">—</div>
+  <div class="fs-btns">
+    <button class="btn-fs btn-ok" onclick="window.location.href='ranking.html'">🏆 Ver ranking</button>
+    <button class="btn-fs btn-sec" onclick="fecharResultado()">Fechar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ══ BLUETOOTH (Web Bluetooth) ═════════════════════════════════
-// UUIDs IGUAIS aos do firmware esp32_bluetooth.ino
-const SERVICE_UUID = "a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
-const CHAR_MOTOR_UUID = "a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
-let bleDevice = null, motorChar = null;
+// ══ BLUETOOTH ═════════════════════════════════════════════════
+const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
+const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
+const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null, linhaChar=null;
+let contagemEncoder=0; // contagem bruta recebida do AS5600
 
-function btUI(estado, texto){
-  const b = document.getElementById('btnBT');
-  b.className = estado;            // '', 'conectado', 'erro'
-  b.textContent = texto;
-}
-
+function btUI(c,t){ const b=document.getElementById('btnBT'); b.className=c; b.textContent=t; }
 async function conectarBLE(){
-  if(!navigator.bluetooth){ alert('Este navegador não tem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
+  if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
+  try{ btUI('','🔵 Procurando...'); bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]}); await ligar(bleDevice); }
+  catch(e){ btUI('erro','🔴 Falhou'); }
+}
+async function ligar(device){
+  bleDevice=device;
+  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; linhaChar=null; btUI('erro','🔵 Reconectar'); mostrarToast('Bluetooth desconectado'); });
+  btUI('','🔵 Conectando...');
+  const server=await device.gatt.connect();
+  const service=await server.getPrimaryService(SERVICE_UUID);
+  motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
   try{
-    btUI('', '🔵 Procurando...');
-    bleDevice = await navigator.bluetooth.requestDevice({ filters:[{ services:[SERVICE_UUID] }] });
-    await ligarNoDispositivo(bleDevice);
-  }catch(e){
-    btUI('erro', '🔴 Falhou');
-    console.log('Erro BLE:', e.message);
-  }
+    linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID);
+    await linhaChar.startNotifications();
+    linhaChar.addEventListener('characteristicvaluechanged', e=>{
+      contagemEncoder = e.target.value.getInt32(0, true); // int32 little-endian
+      atualizarLinha();
+    });
+  }catch(e){ /* firmware antigo sem encoder */ }
+  btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
 }
-
-async function ligarNoDispositivo(device){
-  bleDevice = device;
-  device.addEventListener('gattserverdisconnected', onDesconectado);
-  btUI('', '🔵 Conectando...');
-  const server = await device.gatt.connect();
-  const service = await server.getPrimaryService(SERVICE_UUID);
-  motorChar = await service.getCharacteristic(CHAR_MOTOR_UUID);
-  btUI('conectado', '🟢 Conectado');
-  mostrarToast('Bluetooth conectado');
-}
-
-function onDesconectado(){
-  motorChar = null;
-  btUI('erro', '🔵 Reconectar');
-  mostrarToast('Bluetooth desconectado');
-}
-
-// Reconexão automática (depois do 1º pareamento) — não precisa de internet
 async function tentarReconectar(){
-  if(!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
-  try{
-    const devices = await navigator.bluetooth.getDevices();
-    if(devices.length){
-      btUI('', '🔵 Reconectando...');
-      // tenta conectar no primeiro dispositivo já autorizado
-      await ligarNoDispositivo(devices[0]).catch(()=>btUI('','🔵 Conectar'));
-    }
-  }catch(e){}
+  if(!navigator.bluetooth||!navigator.bluetooth.getDevices) return;
+  try{ const d=await navigator.bluetooth.getDevices(); if(d.length){ btUI('','🔵 Reconectando...'); await ligar(d[0]).catch(()=>btUI('','🔵 Conectar')); } }catch(e){}
 }
-
-// Envia a potência (0-100) para o motor via BLE — 1 byte
 function escreverMotorBLE(pct){
   if(!motorChar) return;
-  const b = new Uint8Array([ Math.max(0, Math.min(100, Math.round(pct))) ]);
-  try{
-    if(motorChar.writeValueWithoutResponse) motorChar.writeValueWithoutResponse(b);
-    else motorChar.writeValue(b);
-  }catch(e){}
+  const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]);
+  try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b); }catch(e){}
+}
+function zerarEncoder(){ // pede pro ESP32 zerar a contagem
+  contagemEncoder=0; atualizarLinha();
+  if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} }
 }
 
-// ══ GATILHOS PADRÃO (embutidos) ═══════════════════════════════
-// Editáveis no dashboard; se houver no localStorage, têm prioridade.
-const GATILHOS_PADRAO = {
-  A: [{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
-  B: [{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
-  C: [{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
-};
+// ══ CALIBRAÇÃO (metros por volta) ─────────────────────────────
+function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
+function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
+function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
+function metrosAtuais(){ return Math.max(0, contagemParaMetros(contagemEncoder)); }
+function atualizarLinha(){
+  const m=metrosAtuais();
+  document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m';
+  const hud=document.getElementById('hudLinha'); hud.textContent='🎣 '+m.toFixed(1)+' m';
+}
 
+// ══ ESTADO ════════════════════════════════════════════════════
+const GATILHOS_PADRAO={
+  A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
+  B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
+  C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
+};
 function carregarGatilhos(letra){
-  try{
-    const raw = localStorage.getItem('simpesca_gatilhos_' + letra);
-    if(raw){ const d = JSON.parse(raw); if(Array.isArray(d) && d.length) return d.sort((a,b)=>a.t-b.t); }
-  }catch(e){}
+  try{ const r=localStorage.getItem('simpesca_gatilhos_'+letra); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.sort((a,b)=>a.t-b.t); } }catch(e){}
   return GATILHOS_PADRAO[letra].slice().sort((a,b)=>a.t-b.t);
 }
-
-// ══ ESTADO DAS SIMULAÇÕES ═════════════════════════════════════
-const SIMS = {
-  A:{ letra:'A', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false },
-  B:{ letra:'B', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false },
-  C:{ letra:'C', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false }
+const SIMS={
+  A:{letra:'A',video:null,wrapper:null,overlay:null,prog:null,gatilhos:[],gatilhoIdx:0,potLocal:0,rampa:{ativa:false},intervalo:null,estaRodando:false},
+  B:{letra:'B',video:null,wrapper:null,overlay:null,prog:null,gatilhos:[],gatilhoIdx:0,potLocal:0,rampa:{ativa:false},intervalo:null,estaRodando:false},
+  C:{letra:'C',video:null,wrapper:null,overlay:null,prog:null,gatilhos:[],gatilhoIdx:0,potLocal:0,rampa:{ativa:false},intervalo:null,estaRodando:false}
 };
-let simEmContagem = null, simEmPausa = null;
+let simEmContagem=null, simEmPausa=null, simAtual=null, nomeJogador='';
 
-window.addEventListener('load', () => {
-  ['A','B','C'].forEach(id => {
-    const s = SIMS[id];
-    s.video   = document.getElementById('video'+id);
-    s.wrapper = document.getElementById('wrapper'+id);
-    s.overlay = document.getElementById('overlay'+id);
-    s.prog    = document.getElementById('prog'+id);
-    s.gatilhos = carregarGatilhos(id);
-    s.video.addEventListener('click', () => { if(s.estaRodando) pausarSim(id); });
-    s.video.addEventListener('timeupdate', () => { s.prog.style.width = ((s.video.currentTime/s.video.duration)*100||0)+'%'; });
-    s.video.addEventListener('ended', () => encerrarSim(id));
+window.addEventListener('load',()=>{
+  ['A','B','C'].forEach(id=>{
+    const s=SIMS[id];
+    s.video=document.getElementById('video'+id); s.wrapper=document.getElementById('wrapper'+id);
+    s.overlay=document.getElementById('overlay'+id); s.prog=document.getElementById('prog'+id);
+    s.gatilhos=carregarGatilhos(id);
+    s.video.addEventListener('click',()=>{ if(s.estaRodando) pausarSim(id); });
+    s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
+    s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
   });
+  document.getElementById('inputNome').value = localStorage.getItem('simpesca_ultimo_nome')||'';
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  tentarReconectar();   // tenta reconectar no simulador já pareado (offline ok)
+  tentarReconectar();
 });
 
-// ══ MOTOR ═════════════════════════════════════════════════════
-let potenciaAtual = 0;
+// ══ MOTOR + RAMPA ═════════════════════════════════════════════
+let potenciaAtual=0;
 function aplicarMotor(pct){
-  pct = Math.max(0, Math.min(100, pct));
-  potenciaAtual = pct;
-  escreverMotorBLE(pct);
-  const badge = document.getElementById('motorBadge');
-  badge.textContent = `MOTOR ${pct.toFixed(0)}%`;
-  badge.className = pct > 70 ? 'alto' : pct > 0 ? 'ativo' : '';
+  pct=Math.max(0,Math.min(100,pct)); potenciaAtual=pct; escreverMotorBLE(pct);
+  const b=document.getElementById('motorBadge'); b.textContent='MOTOR '+pct.toFixed(0)+'%'; b.className='badge '+(pct>70?'alto':pct>0?'ativo':'');
 }
-
-// ══ MOTOR DE RAMPA (mesmo algoritmo do firmware antigo) ═══════
-function dispararGatilho(sim, g){
-  sim.rampa = { ativa:true, fase:'sub1', potInicio:sim.potLocal, potAlvo:g.pot, tsInicio:performance.now(), duracao:g.sub||1, g };
-  mostrarToast(`⚡ ${g.pot}%`);
-}
+function dispararGatilho(sim,g){ sim.rampa={ativa:true,fase:'sub1',potInicio:sim.potLocal,tsInicio:performance.now(),duracao:g.sub||1,g}; }
 function tickRampa(sim){
   if(!sim.rampa.ativa) return;
-  const { g } = sim.rampa, now = performance.now();
-  const prog = Math.min(1,(now - sim.rampa.tsInicio)/sim.rampa.duracao);
-  const lerp = (a,b,t)=>a+(b-a)*t;
-  if(sim.rampa.fase==='sub1'){
-    sim.potLocal = lerp(sim.rampa.potInicio, g.pot, prog);
-    if(prog>=1){ sim.rampa.fase='pico1'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.pico||1; }
-  }else if(sim.rampa.fase==='pico1'){
-    sim.potLocal = g.pot;
-    if(prog>=1){
-      if((g.trans||0)>0){ sim.rampa.fase='trans'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.trans; }
-      else{ sim.rampa.fase='desc'; sim.rampa.potInicio=g.pot; sim.rampa.tsInicio=now; sim.rampa.duracao=g.desc||1; }
-    }
-  }else if(sim.rampa.fase==='trans'){
-    sim.potLocal = lerp(g.pot, g.pot2||0, prog);
-    if(prog>=1){ sim.rampa.fase='pico2'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.pico2||1; }
-  }else if(sim.rampa.fase==='pico2'){
-    sim.potLocal = g.pot2||0;
-    if(prog>=1){ sim.rampa.fase='desc'; sim.rampa.potInicio=g.pot2||0; sim.rampa.tsInicio=now; sim.rampa.duracao=g.desc||1; }
-  }else if(sim.rampa.fase==='desc'){
-    sim.potLocal = lerp(sim.rampa.potInicio, g.potFim||0, prog);
-    if(prog>=1){ sim.potLocal=g.potFim||0; sim.rampa.ativa=false; }
-  }
-  sim.potLocal = Math.max(0, Math.min(100, sim.potLocal));
-  aplicarMotor(sim.potLocal);
+  const {g}=sim.rampa, now=performance.now(), prog=Math.min(1,(now-sim.rampa.tsInicio)/sim.rampa.duracao), lerp=(a,b,t)=>a+(b-a)*t;
+  if(sim.rampa.fase==='sub1'){ sim.potLocal=lerp(sim.rampa.potInicio,g.pot,prog); if(prog>=1){sim.rampa.fase='pico1';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico||1;} }
+  else if(sim.rampa.fase==='pico1'){ sim.potLocal=g.pot; if(prog>=1){ if((g.trans||0)>0){sim.rampa.fase='trans';sim.rampa.tsInicio=now;sim.rampa.duracao=g.trans;} else {sim.rampa.fase='desc';sim.rampa.potInicio=g.pot;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} } }
+  else if(sim.rampa.fase==='trans'){ sim.potLocal=lerp(g.pot,g.pot2||0,prog); if(prog>=1){sim.rampa.fase='pico2';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico2||1;} }
+  else if(sim.rampa.fase==='pico2'){ sim.potLocal=g.pot2||0; if(prog>=1){sim.rampa.fase='desc';sim.rampa.potInicio=g.pot2||0;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} }
+  else if(sim.rampa.fase==='desc'){ sim.potLocal=lerp(sim.rampa.potInicio,g.potFim||0,prog); if(prog>=1){sim.potLocal=g.potFim||0;sim.rampa.ativa=false;} }
+  sim.potLocal=Math.max(0,Math.min(100,sim.potLocal)); aplicarMotor(sim.potLocal);
 }
 
-// ══ CONTAGEM → FULLSCREEN → PLAY ═════════════════════════════
+// ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
+function pedirNome(id){ simEmContagem=id; document.getElementById('nomeOverlay').classList.add('visivel'); setTimeout(()=>document.getElementById('inputNome').focus(),100); }
+function fecharNome(){ document.getElementById('nomeOverlay').classList.remove('visivel'); simEmContagem=null; }
+function confirmarNome(){
+  const v=document.getElementById('inputNome').value.trim();
+  nomeJogador = v || 'Jogador';
+  localStorage.setItem('simpesca_ultimo_nome', nomeJogador);
+  document.getElementById('nomeOverlay').classList.remove('visivel');
+  iniciarContagem(simEmContagem);
+}
+document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
+
 function iniciarContagem(id){
-  simEmContagem = id;
-  const ov = document.getElementById('countdownOverlay'), num = document.getElementById('countdownNum');
-  ov.classList.add('visivel'); let n = 5; num.textContent = n;
-  const tick = () => { num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; };
-  tick();
-  const t = setInterval(() => {
-    n--;
-    if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); entrarFullscreenEPlay(simEmContagem); }
-    else tick();
-  }, 1000);
+  const ov=document.getElementById('countdownOverlay'), num=document.getElementById('countdownNum');
+  ov.classList.add('visivel'); let n=5; num.textContent=n;
+  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; }; tick();
+  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); entrarFullscreenEPlay(id); } else tick(); },1000);
 }
 function entrarFullscreenEPlay(id){
-  const sim = SIMS[id], w = sim.wrapper;
-  const req = w.requestFullscreen || w.webkitRequestFullscreen;
+  const sim=SIMS[id], w=sim.wrapper, req=w.requestFullscreen||w.webkitRequestFullscreen;
   if(req) req.call(w).catch(()=>{});
-  const onFS = () => {
-    if(!document.fullscreenElement && !document.webkitFullscreenElement){
-      document.removeEventListener('fullscreenchange', onFS);
-      document.removeEventListener('webkitfullscreenchange', onFS);
-      if(sim.estaRodando) pausarSim(id);
-    }
-  };
-  document.addEventListener('fullscreenchange', onFS);
-  document.addEventListener('webkitfullscreenchange', onFS);
+  const onFS=()=>{ if(!document.fullscreenElement&&!document.webkitFullscreenElement){ document.removeEventListener('fullscreenchange',onFS); document.removeEventListener('webkitfullscreenchange',onFS); if(sim.estaRodando) pausarSim(id); } };
+  document.addEventListener('fullscreenchange',onFS); document.addEventListener('webkitfullscreenchange',onFS);
   iniciarSim(id);
 }
 function loopSim(sim){
-  return setInterval(() => {
-    const t = sim.video.currentTime;
-    while(sim.gatilhoIdx < sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t <= t){
-      dispararGatilho(sim, sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++;
-    }
+  return setInterval(()=>{
+    const t=sim.video.currentTime;
+    while(sim.gatilhoIdx<sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t<=t){ dispararGatilho(sim,sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++; }
     tickRampa(sim);
-  }, 100);
+  },100);
 }
 function iniciarSim(id){
-  const sim = SIMS[id];
-  sim.estaRodando = true; sim.gatilhoIdx = 0; sim.potLocal = 0; sim.rampa = {ativa:false};
+  const sim=SIMS[id]; simAtual=id;
+  sim.estaRodando=true; sim.gatilhoIdx=0; sim.potLocal=0; sim.rampa={ativa:false};
   sim.overlay.classList.add('oculto');
-  sim.video.currentTime = 0;
-  sim.video.play().catch(()=>{});
-  sim.intervalo = loopSim(sim);
+  zerarEncoder();                 // zera a linha recolhida no início
+  document.getElementById('hudLinha').classList.add('visivel');
+  sim.video.currentTime=0; sim.video.play().catch(()=>{});
+  sim.intervalo=loopSim(sim);
 }
 function pausarSim(id){
-  const sim = SIMS[id];
-  sim.estaRodando = false; sim.rampa.ativa = false;
-  clearInterval(sim.intervalo); sim.video.pause();
-  aplicarMotor(0);
-  simEmPausa = id;
-  document.getElementById('pauseOverlay').classList.add('visivel');
+  const sim=SIMS[id]; sim.estaRodando=false; sim.rampa.ativa=false;
+  clearInterval(sim.intervalo); sim.video.pause(); aplicarMotor(0);
+  simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel');
 }
 function continuarSim(){
   document.getElementById('pauseOverlay').classList.remove('visivel');
-  if(!simEmPausa) return;
-  const sim = SIMS[simEmPausa];
-  sim.estaRodando = true; sim.video.play().catch(()=>{});
-  sim.intervalo = loopSim(sim);
-  simEmPausa = null;
+  if(!simEmPausa) return; const sim=SIMS[simEmPausa];
+  sim.estaRodando=true; sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null;
 }
 function reiniciarSim(){
   document.getElementById('pauseOverlay').classList.remove('visivel');
-  if(!simEmPausa) return;
-  encerrarSim(simEmPausa, true);
-  simEmPausa = null;
+  if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null;
 }
-function encerrarSim(id, sairFS){
-  const sim = SIMS[id];
-  clearInterval(sim.intervalo);
-  sim.estaRodando = false; sim.potLocal = 0; sim.rampa = {ativa:false};
-  sim.video.pause(); sim.video.currentTime = 0;
-  aplicarMotor(0);
+function encerrarSim(id, sairFS, salvar){
+  const sim=SIMS[id]; clearInterval(sim.intervalo);
+  sim.estaRodando=false; sim.potLocal=0; sim.rampa={ativa:false};
+  sim.video.pause(); aplicarMotor(0);
+  document.getElementById('hudLinha').classList.remove('visivel');
+  const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
-  sim.overlay.classList.remove('oculto');
+  sim.overlay.classList.remove('oculto'); sim.video.currentTime=0;
+  if(salvar){ salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id); }
 }
 
-// ══ TOAST ═════════════════════════════════════════════════════
-let toastTimeout = null;
-function mostrarToast(msg){
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('visivel');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(()=>el.classList.remove('visivel'), 1500);
+// ══ RANKING ───────────────────────────────────────────────────
+function salvarRanking(nome, metros, sim){
+  let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  lista.push({ nome, metros:Math.round(metros*10)/10, sim, data:new Date().toISOString() });
+  localStorage.setItem('simpesca_ranking', JSON.stringify(lista));
 }
+function mostrarResultado(nome, metros, sim){
+  const m=Math.round(metros*10)/10;
+  let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  const naSim=lista.filter(r=>r.sim===sim);
+  const total=naSim.length;
+  const pos=naSim.filter(r=>r.metros>m).length + 1;   // ranque dentro da mesma Sim (trata empate)
+  const medalha = pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
+  document.getElementById('resultadoMetros').textContent=metros.toFixed(1)+' m';
+  document.getElementById('resultadoPos').textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' na Sim '+sim;
+  document.getElementById('resultadoNome').textContent=nome;
+  const rec=document.getElementById('resultadoRecorde');
+  if(total===1){ rec.textContent='🎣 Primeira jogada desta simulação!'; rec.style.display='block'; }
+  else if(pos===1){ rec.textContent='🏆 Novo recorde!'; rec.style.display='block'; }
+  else { rec.style.display='none'; }
+  document.getElementById('resultadoOverlay').classList.add('visivel');
+}
+function fecharResultado(){ document.getElementById('resultadoOverlay').classList.remove('visivel'); }
+
+// ══ TOAST ═════════════════════════════════════════════════════
+let toastTimeout=null;
+function mostrarToast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('visivel'); clearTimeout(toastTimeout); toastTimeout=setTimeout(()=>el.classList.remove('visivel'),1500); }
 </script>
 </body>
 </html>

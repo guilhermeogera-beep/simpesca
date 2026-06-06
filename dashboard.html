@@ -34,17 +34,14 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .btn-yellow{background:rgba(255,214,0,0.05);border-color:var(--yellow);color:var(--yellow);}
 .btn-accent{background:rgba(0,212,255,0.05);border-color:var(--accent);color:var(--accent);}
 .btn-outline{border-color:var(--text-dim);color:var(--text-dim);}
-.btn:hover{filter:brightness(1.2);}
-.btn:active{transform:scale(0.96);}
-.btn:disabled{opacity:0.35;cursor:default;filter:none;}
+.btn:hover{filter:brightness(1.2);} .btn:active{transform:scale(0.96);} .btn:disabled{opacity:0.35;cursor:default;filter:none;}
 .time-tick{position:absolute;bottom:3px;transform:translateX(-50%);font-size:0.6rem;color:var(--text-dim);font-family:monospace;pointer-events:none;}
 .time-line{position:absolute;top:0;bottom:20px;width:1px;background:rgba(26,39,54,0.25);pointer-events:none;}
 .timeline-marker{position:absolute;top:12px;height:68px;cursor:grab;z-index:5;min-width:10px;}
 .timeline-marker:active{cursor:grabbing;}
 .timeline-marker .lbl-pot{position:absolute;top:-13px;left:0;white-space:nowrap;font-size:0.55rem;font-family:monospace;color:var(--text-dim);background:var(--bg);padding:1px 3px;border-radius:3px;pointer-events:none;border:1px solid var(--border);}
 .timeline-marker.ativo .lbl-pot{color:var(--accent);border-color:var(--accent);}
-#blockEditor{display:none;background:rgba(13,21,29,0.95);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;animation:fadeIn 0.15s ease;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+#blockEditor{display:none;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;}
 .editor-linha{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;}
 .editor-sep{width:1px;height:38px;background:var(--border);align-self:flex-end;margin:0 2px;flex-shrink:0;}
 .ef{display:flex;flex-direction:column;gap:2px;min-width:52px;flex:1;}
@@ -73,12 +70,21 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .tl-trackbg{position:absolute;bottom:20px;left:0;right:0;height:2px;background:var(--border);}
 .tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:10;}
 .sim-controls{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;}
+.cal-grid{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;}
+.cal-campo{display:flex;flex-direction:column;gap:4px;}
+.cal-campo label{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+.cal-campo input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:0.95rem;padding:8px 10px;width:130px;outline:none;text-align:center;}
+.cal-campo input:focus{border-color:var(--accent);}
+.cal-live{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.cal-val{font-size:1.6rem;font-weight:800;font-family:monospace;}
+.cal-val.metros{color:var(--green);} .cal-val.cont{color:var(--accent);}
+.cal-sub{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+.cal-help{font-size:0.78rem;color:var(--text-dim);background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:10px 14px;margin-top:14px;line-height:1.7;}
+.cal-help b{color:var(--text);}
 #log{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--text-dim);height:90px;overflow-y:auto;display:flex;flex-direction:column-reverse;font-family:monospace;}
-#log span{display:block;}
-#log .ok{color:var(--green);}
-#log .err{color:var(--red);}
-#log .info{color:var(--accent);}
+#log span{display:block;} #log .ok{color:var(--green);} #log .err{color:var(--red);} #log .info{color:var(--accent);}
 .copia-aviso{font-size:0.7rem;color:var(--yellow);margin-left:6px;}
+select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -86,6 +92,7 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
   <span style="font-size:1.8rem">🎣</span>
   <h1>Simulador de Pesca</h1>
   <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
+  <a href="ranking.html" class="btn-link">🏆 Ranking</a>
   <a href="player.html" class="btn-link">▶ Player</a>
 </header>
 
@@ -100,17 +107,45 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
   </div>
 </div>
 
+<!-- CALIBRAÇÃO DO ENCODER -->
+<div class="card">
+  <div class="secao-titulo"><span>📏</span> Encoder — Calibração da Linha (AS5600)</div>
+  <div class="cal-grid">
+    <div class="cal-campo">
+      <label>Metros por volta</label>
+      <input type="number" id="calMpv" step="0.001" min="0" value="0.16">
+    </div>
+    <div class="cal-campo">
+      <label>Inverter direção</label>
+      <label style="display:flex;align-items:center;gap:8px;height:38px;color:var(--text);font-family:inherit;font-size:0.85rem;"><input type="checkbox" id="calInv" style="width:auto;"> sim</label>
+    </div>
+    <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
+  </div>
+  <div class="cal-live">
+    <div><div class="cal-val cont" id="calCont">0</div><div class="cal-sub">contagem</div></div>
+    <div><div class="cal-val" id="calVoltas" style="color:var(--yellow)">0.00</div><div class="cal-sub">voltas</div></div>
+    <div><div class="cal-val metros" id="calMetros">0.0 m</div><div class="cal-sub">metros (calc.)</div></div>
+  </div>
+  <div class="cal-help">
+    <b>Como calibrar:</b> conecte por Bluetooth → clique <b>Zerar</b> → recolha uma quantidade <b>conhecida</b> de linha
+    (ex.: 5,0 m) → digite no campo abaixo e clique <b>Calcular</b>. O "metros por volta" é ajustado automaticamente.
+  </div>
+  <div class="cal-grid" style="margin-top:12px;">
+    <button class="btn btn-yellow" onclick="zerarEncoder()">⟲ Zerar contagem</button>
+    <div class="cal-campo"><label>Metros reais recolhidos</label><input type="number" id="calReal" step="0.1" min="0" placeholder="ex: 5.0"></div>
+    <button class="btn btn-accent" onclick="calcularMpv()">🧮 Calcular m/volta</button>
+  </div>
+</div>
+
 <div class="card">
   <div class="secao-titulo" style="margin-bottom:16px"><span>⚡</span> Perfil de Trancos <span id="copiaAviso" class="copia-aviso"></span></div>
 
-  <div class="sim-bloco" id="simBloco0">
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-a">🎣 Sim A</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct0">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt0">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill0"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(0)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(0)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(0)">■</button>
+        <button class="btn btn-green" onclick="playSim(0)">▶</button><button class="btn btn-yellow" onclick="pauseSim(0)">⏸</button><button class="btn btn-red" onclick="stopSim(0)">■</button>
         <button class="btn btn-accent btnColar" id="colar0" onclick="colarGatilho(0)" disabled title="Colar gatilho copiado">📋</button>
         <div id="tsDisplay0" class="ts-badge">0:00 / 1:30</div>
       </div>
@@ -118,14 +153,12 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
     <div id="timelineContainer0" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead0" class="tl-playhead"></div></div>
   </div>
 
-  <div class="sim-bloco" id="simBloco1">
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-b">🎣 Sim B</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct1">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt1">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill1"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(1)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(1)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(1)">■</button>
+        <button class="btn btn-green" onclick="playSim(1)">▶</button><button class="btn btn-yellow" onclick="pauseSim(1)">⏸</button><button class="btn btn-red" onclick="stopSim(1)">■</button>
         <button class="btn btn-accent btnColar" id="colar1" onclick="colarGatilho(1)" disabled title="Colar gatilho copiado">📋</button>
         <div id="tsDisplay1" class="ts-badge">0:00 / 1:30</div>
       </div>
@@ -133,14 +166,12 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
     <div id="timelineContainer1" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead1" class="tl-playhead"></div></div>
   </div>
 
-  <div class="sim-bloco" id="simBloco2">
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-c">🎣 Sim C</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct2">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt2">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill2"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(2)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(2)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(2)">■</button>
+        <button class="btn btn-green" onclick="playSim(2)">▶</button><button class="btn btn-yellow" onclick="pauseSim(2)">⏸</button><button class="btn btn-red" onclick="stopSim(2)">■</button>
         <button class="btn btn-accent btnColar" id="colar2" onclick="colarGatilho(2)" disabled title="Colar gatilho copiado">📋</button>
         <div id="tsDisplay2" class="ts-badge">0:00 / 1:30</div>
       </div>
@@ -176,13 +207,11 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <select id="selSimAcao" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;">
-      <option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option>
-    </select>
-    <button class="btn btn-green" onclick="exportarJSON()" title="Exportar perfil selecionado">⬇ Exportar</button>
-    <label class="btn btn-outline" style="cursor:pointer;" title="Importar perfil JSON">⬆ Importar<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
-    <button class="btn btn-yellow" onclick="restaurarPadrao()" title="Restaurar padrão">↺ Padrão</button>
-    <button class="btn btn-red" onclick="limparSim()" title="Apagar todos os gatilhos">🗑 Limpar</button>
+    <select id="selSimAcao"><option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option></select>
+    <button class="btn btn-green" onclick="exportarJSON()">⬇ Exportar</button>
+    <label class="btn btn-outline" style="cursor:pointer;">⬆ Importar<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
+    <button class="btn btn-yellow" onclick="restaurarPadrao()">↺ Padrão</button>
+    <button class="btn btn-red" onclick="limparSim()">🗑 Limpar</button>
   </div>
 </div>
 
@@ -195,169 +224,107 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 // ══ BLUETOOTH ═════════════════════════════════════════════════
 const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
 const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
-let bleDevice=null, motorChar=null;
+const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null, linhaChar=null, contagemEncoder=0;
 function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className=cls; b.textContent=txt; }
 async function conectarBLE(){
   if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
-  try{
-    btUI('','🔵 Procurando...');
-    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
-    await ligar(bleDevice);
-  }catch(e){ btUI('','🔵 Conectar'); }
+  try{ btUI('','🔵 Procurando...'); bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]}); await ligar(bleDevice); }catch(e){ btUI('','🔵 Conectar'); }
 }
 async function ligar(device){
   bleDevice=device;
-  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
+  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; linhaChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
   const server=await device.gatt.connect();
   const service=await server.getPrimaryService(SERVICE_UUID);
   motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
+  try{
+    linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID);
+    await linhaChar.startNotifications();
+    linhaChar.addEventListener('characteristicvaluechanged',e=>{ contagemEncoder=e.target.value.getInt32(0,true); atualizarCalLive(); });
+  }catch(e){ log('Encoder não disponível neste firmware','err'); }
   btUI('conectado','🟢 Conectado'); log('Bluetooth conectado','ok');
 }
-async function reconectar(){
-  if(navigator.bluetooth&&navigator.bluetooth.getDevices){
-    try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){}
-  }
+async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
+function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
+function zerarEncoder(){ contagemEncoder=0; atualizarCalLive(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Contagem do encoder zerada','info'); }
+
+// ══ CALIBRAÇÃO ────────────────────────────────────────────────
+function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
+function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
+function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
+function atualizarCalLive(){
+  const voltas=contagemEncoder/4096; const m=Math.max(0,contagemParaMetros(contagemEncoder));
+  document.getElementById('calCont').textContent=contagemEncoder;
+  document.getElementById('calVoltas').textContent=voltas.toFixed(2);
+  document.getElementById('calMetros').textContent=m.toFixed(1)+' m';
 }
-function escreverMotor(pct){
-  if(!motorChar) return;
-  const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]);
-  try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){}
+function salvarCal(){
+  const mpv=parseFloat(document.getElementById('calMpv').value);
+  if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv);
+  localStorage.setItem('simpesca_cal_inv', document.getElementById('calInv').checked?'1':'0');
+  atualizarCalLive(); log('Calibração salva: '+mpv+' m/volta','ok');
+}
+function calcularMpv(){
+  const real=parseFloat(document.getElementById('calReal').value);
+  const voltas=Math.abs(contagemEncoder)/4096;
+  if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; }
+  if(voltas<0.01){ log('Recolha a linha antes de calcular (contagem ~0)','err'); return; }
+  const mpv=real/voltas;
+  document.getElementById('calMpv').value=mpv.toFixed(4);
+  localStorage.setItem('simpesca_cal_mpv',mpv);
+  atualizarCalLive(); log('Calibrado: '+mpv.toFixed(4)+' m/volta ('+real+' m em '+voltas.toFixed(2)+' voltas)','ok');
 }
 
-// ══ ESTADO ════════════════════════════════════════════════════
-const DURACAO=90; // segundos por simulação
+// ══ ESTADO / RAMPA ════════════════════════════════════════════
+const DURACAO=90;
 const LETRAS=['A','B','C'];
 const PADRAO={
   A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
   B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
   C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
 };
-const SIMS=LETRAS.map((L,i)=>({
-  letra:L, idx:i, storageKey:'simpesca_gatilhos_'+L,
-  gatilhos:[], gatilhoIdx:0, tempoAtual:0, potLocal:0,
-  rampa:{ativa:false}, intervalo:null, estaRodando:false
-}));
-let simAtiva=0;            // sim sendo editada (timeline em foco)
-let indiceSelecionado=-1;  // gatilho selecionado no editor
-let gatilhoCopiado=null;   // clipboard de gatilho
+const SIMS=LETRAS.map((L,i)=>({letra:L,idx:i,storageKey:'simpesca_gatilhos_'+L,gatilhos:[],gatilhoIdx:0,tempoAtual:0,potLocal:0,rampa:{ativa:false},intervalo:null,estaRodando:false}));
+let simAtiva=0, indiceSelecionado=-1, gatilhoCopiado=null;
 
-// ══ MOTOR / GAUGE ═════════════════════════════════════════════
-function aplicarMotor(pct){
-  pct=Math.max(0,Math.min(100,pct));
-  escreverMotor(pct);
-  atualizarGauge(pct);
-}
-function atualizarGauge(pct){
-  pct=Math.max(0,Math.min(100,pct));
-  document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('gaugeBarFill').style.width=pct+'%';
-  document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V';
-}
-function atualizarSimGauge(idx,pct){
-  pct=Math.max(0,Math.min(100,pct));
-  const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx);
-  if(!p)return;
-  p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%';
-  if(pct>70)f.style.background='linear-gradient(90deg,#c1121f,#e63946)';
-  else if(pct>40)f.style.background='linear-gradient(90deg,#e07b00,#ffd600)';
-  else f.style.background='linear-gradient(90deg,var(--accent2),var(--accent))';
-}
-function log(msg,tipo=''){
-  const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo;
-  const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`;
-  el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild);
-}
-const slider=document.getElementById('motorSlider');
-slider.addEventListener('input',e=>{ aplicarMotor(parseInt(e.target.value)); });
+function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct)); escreverMotor(pct); atualizarGauge(pct); }
+function atualizarGauge(pct){ pct=Math.max(0,Math.min(100,pct)); document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%'; document.getElementById('gaugeBarFill').style.width=pct+'%'; document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V'; }
+function atualizarSimGauge(idx,pct){ pct=Math.max(0,Math.min(100,pct)); const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx); if(!p)return; p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%'; f.style.background=pct>70?'linear-gradient(90deg,#c1121f,#e63946)':pct>40?'linear-gradient(90deg,#e07b00,#ffd600)':'linear-gradient(90deg,var(--accent2),var(--accent))'; }
+function log(msg,tipo=''){ const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo; const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`; el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild); }
+document.getElementById('motorSlider').addEventListener('input',e=>aplicarMotor(parseInt(e.target.value)));
 
-// ══ MOTOR DE RAMPA ════════════════════════════════════════════
 function resetarRampa(sim){ sim.rampa={ativa:false}; sim.potLocal=0; sim.gatilhoIdx=0; }
-function dispararGatilho(sim,g){
-  sim.rampa={ativa:true,fase:'sub1',potInicio:sim.potLocal,tsInicio:performance.now(),duracao:g.sub||1,g};
-  log('Sim '+sim.letra+': gatilho '+g.t.toFixed(1)+'s → '+g.pot+'%','info');
-}
+function dispararGatilho(sim,g){ sim.rampa={ativa:true,fase:'sub1',potInicio:sim.potLocal,tsInicio:performance.now(),duracao:g.sub||1,g}; log('Sim '+sim.letra+': gatilho '+g.t.toFixed(1)+'s → '+g.pot+'%','info'); }
 function tickRampa(sim){
   if(!sim.rampa.ativa) return;
-  const {g}=sim.rampa, now=performance.now();
-  const prog=Math.min(1,(now-sim.rampa.tsInicio)/sim.rampa.duracao);
-  const lerp=(a,b,t)=>a+(b-a)*t;
-  if(sim.rampa.fase==='sub1'){
-    sim.potLocal=lerp(sim.rampa.potInicio,g.pot,prog);
-    if(prog>=1){sim.rampa.fase='pico1';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico||1;}
-  }else if(sim.rampa.fase==='pico1'){
-    sim.potLocal=g.pot;
-    if(prog>=1){ if((g.trans||0)>0){sim.rampa.fase='trans';sim.rampa.tsInicio=now;sim.rampa.duracao=g.trans;} else {sim.rampa.fase='desc';sim.rampa.potInicio=g.pot;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} }
-  }else if(sim.rampa.fase==='trans'){
-    sim.potLocal=lerp(g.pot,g.pot2||0,prog);
-    if(prog>=1){sim.rampa.fase='pico2';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico2||1;}
-  }else if(sim.rampa.fase==='pico2'){
-    sim.potLocal=g.pot2||0;
-    if(prog>=1){sim.rampa.fase='desc';sim.rampa.potInicio=g.pot2||0;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;}
-  }else if(sim.rampa.fase==='desc'){
-    sim.potLocal=lerp(sim.rampa.potInicio,g.potFim||0,prog);
-    if(prog>=1){sim.potLocal=g.potFim||0;sim.rampa.ativa=false;}
-  }
-  sim.potLocal=Math.max(0,Math.min(100,sim.potLocal));
-  aplicarMotor(sim.potLocal);
-  atualizarSimGauge(sim.idx,sim.potLocal);
+  const {g}=sim.rampa, now=performance.now(), prog=Math.min(1,(now-sim.rampa.tsInicio)/sim.rampa.duracao), lerp=(a,b,t)=>a+(b-a)*t;
+  if(sim.rampa.fase==='sub1'){ sim.potLocal=lerp(sim.rampa.potInicio,g.pot,prog); if(prog>=1){sim.rampa.fase='pico1';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico||1;} }
+  else if(sim.rampa.fase==='pico1'){ sim.potLocal=g.pot; if(prog>=1){ if((g.trans||0)>0){sim.rampa.fase='trans';sim.rampa.tsInicio=now;sim.rampa.duracao=g.trans;} else {sim.rampa.fase='desc';sim.rampa.potInicio=g.pot;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} } }
+  else if(sim.rampa.fase==='trans'){ sim.potLocal=lerp(g.pot,g.pot2||0,prog); if(prog>=1){sim.rampa.fase='pico2';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico2||1;} }
+  else if(sim.rampa.fase==='pico2'){ sim.potLocal=g.pot2||0; if(prog>=1){sim.rampa.fase='desc';sim.rampa.potInicio=g.pot2||0;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} }
+  else if(sim.rampa.fase==='desc'){ sim.potLocal=lerp(sim.rampa.potInicio,g.potFim||0,prog); if(prog>=1){sim.potLocal=g.potFim||0;sim.rampa.ativa=false;} }
+  sim.potLocal=Math.max(0,Math.min(100,sim.potLocal)); aplicarMotor(sim.potLocal); atualizarSimGauge(sim.idx,sim.potLocal);
 }
-
-// ══ PLAY / PAUSE / STOP ───────────────────────────────────────
-function playSim(idx){
-  const sim=SIMS[idx];
-  if(sim.estaRodando) return;
-  sim.estaRodando=true; resetarRampa(sim);
-  sim.intervalo=setInterval(()=>{
-    sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO);
-    while(sim.gatilhoIdx<sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t<=sim.tempoAtual){
-      dispararGatilho(sim,sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++;
-    }
-    tickRampa(sim);
-    atualizarInterfaceTempo();
-    if(sim.tempoAtual>=DURACAO) stopSim(idx);
-  },100);
+function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; resetarRampa(sim);
+  sim.intervalo=setInterval(()=>{ sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO); while(sim.gatilhoIdx<sim.gatilhos.length&&sim.gatilhos[sim.gatilhoIdx].t<=sim.tempoAtual){ dispararGatilho(sim,sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++; } tickRampa(sim); atualizarInterfaceTempo(); if(sim.tempoAtual>=DURACAO) stopSim(idx); },100);
 }
-function pauseSim(idx){
-  const sim=SIMS[idx];
-  sim.estaRodando=false; clearInterval(sim.intervalo); sim.rampa.ativa=false;
-}
-function stopSim(idx){
-  const sim=SIMS[idx];
-  sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; resetarRampa(sim);
-  atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0);
-}
+function pauseSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); sim.rampa.ativa=false; }
+function stopSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; resetarRampa(sim); atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0); }
 function fmt(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
-function atualizarInterfaceTempo(){
-  for(let i=0;i<3;i++){
-    const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`;
-    const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`;
-  }
-}
+function atualizarInterfaceTempo(){ for(let i=0;i<3;i++){ const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`; const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`; } }
 
 // ══ TIMELINE ══════════════════════════════════════════════════
 function renderTimeline(idx){
   const container=document.getElementById('timelineContainer'+idx); if(!container) return;
   container.querySelectorAll('.timeline-marker,.time-tick,.time-line').forEach(e=>e.remove());
-  for(let sec=0;sec<=DURACAO;sec++){
-    const pct=(sec/DURACAO)*100;
-    const line=document.createElement('div'); line.className='time-line';
-    if(sec%5===0) line.style.background='rgba(26,39,54,0.6)';
-    line.style.left=`${pct}%`; container.appendChild(line);
-    if(sec%5===0){ const tk=document.createElement('div'); tk.className='time-tick'; tk.style.left=`${pct}%`; tk.textContent=`${sec}s`; container.appendChild(tk); }
-  }
+  for(let sec=0;sec<=DURACAO;sec++){ const pct=(sec/DURACAO)*100; const line=document.createElement('div'); line.className='time-line'; if(sec%5===0) line.style.background='rgba(26,39,54,0.6)'; line.style.left=`${pct}%`; container.appendChild(line); if(sec%5===0){ const tk=document.createElement('div'); tk.className='time-tick'; tk.style.left=`${pct}%`; tk.textContent=`${sec}s`; container.appendChild(tk); } }
   SIMS[idx].gatilhos.forEach((g,i)=>{
-    const m=document.createElement('div'); m.className='timeline-marker';
-    if(idx===simAtiva && i===indiceSelecionado) m.classList.add('ativo');
+    const m=document.createElement('div'); m.className='timeline-marker'; const sel=(idx===simAtiva&&i===indiceSelecionado); if(sel) m.classList.add('ativo');
     const totalMs=(g.sub||0)+(g.pico||0)+(g.trans||0)+(g.pico2||0)+(g.desc||0)||1;
     m.style.left=`${(g.t/DURACAO)*100}%`; m.style.width=`${((totalMs/1000)/DURACAO)*100}%`;
-    const x1=((g.sub)/totalMs)*100, x2=((g.sub+g.pico)/totalMs)*100, x3=((g.sub+g.pico+g.trans)/totalMs)*100, x4=((g.sub+g.pico+g.trans+g.pico2)/totalMs)*100;
+    const x1=((g.sub)/totalMs)*100,x2=((g.sub+g.pico)/totalMs)*100,x3=((g.sub+g.pico+g.trans)/totalMs)*100,x4=((g.sub+g.pico+g.trans+g.pico2)/totalMs)*100;
     const yIni=100-(g.potIni||0),y1=100-(g.pot||0),y2=100-(g.pot2||0),yFim=100-(g.potFim||0);
-    const sel=(idx===simAtiva && i===indiceSelecionado);
     const corLinha=sel?'var(--accent)':'var(--yellow)', corFundo=sel?'rgba(0,212,255,0.25)':'rgba(245,176,65,0.15)';
-    m.innerHTML=`<div class="lbl-pot">${g.potIni}%→${g.pot}%→${g.pot2||0}%→${g.potFim}%</div>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;border-radius:4px;">
-      <polygon points="0,100 0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim} 100,100" fill="${corFundo}"/>
-      <polyline points="0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim}" fill="none" stroke="${corLinha}" stroke-width="2.5"/></svg>`;
+    m.innerHTML=`<div class="lbl-pot">${g.potIni}%→${g.pot}%→${g.pot2||0}%→${g.potFim}%</div><svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;border-radius:4px;"><polygon points="0,100 0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim} 100,100" fill="${corFundo}"/><polyline points="0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim}" fill="none" stroke="${corLinha}" stroke-width="2.5"/></svg>`;
     m.addEventListener('mousedown',e=>iniciarArrasto(e,i,idx));
     m.addEventListener('click',e=>{ e.stopPropagation(); simAtiva=idx; abrirEditor(i); });
     container.appendChild(m);
@@ -366,129 +333,46 @@ function renderTimeline(idx){
 function renderTodas(){ for(let i=0;i<3;i++) renderTimeline(i); }
 function setupContainerClick(idx){
   const el=document.getElementById('timelineContainer'+idx);
-  el.addEventListener('click',e=>{
-    const a=e.target, fundo = a===el||a.classList.contains('tl-trackbg')||a.classList.contains('time-line');
-    if(!fundo) return;
-    simAtiva=idx; indiceSelecionado=-1;
-    const rect=el.getBoundingClientRect(); const pct=(e.clientX-rect.left)/rect.width;
-    const t=parseFloat((pct*DURACAO).toFixed(2));
+  el.addEventListener('click',e=>{ const a=e.target, fundo=a===el||a.classList.contains('tl-trackbg')||a.classList.contains('time-line'); if(!fundo) return;
+    simAtiva=idx; indiceSelecionado=-1; const rect=el.getBoundingClientRect(); const t=parseFloat(((e.clientX-rect.left)/rect.width*DURACAO).toFixed(2));
     SIMS[idx].gatilhos.push({t,potIni:0,pot:80,sub:300,pico:800,pot2:40,trans:400,pico2:1200,desc:600,potFim:0});
-    indiceSelecionado=SIMS[idx].gatilhos.length-1;
-    salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
+    indiceSelecionado=SIMS[idx].gatilhos.length-1; salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
   });
 }
 let blocoArrastado=null, dragOffsetTime=0;
-function iniciarArrasto(e,indice,idx){
-  simAtiva=idx; e.stopPropagation(); blocoArrastado=indice; indiceSelecionado=indice; abrirEditor(indice);
-  const el=document.getElementById('timelineContainer'+idx); const rect=el.getBoundingClientRect();
-  dragOffsetTime=((e.clientX-rect.left)/rect.width)*DURACAO-SIMS[idx].gatilhos[indice].t;
-  document.addEventListener('mousemove',arrastarBloco); document.addEventListener('mouseup',pararArrasto);
-}
-function arrastarBloco(e){
-  if(blocoArrastado===null) return;
-  const el=document.getElementById('timelineContainer'+simAtiva); const rect=el.getBoundingClientRect();
-  let pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-  SIMS[simAtiva].gatilhos[blocoArrastado].t=parseFloat(Math.max(0,Math.min(DURACAO,(pct*DURACAO)-dragOffsetTime)).toFixed(2));
-  document.getElementById('edTempo').value=SIMS[simAtiva].gatilhos[blocoArrastado].t;
-  renderTimeline(simAtiva);
-}
+function iniciarArrasto(e,indice,idx){ simAtiva=idx; e.stopPropagation(); blocoArrastado=indice; indiceSelecionado=indice; abrirEditor(indice); const el=document.getElementById('timelineContainer'+idx); const rect=el.getBoundingClientRect(); dragOffsetTime=((e.clientX-rect.left)/rect.width)*DURACAO-SIMS[idx].gatilhos[indice].t; document.addEventListener('mousemove',arrastarBloco); document.addEventListener('mouseup',pararArrasto); }
+function arrastarBloco(e){ if(blocoArrastado===null) return; const el=document.getElementById('timelineContainer'+simAtiva); const rect=el.getBoundingClientRect(); let pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)); SIMS[simAtiva].gatilhos[blocoArrastado].t=parseFloat(Math.max(0,Math.min(DURACAO,(pct*DURACAO)-dragOffsetTime)).toFixed(2)); document.getElementById('edTempo').value=SIMS[simAtiva].gatilhos[blocoArrastado].t; renderTimeline(simAtiva); }
 function pararArrasto(){ blocoArrastado=null; document.removeEventListener('mousemove',arrastarBloco); document.removeEventListener('mouseup',pararArrasto); ordenarGatilhos(simAtiva); salvarLocal(simAtiva); }
-function ordenarGatilhos(idx){
-  const lista=SIMS[idx].gatilhos; const atual=indiceSelecionado>-1?lista[indiceSelecionado]:null;
-  lista.sort((a,b)=>a.t-b.t); if(atual) indiceSelecionado=lista.indexOf(atual); renderTimeline(idx);
-}
+function ordenarGatilhos(idx){ const lista=SIMS[idx].gatilhos; const atual=indiceSelecionado>-1?lista[indiceSelecionado]:null; lista.sort((a,b)=>a.t-b.t); if(atual) indiceSelecionado=lista.indexOf(atual); renderTimeline(idx); }
 
 // ══ EDITOR ════════════════════════════════════════════════════
 const painelEditor=document.getElementById('blockEditor');
 const inputs=['edTempo','edPotIni','edForca','edSub','edPico','edForca2','edTrans','edPico2','edDesc','edPotFim'];
 const chaves=['t','potIni','pot','sub','pico','pot2','trans','pico2','desc','potFim'];
-function abrirEditor(indice){
-  indiceSelecionado=indice; const g=SIMS[simAtiva].gatilhos[indice]; if(!g) return;
-  inputs.forEach((id,i)=>{ document.getElementById(id).value=g[chaves[i]]!==undefined?g[chaves[i]]:0; });
-  painelEditor.style.display='block'; renderTodas();
-}
+function abrirEditor(indice){ indiceSelecionado=indice; const g=SIMS[simAtiva].gatilhos[indice]; if(!g) return; inputs.forEach((id,i)=>{ document.getElementById(id).value=g[chaves[i]]!==undefined?g[chaves[i]]:0; }); painelEditor.style.display='block'; renderTodas(); }
 function fecharEditor(){ painelEditor.style.display='none'; indiceSelecionado=-1; renderTodas(); }
 function removerBlocoSelecionado(){ if(indiceSelecionado>-1){ SIMS[simAtiva].gatilhos.splice(indiceSelecionado,1); fecharEditor(); salvarLocal(simAtiva); } }
-inputs.forEach((id,i)=>{
-  document.getElementById(id).addEventListener('input',e=>{
-    if(indiceSelecionado>-1 && SIMS[simAtiva].gatilhos[indiceSelecionado]){
-      SIMS[simAtiva].gatilhos[indiceSelecionado][chaves[i]]=parseFloat(e.target.value)||0;
-      renderTimeline(simAtiva); salvarLocal(simAtiva);
-    }
-  });
-});
+inputs.forEach((id,i)=>{ document.getElementById(id).addEventListener('input',e=>{ if(indiceSelecionado>-1&&SIMS[simAtiva].gatilhos[indiceSelecionado]){ SIMS[simAtiva].gatilhos[indiceSelecionado][chaves[i]]=parseFloat(e.target.value)||0; renderTimeline(simAtiva); salvarLocal(simAtiva); } }); });
 
-// ══ COPIAR / COLAR GATILHO ENTRE SIMULAÇÕES ───────────────────
-function copiarGatilho(){
-  if(indiceSelecionado<0) return;
-  const g=SIMS[simAtiva].gatilhos[indiceSelecionado];
-  gatilhoCopiado=JSON.parse(JSON.stringify(g)); // cópia profunda
-  document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false);
-  document.getElementById('copiaAviso').textContent='— gatilho copiado, cole em qualquer Sim com 📋';
-  log('Gatilho '+SIMS[simAtiva].letra+' '+g.t.toFixed(1)+'s copiado ('+g.pot+'%)','ok');
-}
-function colarGatilho(idx){
-  if(!gatilhoCopiado) return;
-  const novo=JSON.parse(JSON.stringify(gatilhoCopiado));
-  SIMS[idx].gatilhos.push(novo);
-  simAtiva=idx;
-  ordenarGatilhos(idx);
-  indiceSelecionado=SIMS[idx].gatilhos.indexOf(novo);
-  salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
-  log('Gatilho colado na Sim '+SIMS[idx].letra+' ('+novo.t.toFixed(1)+'s)','ok');
-}
+// ══ COPIAR / COLAR ────────────────────────────────────────────
+function copiarGatilho(){ if(indiceSelecionado<0) return; const g=SIMS[simAtiva].gatilhos[indiceSelecionado]; gatilhoCopiado=JSON.parse(JSON.stringify(g)); document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false); document.getElementById('copiaAviso').textContent='— gatilho copiado, cole em qualquer Sim com 📋'; log('Gatilho '+SIMS[simAtiva].letra+' '+g.t.toFixed(1)+'s copiado','ok'); }
+function colarGatilho(idx){ if(!gatilhoCopiado) return; const novo=JSON.parse(JSON.stringify(gatilhoCopiado)); SIMS[idx].gatilhos.push(novo); simAtiva=idx; ordenarGatilhos(idx); indiceSelecionado=SIMS[idx].gatilhos.indexOf(novo); salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado); log('Gatilho colado na Sim '+SIMS[idx].letra,'ok'); }
 
-// ══ PERSISTÊNCIA ──────────────────────────────────────────────
+// ══ PERSISTÊNCIA / IMPORT-EXPORT ──────────────────────────────
 function salvarLocal(idx){ try{ localStorage.setItem(SIMS[idx].storageKey,JSON.stringify(SIMS[idx].gatilhos)); }catch(e){} }
-function carregarLocal(idx){
-  let dados=null;
-  try{ const r=localStorage.getItem(SIMS[idx].storageKey); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) dados=d; } }catch(e){}
-  if(!dados) dados=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])); // fallback padrão
-  SIMS[idx].gatilhos=dados.sort((a,b)=>a.t-b.t);
-}
-function limparSim(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  if(!confirm('Apagar todos os gatilhos da Sim '+SIMS[idx].letra+'?')) return;
-  SIMS[idx].gatilhos=[]; salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' apagada','err');
-}
-function restaurarPadrao(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  if(!confirm('Restaurar o padrão da Sim '+SIMS[idx].letra+'?')) return;
-  SIMS[idx].gatilhos=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])).sort((a,b)=>a.t-b.t);
-  salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' restaurada ao padrão','ok');
-}
-
-// ══ EXPORTAR / IMPORTAR ───────────────────────────────────────
-function exportarJSON(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  ordenarGatilhos(idx);
-  const payload={versao:1,duracao:DURACAO,criado:new Date().toISOString(),gatilhos:SIMS[idx].gatilhos};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='simulacao_'+SIMS[idx].letra+'.json'; a.click(); URL.revokeObjectURL(a.href);
-  log('Sim '+SIMS[idx].letra+' exportada','ok');
-}
-function importarJSON(ev){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  const f=ev.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const d=JSON.parse(e.target.result); const lista=d.gatilhos||d;
-      if(!Array.isArray(lista)) throw 0;
-      SIMS[idx].gatilhos=lista.sort((a,b)=>a.t-b.t);
-      salvarLocal(idx); fecharEditor(); renderTimeline(idx);
-      log('Sim '+SIMS[idx].letra+': '+lista.length+' gatilhos importados','ok');
-    }catch(err){ log('JSON inválido','err'); }
-    ev.target.value='';
-  };
-  r.readAsText(f);
-}
+function carregarLocal(idx){ let dados=null; try{ const r=localStorage.getItem(SIMS[idx].storageKey); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) dados=d; } }catch(e){} if(!dados) dados=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])); SIMS[idx].gatilhos=dados.sort((a,b)=>a.t-b.t); }
+function limparSim(){ const idx=parseInt(document.getElementById('selSimAcao').value); if(!confirm('Apagar todos os gatilhos da Sim '+SIMS[idx].letra+'?')) return; SIMS[idx].gatilhos=[]; salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' apagada','err'); }
+function restaurarPadrao(){ const idx=parseInt(document.getElementById('selSimAcao').value); if(!confirm('Restaurar o padrão da Sim '+SIMS[idx].letra+'?')) return; SIMS[idx].gatilhos=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])).sort((a,b)=>a.t-b.t); salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' restaurada','ok'); }
+function exportarJSON(){ const idx=parseInt(document.getElementById('selSimAcao').value); ordenarGatilhos(idx); const payload={versao:1,duracao:DURACAO,criado:new Date().toISOString(),gatilhos:SIMS[idx].gatilhos}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='simulacao_'+SIMS[idx].letra+'.json'; a.click(); URL.revokeObjectURL(a.href); log('Sim '+SIMS[idx].letra+' exportada','ok'); }
+function importarJSON(ev){ const idx=parseInt(document.getElementById('selSimAcao').value); const f=ev.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); const lista=d.gatilhos||d; if(!Array.isArray(lista)) throw 0; SIMS[idx].gatilhos=lista.sort((a,b)=>a.t-b.t); salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+': '+lista.length+' gatilhos importados','ok'); }catch(err){ log('JSON inválido','err'); } ev.target.value=''; }; r.readAsText(f); }
 
 // ══ INIT ══════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  document.getElementById('calMpv').value=metrosPorVolta();
+  document.getElementById('calInv').checked=inverterDir();
   for(let i=0;i<3;i++){ carregarLocal(i); setupContainerClick(i); }
-  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0);
+  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive();
   reconectar();
   log('Dashboard pronto ('+DURACAO+'s por simulação)','ok');
 });
