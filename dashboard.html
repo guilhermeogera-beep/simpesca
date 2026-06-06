@@ -3,170 +3,494 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimPesca — Config</title>
+<title>Simulador de Pesca — Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#050a0f">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#050a0f;--card:#0d151d;--surface:#121d28;--border:#1a2736;--accent:#00d4ff;--accent2:#0077b6;--green:#00e676;--red:#ff1744;--text:#e0e6ed;--dim:#7b8d9e;}
+:root{--bg:#050a0f;--card:#0d151d;--surface:#121d28;--border:#1a2736;--accent:#00d4ff;--accent2:#0077b6;--green:#00e676;--yellow:#ffd600;--red:#ff1744;--text:#e0e6ed;--text-dim:#7b8d9e;--radius:14px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;padding:20px;max-width:760px;margin:0 auto;line-height:1.6;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding:20px;line-height:1.6;max-width:1000px;margin:0 auto;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+.secao-titulo{font-size:0.75rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
 header{display:flex;align-items:center;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:16px;flex-wrap:wrap;}
-header h1{font-size:1.3rem;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
-.btn{padding:10px 18px;border:1px solid;border-radius:8px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:1px;background:transparent;}
-.btn-accent{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
-.btn-accent.conectado{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.1);}
-.btn-green{border-color:var(--green);color:var(--green);}
-.btn-dim{border-color:var(--dim);color:var(--dim);}
-.btn:disabled{opacity:.5;cursor:default;}
-.spacer{margin-left:auto;}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;}
-.titulo{font-size:.72rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;font-weight:600;}
-#gaugePct{font-size:3rem;font-weight:800;color:var(--accent);text-align:center;}
-#gaugeVolt{text-align:center;color:var(--dim);font-family:monospace;margin-bottom:6px;}
-#gaugeBar{height:12px;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--border);margin:10px 0;}
-#gaugeFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .1s;}
-input[type=range]{width:100%;margin-top:10px;}
-.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-select,.fileLabel{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:.85rem;cursor:pointer;}
-.info{font-size:.8rem;color:var(--dim);margin-top:8px;}
-.nota{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:12px 16px;font-size:.8rem;color:var(--dim);}
-.nota b{color:var(--text);}
+header h1{font-size:1.5rem;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+#btnBT{margin-left:auto;font-size:0.75rem;font-weight:600;padding:8px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-family:inherit;letter-spacing:1px;}
+#btnBT.conectado{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.1);}
+.btn-link{font-size:0.7rem;padding:8px 14px;border:1px solid var(--text-dim);border-radius:8px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;}
+#gaugeArea{text-align:center;}
+#gaugeLabel{font-size:0.75rem;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;font-weight:600;}
+#gaugePct{font-size:4rem;font-weight:800;color:var(--accent);line-height:1.2;text-shadow:0 0 20px rgba(0,212,255,0.3);}
+#gaugeBar{height:12px;background:var(--surface);border-radius:6px;margin:10px auto;max-width:400px;overflow:hidden;border:1px solid var(--border);}
+#gaugeBarFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:6px;transition:width 0.15s ease;}
+#gaugeVolt{font-size:0.85rem;color:var(--text-dim);font-family:monospace;}
+input[type="range"]{-webkit-appearance:none;width:100%;max-width:400px;background:transparent;margin:15px 0;}
+input[type="range"]:focus{outline:none;}
+input[type="range"]::-webkit-slider-runnable-track{width:100%;height:8px;cursor:pointer;background:var(--surface);border-radius:4px;border:1px solid var(--border);}
+input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:50%;background:var(--accent);cursor:pointer;-webkit-appearance:none;margin-top:-9px;box-shadow:0 0 12px rgba(0,212,255,0.6);}
+.btn{padding:10px 20px;border:1px solid;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all 0.2s ease;display:flex;align-items:center;gap:6px;background:transparent;}
+.btn-green{background:rgba(0,230,118,0.05);border-color:var(--green);color:var(--green);}
+.btn-red{background:rgba(255,23,68,0.05);border-color:var(--red);color:var(--red);}
+.btn-yellow{background:rgba(255,214,0,0.05);border-color:var(--yellow);color:var(--yellow);}
+.btn-accent{background:rgba(0,212,255,0.05);border-color:var(--accent);color:var(--accent);}
+.btn-outline{border-color:var(--text-dim);color:var(--text-dim);}
+.btn:hover{filter:brightness(1.2);}
+.btn:active{transform:scale(0.96);}
+.btn:disabled{opacity:0.35;cursor:default;filter:none;}
+.time-tick{position:absolute;bottom:3px;transform:translateX(-50%);font-size:0.6rem;color:var(--text-dim);font-family:monospace;pointer-events:none;}
+.time-line{position:absolute;top:0;bottom:20px;width:1px;background:rgba(26,39,54,0.25);pointer-events:none;}
+.timeline-marker{position:absolute;top:12px;height:68px;cursor:grab;z-index:5;min-width:10px;}
+.timeline-marker:active{cursor:grabbing;}
+.timeline-marker .lbl-pot{position:absolute;top:-13px;left:0;white-space:nowrap;font-size:0.55rem;font-family:monospace;color:var(--text-dim);background:var(--bg);padding:1px 3px;border-radius:3px;pointer-events:none;border:1px solid var(--border);}
+.timeline-marker.ativo .lbl-pot{color:var(--accent);border-color:var(--accent);}
+#blockEditor{display:none;background:rgba(13,21,29,0.95);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;animation:fadeIn 0.15s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.editor-linha{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;}
+.editor-sep{width:1px;height:38px;background:var(--border);align-self:flex-end;margin:0 2px;flex-shrink:0;}
+.ef{display:flex;flex-direction:column;gap:2px;min-width:52px;flex:1;}
+.ef label{font-size:0.5rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;font-weight:600;}
+.ef input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:0.75rem;padding:4px 5px;height:26px;outline:none;text-align:center;}
+.ef input:focus{border-color:var(--accent2);}
+.estagio-badge{font-size:0.48rem;font-weight:700;letter-spacing:0.5px;padding:2px 5px;border-radius:4px;text-transform:uppercase;align-self:flex-end;margin-bottom:2px;flex-shrink:0;white-space:nowrap;}
+.badge-sub{background:rgba(255,214,0,0.12);color:var(--yellow);border:1px solid rgba(255,214,0,0.2);}
+.badge-trans{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.2);}
+.badge-fim{background:rgba(0,212,255,0.12);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+.editor-acoes{display:flex;gap:6px;align-self:flex-end;flex-shrink:0;}
+.editor-acoes .btn{padding:4px 10px;font-size:0.65rem;height:26px;letter-spacing:0.5px;}
+.sim-bloco{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+.sim-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.sim-label{font-size:0.75rem;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.sim-label-a{background:rgba(0,212,255,0.12);color:var(--accent);border:1px solid rgba(0,212,255,0.3);}
+.sim-label-b{background:rgba(255,214,0,0.10);color:var(--yellow);border:1px solid rgba(255,214,0,0.3);}
+.sim-label-c{background:rgba(0,230,118,0.10);color:var(--green);border:1px solid rgba(0,230,118,0.3);}
+.ts-badge{font-size:0.8rem;color:var(--text-dim);font-family:monospace;background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--border);}
+.sim-mini-gauge{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;}
+.sim-gauge-pct{font-size:0.75rem;font-weight:800;font-family:monospace;color:var(--accent);min-width:34px;}
+.sim-gauge-volt{font-size:0.65rem;font-family:monospace;color:var(--text-dim);min-width:36px;}
+.sim-gauge-bar{width:48px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;border:1px solid var(--border);}
+.sim-gauge-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width 0.15s;}
+.timeline-wrap{position:relative;height:120px;background:#03070b;border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:crosshair;}
+.tl-trackbg{position:absolute;bottom:20px;left:0;right:0;height:2px;background:var(--border);}
+.tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:10;}
+.sim-controls{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;}
+#log{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--text-dim);height:90px;overflow-y:auto;display:flex;flex-direction:column-reverse;font-family:monospace;}
+#log span{display:block;}
+#log .ok{color:var(--green);}
+#log .err{color:var(--red);}
+#log .info{color:var(--accent);}
+.copia-aviso{font-size:0.7rem;color:var(--yellow);margin-left:6px;}
 </style>
 </head>
 <body>
 <header>
-  <span style="font-size:1.6rem">🎣</span>
-  <h1>SimPesca · Config</h1>
-  <button id="btnBT" class="btn btn-accent spacer" onclick="conectarBLE()">🔵 Conectar</button>
-  <a href="player.html" class="btn btn-dim" style="text-decoration:none;">▶ Player</a>
+  <span style="font-size:1.8rem">🎣</span>
+  <h1>Simulador de Pesca</h1>
+  <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
+  <a href="player.html" class="btn-link">▶ Player</a>
 </header>
 
-<div class="card">
-  <div class="titulo">⚙️ Teste manual do motor (Bluetooth)</div>
+<div class="card" id="gaugeArea">
+  <div id="gaugeLabel">Tensão do Motor</div>
   <div id="gaugePct">0%</div>
+  <div id="gaugeBar"><div id="gaugeBarFill"></div></div>
   <div id="gaugeVolt">1.00 V</div>
-  <div id="gaugeBar"><div id="gaugeFill"></div></div>
-  <input type="range" id="slider" min="0" max="100" value="0">
-  <div class="info">Conecte por Bluetooth e arraste o slider para testar o motor em tempo real.</div>
+  <div style="margin-top:25px;border-top:1px solid var(--border);padding-top:20px;">
+    <div class="secao-titulo" style="justify-content:center;"><span>⚙️</span> Teste Manual de Velocidade</div>
+    <input type="range" id="motorSlider" min="0" max="100" value="0">
+  </div>
 </div>
 
 <div class="card">
-  <div class="titulo">💾 Perfis de gatilhos (A / B / C)</div>
-  <div class="linha">
-    <select id="selSim">
-      <option value="A">Sim A</option>
-      <option value="B">Sim B</option>
-      <option value="C">Sim C</option>
+  <div class="secao-titulo" style="margin-bottom:16px"><span>⚡</span> Perfil de Trancos <span id="copiaAviso" class="copia-aviso"></span></div>
+
+  <div class="sim-bloco" id="simBloco0">
+    <div class="sim-header">
+      <span class="sim-label sim-label-a">🎣 Sim A</span>
+      <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct0">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt0">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill0"></div></div></div>
+      <div class="sim-controls">
+        <button class="btn btn-green" onclick="playSim(0)">▶</button>
+        <button class="btn btn-yellow" onclick="pauseSim(0)">⏸</button>
+        <button class="btn btn-red" onclick="stopSim(0)">■</button>
+        <button class="btn btn-accent btnColar" id="colar0" onclick="colarGatilho(0)" disabled title="Colar gatilho copiado">📋</button>
+        <div id="tsDisplay0" class="ts-badge">0:00 / 1:30</div>
+      </div>
+    </div>
+    <div id="timelineContainer0" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead0" class="tl-playhead"></div></div>
+  </div>
+
+  <div class="sim-bloco" id="simBloco1">
+    <div class="sim-header">
+      <span class="sim-label sim-label-b">🎣 Sim B</span>
+      <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct1">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt1">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill1"></div></div></div>
+      <div class="sim-controls">
+        <button class="btn btn-green" onclick="playSim(1)">▶</button>
+        <button class="btn btn-yellow" onclick="pauseSim(1)">⏸</button>
+        <button class="btn btn-red" onclick="stopSim(1)">■</button>
+        <button class="btn btn-accent btnColar" id="colar1" onclick="colarGatilho(1)" disabled title="Colar gatilho copiado">📋</button>
+        <div id="tsDisplay1" class="ts-badge">0:00 / 1:30</div>
+      </div>
+    </div>
+    <div id="timelineContainer1" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead1" class="tl-playhead"></div></div>
+  </div>
+
+  <div class="sim-bloco" id="simBloco2">
+    <div class="sim-header">
+      <span class="sim-label sim-label-c">🎣 Sim C</span>
+      <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct2">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt2">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill2"></div></div></div>
+      <div class="sim-controls">
+        <button class="btn btn-green" onclick="playSim(2)">▶</button>
+        <button class="btn btn-yellow" onclick="pauseSim(2)">⏸</button>
+        <button class="btn btn-red" onclick="stopSim(2)">■</button>
+        <button class="btn btn-accent btnColar" id="colar2" onclick="colarGatilho(2)" disabled title="Colar gatilho copiado">📋</button>
+        <div id="tsDisplay2" class="ts-badge">0:00 / 1:30</div>
+      </div>
+    </div>
+    <div id="timelineContainer2" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead2" class="tl-playhead"></div></div>
+  </div>
+
+  <div id="blockEditor">
+    <div class="editor-linha">
+      <div class="ef"><label>Início (s)</label><input type="number" id="edTempo" step="0.1" min="0"></div>
+      <div class="editor-sep"></div>
+      <span class="estagio-badge badge-sub">Pico 1</span>
+      <div class="ef"><label>Força ini (%)</label><input type="number" id="edPotIni" step="1" min="0" max="100"></div>
+      <div class="ef"><label>Subida (ms)</label><input type="number" id="edSub" step="50" min="0"></div>
+      <div class="ef"><label>Força 1 (%)</label><input type="number" id="edForca" step="1" min="0" max="100"></div>
+      <div class="ef"><label>Pico 1 (ms)</label><input type="number" id="edPico" step="100" min="0"></div>
+      <div class="editor-sep"></div>
+      <span class="estagio-badge badge-trans">Pico 2</span>
+      <div class="ef"><label>Transição (ms)</label><input type="number" id="edTrans" step="50" min="0"></div>
+      <div class="ef"><label>Força 2 (%)</label><input type="number" id="edForca2" step="1" min="0" max="100"></div>
+      <div class="ef"><label>Pico 2 (ms)</label><input type="number" id="edPico2" step="100" min="0"></div>
+      <div class="editor-sep"></div>
+      <span class="estagio-badge badge-fim">Final</span>
+      <div class="ef"><label>Descida (ms)</label><input type="number" id="edDesc" step="50" min="0"></div>
+      <div class="ef"><label>Força fim (%)</label><input type="number" id="edPotFim" step="1" min="0" max="100"></div>
+      <div class="editor-sep"></div>
+      <div class="editor-acoes">
+        <button class="btn btn-accent" onclick="copiarGatilho()" title="Copiar este gatilho">📋 Copiar</button>
+        <button class="btn btn-red" onclick="removerBlocoSelecionado()">✕</button>
+        <button class="btn btn-green" onclick="fecharEditor()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select id="selSimAcao" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;">
+      <option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option>
     </select>
-    <label class="fileLabel">⬆ Importar JSON<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
-    <button class="btn btn-green" onclick="exportarJSON()">⬇ Exportar</button>
-    <button class="btn btn-dim" onclick="restaurarPadrao()">↺ Padrão</button>
+    <button class="btn btn-green" onclick="exportarJSON()" title="Exportar perfil selecionado">⬇ Exportar</button>
+    <label class="btn btn-outline" style="cursor:pointer;" title="Importar perfil JSON">⬆ Importar<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
+    <button class="btn btn-yellow" onclick="restaurarPadrao()" title="Restaurar padrão">↺ Padrão</button>
+    <button class="btn btn-red" onclick="limparSim()" title="Apagar todos os gatilhos">🗑 Limpar</button>
   </div>
-  <div class="info" id="infoPerfil">—</div>
 </div>
 
 <div class="card">
-  <div class="nota">
-    <b>Como funciona:</b> os perfis ficam salvos neste aparelho (localStorage) e são usados pelo Player.
-    Os 3 perfis já vêm embutidos como padrão. Para criar/editar visualmente na timeline,
-    a versão completa do editor pode ser portada — peça quando quiser.
-  </div>
+  <div class="secao-titulo" style="margin-bottom:10px;"><span>📋</span> Terminal de Eventos</div>
+  <div id="log"><span class="info">Aguardando inicialização...</span></div>
 </div>
 
 <script>
 // ══ BLUETOOTH ═════════════════════════════════════════════════
-const SERVICE_UUID = "a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
-const CHAR_MOTOR_UUID = "a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
+const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
+const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
 let bleDevice=null, motorChar=null;
-
-function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className='btn btn-accent spacer '+cls; b.textContent=txt; }
+function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className=cls; b.textContent=txt; }
 async function conectarBLE(){
   if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
   try{
     btUI('','🔵 Procurando...');
-    bleDevice = await navigator.bluetooth.requestDevice({ filters:[{ services:[SERVICE_UUID] }] });
+    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
     await ligar(bleDevice);
   }catch(e){ btUI('','🔵 Conectar'); }
 }
 async function ligar(device){
   bleDevice=device;
-  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; btUI('','🔵 Reconectar'); });
+  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
   const server=await device.gatt.connect();
   const service=await server.getPrimaryService(SERVICE_UUID);
   motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
-  btUI('conectado','🟢 Conectado');
+  btUI('conectado','🟢 Conectado'); log('Bluetooth conectado','ok');
 }
 async function reconectar(){
-  if(navigator.bluetooth && navigator.bluetooth.getDevices){
+  if(navigator.bluetooth&&navigator.bluetooth.getDevices){
     try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){}
   }
 }
 function escreverMotor(pct){
   if(!motorChar) return;
   const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]);
-  try{ motorChar.writeValueWithoutResponse ? motorChar.writeValueWithoutResponse(b) : motorChar.writeValue(b); }catch(e){}
+  try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){}
 }
 
-// ══ SLIDER / GAUGE ════════════════════════════════════════════
-const slider=document.getElementById('slider');
-function atualizarGauge(p){
-  document.getElementById('gaugePct').textContent=p+'%';
-  document.getElementById('gaugeVolt').textContent=(1.0+2.5*(p/100)).toFixed(2)+' V';
-  document.getElementById('gaugeFill').style.width=p+'%';
-}
-slider.addEventListener('input',e=>{ const p=parseInt(e.target.value); atualizarGauge(p); escreverMotor(p); });
-
-// ══ PERFIS ════════════════════════════════════════════════════
-const PADRAO = {
+// ══ ESTADO ════════════════════════════════════════════════════
+const DURACAO=90; // segundos por simulação
+const LETRAS=['A','B','C'];
+const PADRAO={
   A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
   B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
   C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
 };
-function chave(){ return 'simpesca_gatilhos_'+document.getElementById('selSim').value; }
-function lerPerfil(letra){
-  try{ const r=localStorage.getItem('simpesca_gatilhos_'+letra); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) return d; } }catch(e){}
-  return PADRAO[letra];
-}
-function mostrarInfo(){
-  const letra=document.getElementById('selSim').value;
-  const g=lerPerfil(letra);
-  const fonte = localStorage.getItem('simpesca_gatilhos_'+letra) ? 'salvo neste aparelho' : 'padrão embutido';
-  document.getElementById('infoPerfil').textContent = `Sim ${letra}: ${g.length} gatilhos (${fonte}).`;
-}
-document.getElementById('selSim').addEventListener('change',mostrarInfo);
+const SIMS=LETRAS.map((L,i)=>({
+  letra:L, idx:i, storageKey:'simpesca_gatilhos_'+L,
+  gatilhos:[], gatilhoIdx:0, tempoAtual:0, potLocal:0,
+  rampa:{ativa:false}, intervalo:null, estaRodando:false
+}));
+let simAtiva=0;            // sim sendo editada (timeline em foco)
+let indiceSelecionado=-1;  // gatilho selecionado no editor
+let gatilhoCopiado=null;   // clipboard de gatilho
 
+// ══ MOTOR / GAUGE ═════════════════════════════════════════════
+function aplicarMotor(pct){
+  pct=Math.max(0,Math.min(100,pct));
+  escreverMotor(pct);
+  atualizarGauge(pct);
+}
+function atualizarGauge(pct){
+  pct=Math.max(0,Math.min(100,pct));
+  document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('gaugeBarFill').style.width=pct+'%';
+  document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V';
+}
+function atualizarSimGauge(idx,pct){
+  pct=Math.max(0,Math.min(100,pct));
+  const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx);
+  if(!p)return;
+  p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%';
+  if(pct>70)f.style.background='linear-gradient(90deg,#c1121f,#e63946)';
+  else if(pct>40)f.style.background='linear-gradient(90deg,#e07b00,#ffd600)';
+  else f.style.background='linear-gradient(90deg,var(--accent2),var(--accent))';
+}
+function log(msg,tipo=''){
+  const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo;
+  const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`;
+  el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild);
+}
+const slider=document.getElementById('motorSlider');
+slider.addEventListener('input',e=>{ aplicarMotor(parseInt(e.target.value)); });
+
+// ══ MOTOR DE RAMPA ════════════════════════════════════════════
+function resetarRampa(sim){ sim.rampa={ativa:false}; sim.potLocal=0; sim.gatilhoIdx=0; }
+function dispararGatilho(sim,g){
+  sim.rampa={ativa:true,fase:'sub1',potInicio:sim.potLocal,tsInicio:performance.now(),duracao:g.sub||1,g};
+  log('Sim '+sim.letra+': gatilho '+g.t.toFixed(1)+'s → '+g.pot+'%','info');
+}
+function tickRampa(sim){
+  if(!sim.rampa.ativa) return;
+  const {g}=sim.rampa, now=performance.now();
+  const prog=Math.min(1,(now-sim.rampa.tsInicio)/sim.rampa.duracao);
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  if(sim.rampa.fase==='sub1'){
+    sim.potLocal=lerp(sim.rampa.potInicio,g.pot,prog);
+    if(prog>=1){sim.rampa.fase='pico1';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico||1;}
+  }else if(sim.rampa.fase==='pico1'){
+    sim.potLocal=g.pot;
+    if(prog>=1){ if((g.trans||0)>0){sim.rampa.fase='trans';sim.rampa.tsInicio=now;sim.rampa.duracao=g.trans;} else {sim.rampa.fase='desc';sim.rampa.potInicio=g.pot;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} }
+  }else if(sim.rampa.fase==='trans'){
+    sim.potLocal=lerp(g.pot,g.pot2||0,prog);
+    if(prog>=1){sim.rampa.fase='pico2';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico2||1;}
+  }else if(sim.rampa.fase==='pico2'){
+    sim.potLocal=g.pot2||0;
+    if(prog>=1){sim.rampa.fase='desc';sim.rampa.potInicio=g.pot2||0;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;}
+  }else if(sim.rampa.fase==='desc'){
+    sim.potLocal=lerp(sim.rampa.potInicio,g.potFim||0,prog);
+    if(prog>=1){sim.potLocal=g.potFim||0;sim.rampa.ativa=false;}
+  }
+  sim.potLocal=Math.max(0,Math.min(100,sim.potLocal));
+  aplicarMotor(sim.potLocal);
+  atualizarSimGauge(sim.idx,sim.potLocal);
+}
+
+// ══ PLAY / PAUSE / STOP ───────────────────────────────────────
+function playSim(idx){
+  const sim=SIMS[idx];
+  if(sim.estaRodando) return;
+  sim.estaRodando=true; resetarRampa(sim);
+  sim.intervalo=setInterval(()=>{
+    sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO);
+    while(sim.gatilhoIdx<sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t<=sim.tempoAtual){
+      dispararGatilho(sim,sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++;
+    }
+    tickRampa(sim);
+    atualizarInterfaceTempo();
+    if(sim.tempoAtual>=DURACAO) stopSim(idx);
+  },100);
+}
+function pauseSim(idx){
+  const sim=SIMS[idx];
+  sim.estaRodando=false; clearInterval(sim.intervalo); sim.rampa.ativa=false;
+}
+function stopSim(idx){
+  const sim=SIMS[idx];
+  sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; resetarRampa(sim);
+  atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0);
+}
+function fmt(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+function atualizarInterfaceTempo(){
+  for(let i=0;i<3;i++){
+    const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`;
+    const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`;
+  }
+}
+
+// ══ TIMELINE ══════════════════════════════════════════════════
+function renderTimeline(idx){
+  const container=document.getElementById('timelineContainer'+idx); if(!container) return;
+  container.querySelectorAll('.timeline-marker,.time-tick,.time-line').forEach(e=>e.remove());
+  for(let sec=0;sec<=DURACAO;sec++){
+    const pct=(sec/DURACAO)*100;
+    const line=document.createElement('div'); line.className='time-line';
+    if(sec%5===0) line.style.background='rgba(26,39,54,0.6)';
+    line.style.left=`${pct}%`; container.appendChild(line);
+    if(sec%5===0){ const tk=document.createElement('div'); tk.className='time-tick'; tk.style.left=`${pct}%`; tk.textContent=`${sec}s`; container.appendChild(tk); }
+  }
+  SIMS[idx].gatilhos.forEach((g,i)=>{
+    const m=document.createElement('div'); m.className='timeline-marker';
+    if(idx===simAtiva && i===indiceSelecionado) m.classList.add('ativo');
+    const totalMs=(g.sub||0)+(g.pico||0)+(g.trans||0)+(g.pico2||0)+(g.desc||0)||1;
+    m.style.left=`${(g.t/DURACAO)*100}%`; m.style.width=`${((totalMs/1000)/DURACAO)*100}%`;
+    const x1=((g.sub)/totalMs)*100, x2=((g.sub+g.pico)/totalMs)*100, x3=((g.sub+g.pico+g.trans)/totalMs)*100, x4=((g.sub+g.pico+g.trans+g.pico2)/totalMs)*100;
+    const yIni=100-(g.potIni||0),y1=100-(g.pot||0),y2=100-(g.pot2||0),yFim=100-(g.potFim||0);
+    const sel=(idx===simAtiva && i===indiceSelecionado);
+    const corLinha=sel?'var(--accent)':'var(--yellow)', corFundo=sel?'rgba(0,212,255,0.25)':'rgba(245,176,65,0.15)';
+    m.innerHTML=`<div class="lbl-pot">${g.potIni}%→${g.pot}%→${g.pot2||0}%→${g.potFim}%</div>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;border-radius:4px;">
+      <polygon points="0,100 0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim} 100,100" fill="${corFundo}"/>
+      <polyline points="0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim}" fill="none" stroke="${corLinha}" stroke-width="2.5"/></svg>`;
+    m.addEventListener('mousedown',e=>iniciarArrasto(e,i,idx));
+    m.addEventListener('click',e=>{ e.stopPropagation(); simAtiva=idx; abrirEditor(i); });
+    container.appendChild(m);
+  });
+}
+function renderTodas(){ for(let i=0;i<3;i++) renderTimeline(i); }
+function setupContainerClick(idx){
+  const el=document.getElementById('timelineContainer'+idx);
+  el.addEventListener('click',e=>{
+    const a=e.target, fundo = a===el||a.classList.contains('tl-trackbg')||a.classList.contains('time-line');
+    if(!fundo) return;
+    simAtiva=idx; indiceSelecionado=-1;
+    const rect=el.getBoundingClientRect(); const pct=(e.clientX-rect.left)/rect.width;
+    const t=parseFloat((pct*DURACAO).toFixed(2));
+    SIMS[idx].gatilhos.push({t,potIni:0,pot:80,sub:300,pico:800,pot2:40,trans:400,pico2:1200,desc:600,potFim:0});
+    indiceSelecionado=SIMS[idx].gatilhos.length-1;
+    salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
+  });
+}
+let blocoArrastado=null, dragOffsetTime=0;
+function iniciarArrasto(e,indice,idx){
+  simAtiva=idx; e.stopPropagation(); blocoArrastado=indice; indiceSelecionado=indice; abrirEditor(indice);
+  const el=document.getElementById('timelineContainer'+idx); const rect=el.getBoundingClientRect();
+  dragOffsetTime=((e.clientX-rect.left)/rect.width)*DURACAO-SIMS[idx].gatilhos[indice].t;
+  document.addEventListener('mousemove',arrastarBloco); document.addEventListener('mouseup',pararArrasto);
+}
+function arrastarBloco(e){
+  if(blocoArrastado===null) return;
+  const el=document.getElementById('timelineContainer'+simAtiva); const rect=el.getBoundingClientRect();
+  let pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  SIMS[simAtiva].gatilhos[blocoArrastado].t=parseFloat(Math.max(0,Math.min(DURACAO,(pct*DURACAO)-dragOffsetTime)).toFixed(2));
+  document.getElementById('edTempo').value=SIMS[simAtiva].gatilhos[blocoArrastado].t;
+  renderTimeline(simAtiva);
+}
+function pararArrasto(){ blocoArrastado=null; document.removeEventListener('mousemove',arrastarBloco); document.removeEventListener('mouseup',pararArrasto); ordenarGatilhos(simAtiva); salvarLocal(simAtiva); }
+function ordenarGatilhos(idx){
+  const lista=SIMS[idx].gatilhos; const atual=indiceSelecionado>-1?lista[indiceSelecionado]:null;
+  lista.sort((a,b)=>a.t-b.t); if(atual) indiceSelecionado=lista.indexOf(atual); renderTimeline(idx);
+}
+
+// ══ EDITOR ════════════════════════════════════════════════════
+const painelEditor=document.getElementById('blockEditor');
+const inputs=['edTempo','edPotIni','edForca','edSub','edPico','edForca2','edTrans','edPico2','edDesc','edPotFim'];
+const chaves=['t','potIni','pot','sub','pico','pot2','trans','pico2','desc','potFim'];
+function abrirEditor(indice){
+  indiceSelecionado=indice; const g=SIMS[simAtiva].gatilhos[indice]; if(!g) return;
+  inputs.forEach((id,i)=>{ document.getElementById(id).value=g[chaves[i]]!==undefined?g[chaves[i]]:0; });
+  painelEditor.style.display='block'; renderTodas();
+}
+function fecharEditor(){ painelEditor.style.display='none'; indiceSelecionado=-1; renderTodas(); }
+function removerBlocoSelecionado(){ if(indiceSelecionado>-1){ SIMS[simAtiva].gatilhos.splice(indiceSelecionado,1); fecharEditor(); salvarLocal(simAtiva); } }
+inputs.forEach((id,i)=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    if(indiceSelecionado>-1 && SIMS[simAtiva].gatilhos[indiceSelecionado]){
+      SIMS[simAtiva].gatilhos[indiceSelecionado][chaves[i]]=parseFloat(e.target.value)||0;
+      renderTimeline(simAtiva); salvarLocal(simAtiva);
+    }
+  });
+});
+
+// ══ COPIAR / COLAR GATILHO ENTRE SIMULAÇÕES ───────────────────
+function copiarGatilho(){
+  if(indiceSelecionado<0) return;
+  const g=SIMS[simAtiva].gatilhos[indiceSelecionado];
+  gatilhoCopiado=JSON.parse(JSON.stringify(g)); // cópia profunda
+  document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false);
+  document.getElementById('copiaAviso').textContent='— gatilho copiado, cole em qualquer Sim com 📋';
+  log('Gatilho '+SIMS[simAtiva].letra+' '+g.t.toFixed(1)+'s copiado ('+g.pot+'%)','ok');
+}
+function colarGatilho(idx){
+  if(!gatilhoCopiado) return;
+  const novo=JSON.parse(JSON.stringify(gatilhoCopiado));
+  SIMS[idx].gatilhos.push(novo);
+  simAtiva=idx;
+  ordenarGatilhos(idx);
+  indiceSelecionado=SIMS[idx].gatilhos.indexOf(novo);
+  salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
+  log('Gatilho colado na Sim '+SIMS[idx].letra+' ('+novo.t.toFixed(1)+'s)','ok');
+}
+
+// ══ PERSISTÊNCIA ──────────────────────────────────────────────
+function salvarLocal(idx){ try{ localStorage.setItem(SIMS[idx].storageKey,JSON.stringify(SIMS[idx].gatilhos)); }catch(e){} }
+function carregarLocal(idx){
+  let dados=null;
+  try{ const r=localStorage.getItem(SIMS[idx].storageKey); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) dados=d; } }catch(e){}
+  if(!dados) dados=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])); // fallback padrão
+  SIMS[idx].gatilhos=dados.sort((a,b)=>a.t-b.t);
+}
+function limparSim(){
+  const idx=parseInt(document.getElementById('selSimAcao').value);
+  if(!confirm('Apagar todos os gatilhos da Sim '+SIMS[idx].letra+'?')) return;
+  SIMS[idx].gatilhos=[]; salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' apagada','err');
+}
+function restaurarPadrao(){
+  const idx=parseInt(document.getElementById('selSimAcao').value);
+  if(!confirm('Restaurar o padrão da Sim '+SIMS[idx].letra+'?')) return;
+  SIMS[idx].gatilhos=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])).sort((a,b)=>a.t-b.t);
+  salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' restaurada ao padrão','ok');
+}
+
+// ══ EXPORTAR / IMPORTAR ───────────────────────────────────────
 function exportarJSON(){
-  const letra=document.getElementById('selSim').value;
-  const payload={ versao:1, duracao:60, criado:new Date().toISOString(), gatilhos:lerPerfil(letra) };
+  const idx=parseInt(document.getElementById('selSimAcao').value);
+  ordenarGatilhos(idx);
+  const payload={versao:1,duracao:DURACAO,criado:new Date().toISOString(),gatilhos:SIMS[idx].gatilhos};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='simulacao_'+letra+'.json'; a.click(); URL.revokeObjectURL(a.href);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='simulacao_'+SIMS[idx].letra+'.json'; a.click(); URL.revokeObjectURL(a.href);
+  log('Sim '+SIMS[idx].letra+' exportada','ok');
 }
 function importarJSON(ev){
+  const idx=parseInt(document.getElementById('selSimAcao').value);
   const f=ev.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=e=>{
     try{
-      const d=JSON.parse(e.target.result);
-      const lista=d.gatilhos||d;
+      const d=JSON.parse(e.target.result); const lista=d.gatilhos||d;
       if(!Array.isArray(lista)) throw 0;
-      localStorage.setItem(chave(),JSON.stringify(lista));
-      mostrarInfo(); alert('Perfil importado: '+lista.length+' gatilhos.');
-    }catch(err){ alert('JSON inválido.'); }
+      SIMS[idx].gatilhos=lista.sort((a,b)=>a.t-b.t);
+      salvarLocal(idx); fecharEditor(); renderTimeline(idx);
+      log('Sim '+SIMS[idx].letra+': '+lista.length+' gatilhos importados','ok');
+    }catch(err){ log('JSON inválido','err'); }
     ev.target.value='';
   };
   r.readAsText(f);
 }
-function restaurarPadrao(){
-  const letra=document.getElementById('selSim').value;
-  if(!confirm('Restaurar o perfil padrão da Sim '+letra+'?')) return;
-  localStorage.removeItem('simpesca_gatilhos_'+letra);
-  mostrarInfo();
-}
 
+// ══ INIT ══════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  mostrarInfo(); atualizarGauge(0); reconectar();
+  for(let i=0;i<3;i++){ carregarLocal(i); setupContainerClick(i); }
+  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0);
+  reconectar();
+  log('Dashboard pronto ('+DURACAO+'s por simulação)','ok');
 });
 </script>
 </body>
