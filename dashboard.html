@@ -56,6 +56,7 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .ponto-handle{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid #fff;transform:translate(-50%,-50%);cursor:grab;z-index:12;box-shadow:0 0 6px rgba(0,212,255,0.7);}
 .ponto-handle:active{cursor:grabbing;}
 .ponto-handle.sel{background:var(--yellow);box-shadow:0 0 10px var(--yellow);width:16px;height:16px;}
+.ponto-handle.multi{background:var(--green);box-shadow:0 0 10px var(--green);border-color:#fff;width:16px;height:16px;}
 .tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:9;}
 #pontoEditor{display:none;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
 #pontoEditor .campo{display:flex;flex-direction:column;gap:3px;}
@@ -126,7 +127,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 <!-- EDITOR DE CURVA POR PONTOS -->
 <div class="card">
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
-  <div class="dica-editor">👉 <b>Clique</b> na linha do tempo para adicionar um ponto · <b>arraste</b> para mover · <b>clique num ponto</b> para editar/remover. A potência é a altura (0% embaixo, 100% no topo) e as rampas saem da distância entre os pontos.</div>
+  <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> em vários pontos para marcá-los (ficam verdes) → <b>Ctrl+C</b> copia → <b>passe o mouse sobre a outra Sim</b> e <b>Ctrl+V</b> cola (ou use o botão 📋). Delete remove os marcados · Esc limpa.</div>
 
   <div class="sim-bloco">
     <div class="sim-header">
@@ -245,7 +246,7 @@ function interpolarPontos(pontos,t){ if(!pontos.length) return 0; if(t<=pontos[0
 const round2=v=>Math.round(v*100)/100;
 
 const SIMS=LETRAS.map((L,i)=>({letra:L,idx:i,pontos:[],tempoAtual:0,intervalo:null,estaRodando:false}));
-let simAtiva=0, selPonto=-1, curvaCopiada=null, arrastouPonto=false;
+let simAtiva=0, selPonto=-1, clip=null, multiSel=[], arrastouPonto=false, simHover=null;
 
 function carregarSim(idx){
   const L=LETRAS[idx]; let pts=null;
@@ -277,27 +278,32 @@ function renderCurva(idx){
     svg=`<svg class="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="0,100 ${linePts} 100,100" fill="rgba(0,212,255,0.12)"/><polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
   }
   area.innerHTML=svg;
-  pts.forEach((p,i)=>{ const h=document.createElement('div'); h.className='ponto-handle'+(idx===simAtiva&&i===selPonto?' sel':''); h.style.left=(p.t/DURACAO*100)+'%'; h.style.top=(100-p.pot)+'%'; h.addEventListener('mousedown',e=>iniciarDragPonto(e,idx,i)); area.appendChild(h); });
+  pts.forEach((p,i)=>{ const h=document.createElement('div'); let cls='ponto-handle'; if(idx===simAtiva){ if(multiSel.indexOf(p)>-1) cls+=' multi'; else if(i===selPonto) cls+=' sel'; } h.className=cls; h.style.left=(p.t/DURACAO*100)+'%'; h.style.top=(100-p.pot)+'%'; h.addEventListener('mousedown',e=>iniciarDragPonto(e,idx,i)); area.appendChild(h); });
 }
 function renderTodas(){ for(let i=0;i<3;i++) renderCurva(i); }
 
 function setupArea(idx){
   const area=document.getElementById('curva'+idx);
+  const wrap=document.getElementById('tl'+idx);
+  wrap.addEventListener('mouseenter',()=>{ simHover=idx; });
+  wrap.addEventListener('mouseleave',()=>{ if(simHover===idx) simHover=null; });
   area.addEventListener('click',e=>{
     if(e.target.classList.contains('ponto-handle')) return;
     if(arrastouPonto) return;
+    if(e.ctrlKey||e.metaKey) return;   // Ctrl+clique no fundo não cria ponto
     const rect=area.getBoundingClientRect();
     let t=round2(Math.max(0,Math.min(DURACAO,(e.clientX-rect.left)/rect.width*DURACAO)));
     let pot=Math.max(0,Math.min(100,Math.round(100-((e.clientY-rect.top)/rect.height*100))));
     const novo={t,pot}; SIMS[idx].pontos.push(novo); SIMS[idx].pontos.sort((a,b)=>a.t-b.t);
-    simAtiva=idx; selPonto=SIMS[idx].pontos.indexOf(novo);
+    simAtiva=idx; multiSel=[]; selPonto=SIMS[idx].pontos.indexOf(novo);
     salvarPontos(idx); renderCurva(idx); abrirEditorPonto();
     log('Ponto adicionado na Sim '+LETRAS[idx]+' ('+t.toFixed(1)+'s, '+pot+'%)','info');
   });
 }
 function iniciarDragPonto(e,idx,i){
   e.stopPropagation(); e.preventDefault();
-  simAtiva=idx; selPonto=i; arrastouPonto=false; abrirEditorPonto(); renderCurva(idx);
+  if(e.ctrlKey||e.metaKey){ toggleMulti(idx,i); return; }   // Ctrl+clique = marcar/desmarcar
+  simAtiva=idx; multiSel=[]; selPonto=i; arrastouPonto=false; abrirEditorPonto(); renderCurva(idx);
   const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
   const onMove=ev=>{ arrastouPonto=true; const p=SIMS[idx].pontos[selPonto]; if(!p) return;
     p.t=round2(Math.max(0,Math.min(DURACAO,(ev.clientX-rect.left)/rect.width*DURACAO)));
@@ -320,9 +326,52 @@ function removerPonto(){ if(selPonto>-1){ SIMS[simAtiva].pontos.splice(selPonto,
 document.getElementById('pTempo').addEventListener('input',e=>{ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; p.t=Math.max(0,Math.min(DURACAO,parseFloat(e.target.value)||0)); salvarPontos(simAtiva); renderCurva(simAtiva); });
 document.getElementById('pPot').addEventListener('input',e=>{ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; p.pot=Math.max(0,Math.min(100,parseInt(e.target.value)||0)); salvarPontos(simAtiva); renderCurva(simAtiva); });
 
-// ══ COPIAR / COLAR CURVA ──────────────────────────────────────
-function copiarCurva(idx){ curvaCopiada=JSON.parse(JSON.stringify(SIMS[idx].pontos)); document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false); document.getElementById('copiaAviso').textContent='— curva da Sim '+LETRAS[idx]+' copiada, cole com 📋'; log('Curva da Sim '+LETRAS[idx]+' copiada ('+curvaCopiada.length+' pontos)','ok'); }
-function colarCurva(idx){ if(!curvaCopiada) return; SIMS[idx].pontos=JSON.parse(JSON.stringify(curvaCopiada)).sort((a,b)=>a.t-b.t); simAtiva=idx; selPonto=-1; salvarPontos(idx); fecharEditorPonto(); renderCurva(idx); log('Curva colada na Sim '+LETRAS[idx],'ok'); }
+// ══ SELEÇÃO MÚLTIPLA + COPIAR / COLAR ─────────────────────────
+function toggleMulti(idx,i){
+  if(idx!==simAtiva){ simAtiva=idx; multiSel=[]; }
+  selPonto=-1; pEditor.style.display='none';
+  const p=SIMS[idx].pontos[i]; const k=multiSel.indexOf(p);
+  if(k>-1) multiSel.splice(k,1); else multiSel.push(p);
+  document.getElementById('copiaAviso').textContent = multiSel.length ? ('— '+multiSel.length+' ponto(s) marcado(s) · Ctrl+C copia') : '';
+  renderCurva(idx);
+}
+// 📄 botão: copia a CURVA INTEIRA (cola substituindo)
+function copiarCurva(idx){ clip={pts:JSON.parse(JSON.stringify(SIMS[idx].pontos)),modo:'replace'}; document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false); document.getElementById('copiaAviso').textContent='— curva da Sim '+LETRAS[idx]+' copiada (substitui ao colar)'; log('Curva da Sim '+LETRAS[idx]+' copiada','ok'); }
+// Ctrl+C: copia os pontos MARCADOS (cola adicionando)
+function copiarSelecionados(){
+  let pts=[];
+  if(multiSel.length) pts=multiSel.filter(p=>SIMS[simAtiva].pontos.indexOf(p)>-1).map(p=>({t:p.t,pot:p.pot}));
+  else if(selPonto>-1 && SIMS[simAtiva].pontos[selPonto]){ const p=SIMS[simAtiva].pontos[selPonto]; pts=[{t:p.t,pot:p.pot}]; }
+  if(!pts.length){ log('Marque pontos com Ctrl+clique antes de copiar','err'); return; }
+  clip={pts:JSON.parse(JSON.stringify(pts)),modo:'add'};
+  document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false);
+  document.getElementById('copiaAviso').textContent='— '+pts.length+' ponto(s) copiado(s) · passe o mouse na Sim e Ctrl+V';
+  log(pts.length+' ponto(s) copiado(s) (Ctrl+C)','ok');
+}
+// Cola o clipboard (substitui se veio de 📄; adiciona se veio de Ctrl+C)
+function colar(idx){
+  if(!clip||!clip.pts.length) return;
+  const novos=JSON.parse(JSON.stringify(clip.pts));
+  if(clip.modo==='replace') SIMS[idx].pontos=novos.sort((a,b)=>a.t-b.t);
+  else SIMS[idx].pontos=SIMS[idx].pontos.concat(novos).sort((a,b)=>a.t-b.t);
+  simAtiva=idx; selPonto=-1; multiSel=[]; salvarPontos(idx); pEditor.style.display='none'; renderCurva(idx);
+  log((clip.modo==='replace'?'Curva colada (substituiu)':novos.length+' ponto(s) colado(s)')+' na Sim '+LETRAS[idx],'ok');
+}
+function colarCurva(idx){ colar(idx); }
+function apagarSelecionados(){
+  if(multiSel.length){ SIMS[simAtiva].pontos=SIMS[simAtiva].pontos.filter(p=>multiSel.indexOf(p)<0); multiSel=[]; salvarPontos(simAtiva); pEditor.style.display='none'; document.getElementById('copiaAviso').textContent=''; renderCurva(simAtiva); log('Pontos marcados removidos','info'); }
+  else if(selPonto>-1) removerPonto();
+}
+// Atalhos: Ctrl+C / Ctrl+V / Delete / Esc (ignorados se estiver digitando num campo)
+document.addEventListener('keydown',e=>{
+  const tag=(document.activeElement&&document.activeElement.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='c'){ copiarSelecionados(); e.preventDefault(); }
+  else if((e.ctrlKey||e.metaKey)&&k==='v'){ const alvo=(simHover!==null?simHover:simAtiva); if(clip) colar(alvo); e.preventDefault(); }
+  else if(k==='delete'||k==='backspace'){ apagarSelecionados(); e.preventDefault(); }
+  else if(k==='escape'){ multiSel=[]; selPonto=-1; pEditor.style.display='none'; document.getElementById('copiaAviso').textContent=''; renderTodas(); }
+});
 
 // ══ PLAY / PAUSE / STOP (preview) ─────────────────────────────
 function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; sim.tempoAtual=0;
