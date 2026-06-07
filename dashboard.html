@@ -127,7 +127,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 <!-- EDITOR DE CURVA POR PONTOS -->
 <div class="card">
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
-  <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> em vários pontos para marcá-los (ficam verdes) → <b>Ctrl+C</b> copia → <b>passe o mouse sobre a outra Sim</b> e <b>Ctrl+V</b> cola (ou use o botão 📋). Delete remove os marcados · Esc limpa.</div>
+  <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> marca vários pontos (verdes) · <b>arraste um deles para mover todos juntos</b> · <b>Ctrl+C</b> copia → passe o mouse na outra Sim e <b>Ctrl+V</b> cola (ou 📋). Delete remove os marcados · Esc limpa.</div>
 
   <div class="sim-bloco">
     <div class="sim-header">
@@ -303,6 +303,7 @@ function setupArea(idx){
 function iniciarDragPonto(e,idx,i){
   e.stopPropagation(); e.preventDefault();
   if(e.ctrlKey||e.metaKey){ toggleMulti(idx,i); return; }   // Ctrl+clique = marcar/desmarcar
+  if(idx===simAtiva && multiSel.indexOf(SIMS[idx].pontos[i])>-1){ iniciarDragGrupo(e,idx); return; } // arrastar grupo marcado
   simAtiva=idx; multiSel=[]; selPonto=i; arrastouPonto=false; abrirEditorPonto(); renderCurva(idx);
   const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
   const onMove=ev=>{ arrastouPonto=true; const p=SIMS[idx].pontos[selPonto]; if(!p) return;
@@ -313,6 +314,31 @@ function iniciarDragPonto(e,idx,i){
   const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
     const obj=SIMS[idx].pontos[selPonto]; SIMS[idx].pontos.sort((a,b)=>a.t-b.t); selPonto=SIMS[idx].pontos.indexOf(obj);
     salvarPontos(idx); renderCurva(idx); camposDoPonto(); setTimeout(()=>{arrastouPonto=false;},10);
+  };
+  document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
+}
+
+// Arrasta TODOS os pontos marcados juntos (mantém a forma; trava nas bordas)
+function iniciarDragGrupo(e,idx){
+  arrastouPonto=false; selPonto=-1; pEditor.style.display='none';
+  const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
+  const sel=multiSel.filter(p=>SIMS[idx].pontos.indexOf(p)>-1);
+  const orig=sel.map(p=>({p,t:p.t,pot:p.pot}));
+  const minT=Math.min.apply(null,orig.map(o=>o.t)), maxT=Math.max.apply(null,orig.map(o=>o.t));
+  const minPot=Math.min.apply(null,orig.map(o=>o.pot)), maxPot=Math.max.apply(null,orig.map(o=>o.pot));
+  const startT=(e.clientX-rect.left)/rect.width*DURACAO;
+  const startPot=100-((e.clientY-rect.top)/rect.height*100);
+  const onMove=ev=>{
+    arrastouPonto=true;
+    let dt=((ev.clientX-rect.left)/rect.width*DURACAO)-startT;
+    let dpot=(100-((ev.clientY-rect.top)/rect.height*100))-startPot;
+    dt=Math.max(-minT, Math.min(DURACAO-maxT, dt));        // trava o grupo nas bordas (0..90s)
+    dpot=Math.max(-minPot, Math.min(100-maxPot, dpot));    // e em 0..100%
+    orig.forEach(o=>{ o.p.t=round2(o.t+dt); o.p.pot=Math.round(o.pot+dpot); });
+    renderCurva(idx);
+  };
+  const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+    SIMS[idx].pontos.sort((a,b)=>a.t-b.t); salvarPontos(idx); renderCurva(idx); setTimeout(()=>{arrastouPonto=false;},10);
   };
   document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
 }
