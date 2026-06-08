@@ -124,6 +124,26 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   </div>
 </div>
 
+<!-- CONTADORES DE LINHA (teste) -->
+<div class="card">
+  <div class="secao-titulo"><span>🎣</span> Linha — Ganhos / Perdidos (teste)</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.35);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">⬆ Ganhos (recolheu)</div>
+      <div class="cal-val metros" id="ctGanhos" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:rgba(255,23,68,0.06);border:1px solid rgba(255,23,68,0.35);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">⬇ Perdidos (soltou)</div>
+      <div class="cal-val" id="ctPerdidos" style="font-size:2.1rem;margin-top:4px;color:var(--red);">0.0 m</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">= Saldo líquido</div>
+      <div class="cal-val cont" id="ctSaldo" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
+    </div>
+  </div>
+  <div style="margin-top:14px;"><button class="btn btn-yellow" onclick="zerarContadores()">⟲ Zerar contadores</button></div>
+</div>
+
 <!-- EDITOR DE CURVA POR PONTOS -->
 <div class="card">
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
@@ -198,6 +218,7 @@ const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
 const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
 const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
 let bleDevice=null, motorChar=null, linhaChar=null, contagemEncoder=0;
+let contAnt=0, primeiraLeitura=true, metrosGanhos=0, metrosPerdidos=0;
 function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className=cls; b.textContent=txt; }
 async function conectarBLE(){
   if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
@@ -208,12 +229,20 @@ async function ligar(device){
   device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; linhaChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
   const server=await device.gatt.connect(); const service=await server.getPrimaryService(SERVICE_UUID);
   motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
-  try{ linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID); await linhaChar.startNotifications(); linhaChar.addEventListener('characteristicvaluechanged',e=>{ contagemEncoder=e.target.value.getInt32(0,true); atualizarCalLive(); }); }catch(e){ log('Encoder não disponível neste firmware','err'); }
+  try{ linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID); await linhaChar.startNotifications(); linhaChar.addEventListener('characteristicvaluechanged',e=>{
+        const nova=e.target.value.getInt32(0,true);
+        if(primeiraLeitura){ contAnt=nova; primeiraLeitura=false; }
+        const dM=contagemParaMetros(nova-contAnt); contAnt=nova;
+        if(dM>0) metrosGanhos+=dM; else metrosPerdidos+=-dM;
+        contagemEncoder=nova; atualizarCalLive(); atualizarContadores();
+      }); }catch(e){ log('Encoder não disponível neste firmware','err'); }
   btUI('conectado','🟢 Conectado'); log('Bluetooth conectado','ok');
 }
 async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
 function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
-function zerarEncoder(){ contagemEncoder=0; atualizarCalLive(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Contagem do encoder zerada','info'); }
+function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Contagem do encoder zerada','info'); }
+function atualizarContadores(){ const g=document.getElementById('ctGanhos'); if(!g) return; g.textContent=metrosGanhos.toFixed(1)+' m'; document.getElementById('ctPerdidos').textContent=metrosPerdidos.toFixed(1)+' m'; document.getElementById('ctSaldo').textContent=(metrosGanhos-metrosPerdidos).toFixed(1)+' m'; }
+function zerarContadores(){ metrosGanhos=0; metrosPerdidos=0; contAnt=contagemEncoder; atualizarContadores(); log('Contadores ganhos/perdidos zerados','info'); }
 
 // ══ CALIBRAÇÃO ────────────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
@@ -433,7 +462,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calMpv').value=metrosPorVolta();
   document.getElementById('calInv').checked=inverterDir();
   for(let i=0;i<3;i++){ carregarSim(i); setupArea(i); }
-  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive();
+  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores();
   reconectar();
   log('Dashboard pronto — editor por pontos ('+DURACAO+'s)','ok');
 });
