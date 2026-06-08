@@ -117,6 +117,7 @@ const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
 const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
 const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
 let bleDevice=null, motorChar=null, linhaChar=null, contagemEncoder=0;
+let contAnt=0, primeiraLeitura=true, metrosGanhos=0, contando=false;
 function btUI(c,t){ const b=document.getElementById('btnBT'); b.className=c; b.textContent=t; }
 async function conectarBLE(){
   if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
@@ -133,7 +134,12 @@ async function ligar(device){
   try{
     linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID);
     await linhaChar.startNotifications();
-    linhaChar.addEventListener('characteristicvaluechanged', e=>{ contagemEncoder=e.target.value.getInt32(0,true); atualizarLinha(); });
+    linhaChar.addEventListener('characteristicvaluechanged', e=>{
+      const nova=e.target.value.getInt32(0,true);
+      if(primeiraLeitura){ contAnt=nova; primeiraLeitura=false; }
+      if(contando){ const dM=contagemParaMetros(nova-contAnt); if(dM>0) metrosGanhos+=dM; }  // só conta o que recolheu
+      contAnt=nova; contagemEncoder=nova; atualizarLinha();
+    });
   }catch(e){}
   btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
 }
@@ -142,13 +148,13 @@ async function tentarReconectar(){
   try{ const d=await navigator.bluetooth.getDevices(); if(d.length){ btUI('','🔵 Reconectando...'); await ligar(d[0]).catch(()=>btUI('','🔵 Conectar')); } }catch(e){}
 }
 function escreverMotorBLE(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b); }catch(e){} }
-function zerarEncoder(){ contagemEncoder=0; atualizarLinha(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } }
+function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; atualizarLinha(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } }
 
 // ══ CALIBRAÇÃO / LINHA ────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
-function metrosAtuais(){ return Math.max(0, contagemParaMetros(contagemEncoder)); }
+function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
 function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🎣 '+m.toFixed(1)+' m'; }
 
 // ══ PERFIS — MODELO DE PONTOS {t, pot} ════════════════════════
@@ -239,16 +245,17 @@ function iniciarSim(id){
   sim.estaRodando=true;
   sim.overlay.classList.add('oculto');
   zerarEncoder();
+  contando=true;                          // começa a contar a linha recolhida
   document.getElementById('hudLinha').classList.add('visivel');
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
   sim.intervalo=loopSim(sim);
 }
-function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; clearInterval(sim.intervalo); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
-function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
 function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
 function encerrarSim(id, sairFS, salvar){
   const sim=SIMS[id]; clearInterval(sim.intervalo);
-  sim.estaRodando=false; sim.video.pause(); aplicarMotor(0);
+  sim.estaRodando=false; contando=false; sim.video.pause(); aplicarMotor(0);  // fim dos 90s: para de contar
   document.getElementById('hudLinha').classList.remove('visivel');
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
