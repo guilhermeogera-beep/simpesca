@@ -53,6 +53,20 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudLinha.visivel{display:block;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
+.rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.rk-filtro{padding:6px 14px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--dim);cursor:pointer;font-family:inherit;font-size:0.7rem;letter-spacing:1px;}
+.rk-filtro.ativo{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.1);}
+.rk-lista{width:min(440px,92vw);max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.rk-linha{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;}
+.rk-pos{font-size:1.1rem;font-weight:800;min-width:36px;text-align:center;color:var(--dim);}
+.rk-linha.top1{border-color:#ffd700;} .rk-linha.top1 .rk-pos{color:#ffd700;}
+.rk-linha.top2{border-color:#c0c8d0;} .rk-linha.top2 .rk-pos{color:#c0c8d0;}
+.rk-linha.top3{border-color:#cd7f32;} .rk-linha.top3 .rk-pos{color:#cd7f32;}
+.rk-info{flex:1;min-width:0;text-align:left;}
+.rk-nome{font-size:0.95rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rk-meta{font-size:0.62rem;color:var(--dim);}
+.rk-metros{font-size:1.1rem;font-weight:800;color:var(--green);white-space:nowrap;}
+.rk-vazio{color:var(--dim);font-size:0.85rem;padding:30px;text-align:center;}
 </style>
 </head>
 <body>
@@ -62,7 +76,7 @@ input[type=text]:focus{border-color:var(--accent);}
     <div id="linhaBadge" class="badge">LINHA 0.0 m</div>
     <div id="motorBadge" class="badge">MOTOR 0%</div>
     <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
-    <a href="ranking.html" class="btn-dash">🏆 RANKING</a>
+    <button class="btn-dash" onclick="abrirRanking()">🏆 RANKING</button>
     <a href="dashboard.html" class="btn-dash">⚙ CONFIG</a>
   </div>
 </header>
@@ -107,7 +121,18 @@ input[type=text]:focus{border-color:var(--accent);}
   <div class="metros-grande" id="resultadoMetros">0.0 m</div>
   <div class="posicao-grande" id="resultadoPos">—</div>
   <div class="lbl" id="resultadoNome">—</div>
-  <div class="fs-btns"><button class="btn-fs btn-ok" onclick="window.location.href='ranking.html'">🏆 Ver ranking</button><button class="btn-fs btn-sec" onclick="fecharResultado()">Fechar</button></div>
+  <div class="fs-btns"><button class="btn-fs btn-ok" onclick="fecharResultado();abrirRanking()">🏆 Ver ranking</button><button class="btn-fs btn-sec" onclick="fecharResultado()">Fechar</button></div>
+</div>
+<div class="fs-overlay" id="rankingOverlay">
+  <div class="titulo-grande">🏆 Ranking</div>
+  <div class="rk-filtros" id="rkFiltros">
+    <button class="rk-filtro ativo" data-sim="todos" onclick="filtrarRanking('todos',this)">Todas</button>
+    <button class="rk-filtro" data-sim="A" onclick="filtrarRanking('A',this)">Sim A</button>
+    <button class="rk-filtro" data-sim="B" onclick="filtrarRanking('B',this)">Sim B</button>
+    <button class="rk-filtro" data-sim="C" onclick="filtrarRanking('C',this)">Sim C</button>
+  </div>
+  <div class="rk-lista" id="rkLista"></div>
+  <div class="fs-btns"><button class="btn-fs btn-sec" onclick="fecharRanking()">Fechar</button></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -126,7 +151,11 @@ async function conectarBLE(){
 }
 async function ligar(device){
   bleDevice=device;
-  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; linhaChar=null; btUI('erro','🔵 Reconectar'); mostrarToast('Bluetooth desconectado'); });
+  device.addEventListener('gattserverdisconnected',()=>{
+    motorChar=null; linhaChar=null; btUI('erro','🔵 Reconectar'); mostrarToast('⚠ Bluetooth caiu — motor travado');
+    // SEGURANÇA: pausa qualquer simulação em andamento ao perder a conexão
+    Object.keys(SIMS).forEach(id=>{ if(SIMS[id].estaRodando) pausarSim(id); });
+  });
   btUI('','🔵 Conectando...');
   const server=await device.gatt.connect();
   const service=await server.getPrimaryService(SERVICE_UUID);
@@ -137,7 +166,7 @@ async function ligar(device){
     linhaChar.addEventListener('characteristicvaluechanged', e=>{
       const nova=e.target.value.getInt32(0,true);
       if(primeiraLeitura){ contAnt=nova; primeiraLeitura=false; }
-      if(contando){ const dM=contagemParaMetros(nova-contAnt); if(dM>0) metrosGanhos+=dM; }  // só conta o que recolheu
+      if(contando){ const dM=contagemParaMetros(nova-contAnt); if(dM>0) metrosGanhos=Math.min(limiteLinha(), metrosGanhos+dM); }  // recolheu (travado no limite de linha)
       contAnt=nova; contagemEncoder=nova; atualizarLinha();
     });
   }catch(e){}
@@ -152,10 +181,13 @@ function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; met
 
 // ══ CALIBRAÇÃO / LINHA ────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
+function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v>0)?v:50; }
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
-function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🎣 '+m.toFixed(1)+' m'; }
+function atualizarLinha(){ const m=metrosAtuais(), L=limiteLinha(); const cheio=m>=L-0.05;
+  document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+'/'+L.toFixed(0)+' m';
+  document.getElementById('hudLinha').textContent=(cheio?'✅ ':'🎣 ')+m.toFixed(1)+' / '+L.toFixed(0)+' m'; }
 
 // ══ PERFIS — MODELO DE PONTOS {t, pot} ════════════════════════
 // Perfis antigos (gatilhos) embutidos só para gerar a curva inicial.
@@ -281,6 +313,26 @@ function mostrarResultado(nome, metros, sim){
   document.getElementById('resultadoOverlay').classList.add('visivel');
 }
 function fecharResultado(){ document.getElementById('resultadoOverlay').classList.remove('visivel'); }
+
+// ══ RANKING — painel sobreposto (NÃO navega, mantém Bluetooth) ─
+let rkFiltro='todos';
+function abrirRanking(){ renderRanking(); document.getElementById('rankingOverlay').classList.add('visivel'); }
+function fecharRanking(){ document.getElementById('rankingOverlay').classList.remove('visivel'); }
+function filtrarRanking(sim,btn){ rkFiltro=sim; document.querySelectorAll('.rk-filtro').forEach(b=>b.classList.remove('ativo')); btn.classList.add('ativo'); renderRanking(); }
+function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderRanking(){
+  let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  if(rkFiltro!=='todos') lista=lista.filter(r=>r.sim===rkFiltro);
+  lista.sort((a,b)=>b.metros-a.metros);
+  const el=document.getElementById('rkLista');
+  if(!lista.length){ el.innerHTML='<div class="rk-vazio">Nenhuma jogada registrada ainda. 🎣</div>'; return; }
+  el.innerHTML=lista.map((r,i)=>{
+    const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
+    const medalha=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º';
+    const d=new Date(r.data); const data=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="rk-linha ${cls}"><div class="rk-pos">${medalha}</div><div class="rk-info"><div class="rk-nome">${escHtml(r.nome)}</div><div class="rk-meta">Sim ${r.sim} · ${data}</div></div><div class="rk-metros">${r.metros.toFixed(1)} m</div></div>`;
+  }).join('');
+}
 
 // ══ TOAST ═════════════════════════════════════════════════════
 let toastTimeout=null;

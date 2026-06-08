@@ -109,6 +109,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <div class="cal-grid">
     <div class="cal-campo"><label>Metros por volta</label><input type="number" id="calMpv" step="0.001" min="0" value="0.16"></div>
     <div class="cal-campo"><label>Inverter direção</label><label style="display:flex;align-items:center;gap:8px;height:38px;color:var(--text);font-size:0.85rem;"><input type="checkbox" id="calInv" style="width:auto;"> sim</label></div>
+    <div class="cal-campo"><label>Limite de linha (m)</label><input type="number" id="calLimite" step="1" min="1" value="50"></div>
     <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
   </div>
   <div class="cal-live">
@@ -246,10 +247,11 @@ function zerarContadores(){ metrosGanhos=0; metrosPerdidos=0; contAnt=contagemEn
 
 // ══ CALIBRAÇÃO ────────────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
+function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v>0)?v:50; }
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function atualizarCalLive(){ const voltas=contagemEncoder/4096, m=Math.max(0,contagemParaMetros(contagemEncoder)); document.getElementById('calCont').textContent=contagemEncoder; document.getElementById('calVoltas').textContent=voltas.toFixed(2); document.getElementById('calMetros').textContent=m.toFixed(1)+' m'; }
-function salvarCal(){ const mpv=parseFloat(document.getElementById('calMpv').value); if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv); localStorage.setItem('simpesca_cal_inv',document.getElementById('calInv').checked?'1':'0'); atualizarCalLive(); log('Calibração salva: '+mpv+' m/volta','ok'); }
+function salvarCal(){ const mpv=parseFloat(document.getElementById('calMpv').value); if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv); const lim=parseFloat(document.getElementById('calLimite').value); if(isFinite(lim)&&lim>0) localStorage.setItem('simpesca_cal_limite',lim); localStorage.setItem('simpesca_cal_inv',document.getElementById('calInv').checked?'1':'0'); atualizarCalLive(); log('Calibração salva: '+mpv+' m/volta · limite '+lim+' m','ok'); }
 function calcularMpv(){ const real=parseFloat(document.getElementById('calReal').value); const voltas=Math.abs(contagemEncoder)/4096; if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; } if(voltas<0.01){ log('Recolha a linha antes de calcular','err'); return; } const mpv=real/voltas; document.getElementById('calMpv').value=mpv.toFixed(4); localStorage.setItem('simpesca_cal_mpv',mpv); atualizarCalLive(); log('Calibrado: '+mpv.toFixed(4)+' m/volta','ok'); }
 
 // ══ GAUGES / LOG ──────────────────────────────────────────────
@@ -460,6 +462,7 @@ function importarJSON(ev){
 window.addEventListener('load',()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   document.getElementById('calMpv').value=metrosPorVolta();
+  document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calInv').checked=inverterDir();
   for(let i=0;i<3;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores();
