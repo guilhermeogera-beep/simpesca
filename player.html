@@ -58,7 +58,7 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudTimeline{position:fixed;top:58px;left:14px;z-index:61;width:280px;max-width:58vw;height:38px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:9px;padding:3px;display:none;pointer-events:none;}
 #hudTimeline.visivel{display:block;}
 #tlCanvas{width:100%;height:100%;display:block;border-radius:6px;}
-#hudConfig{position:fixed;top:12px;right:14px;z-index:63;background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:10px;padding:8px 11px;display:none;font-size:0.74rem;color:var(--text);min-width:158px;}
+#hudConfig{position:fixed;top:56px;right:14px;z-index:120;background:#0a1420;border:1px solid var(--accent);border-radius:10px;padding:10px 12px;display:none;font-size:0.78rem;color:var(--text);min-width:184px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
 #hudConfig.visivel{display:block;}
 #hudConfig .hc-tit{font-size:0.6rem;letter-spacing:1.5px;color:#7e96ad;text-transform:uppercase;margin-bottom:6px;}
 #hudConfig label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;}
@@ -90,6 +90,7 @@ input[type=text]:focus{border-color:var(--accent);}
     <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
     <button class="btn-dash" onclick="abrirRanking()">🏆 RANKING</button>
     <button class="btn-dash" onclick="resetarLinha()" title="Zerar a linha do carretel (após re-enrolar)">⟲ LINHA</button>
+    <button class="btn-dash" onclick="toggleConfig()" title="Escolher o que aparece na tela do jogo">👁 EXIBIR</button>
     <a href="dashboard.html" class="btn-dash">⚙ CONFIG</a>
   </div>
 </header>
@@ -319,11 +320,11 @@ function atualizarVisibilidadeHUD(){
   document.getElementById('hudLinha').classList.toggle('visivel', emJogo && hudCfg.linha);
   document.getElementById('hudEstado').classList.toggle('visivel', emJogo && hudCfg.estado);
   document.getElementById('hudTimeline').classList.toggle('visivel', emJogo && hudCfg.barra);
-  document.getElementById('hudConfig').classList.toggle('visivel', emJogo);
   const rodar = simTocando!=null && hudCfg.barra;
   if(rodar){ if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
   else if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; }
 }
+function toggleConfig(){ document.getElementById('hudConfig').classList.toggle('visivel'); }
 function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); }
 function carregarHudCfg(){
   const g=(k)=>{ const v=localStorage.getItem(k); return v===null?true:v==='1'; };
@@ -342,12 +343,13 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline','hudConfig'];
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline'];
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
 function iniciarContagem(id){
   const sim=SIMS[id], w=sim.wrapper;
+  document.getElementById('hudConfig').classList.remove('visivel');   // fecha o painel de exibição
   moverOverlaysPara(w);
   const req=w.requestFullscreen||w.webkitRequestFullscreen;      // tela cheia JÁ no gesto do usuário
   if(req) req.call(w).catch(()=>{});
