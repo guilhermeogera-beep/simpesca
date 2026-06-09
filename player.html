@@ -55,6 +55,9 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudEstado.visivel{display:block;}
 #hudEstado.puxando{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
 #hudEstado.recolher{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.22);}
+#hudCarretel{position:fixed;top:12px;right:14px;z-index:62;border:2px solid var(--accent);border-radius:14px;padding:8px 14px;font-size:0.95rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);color:var(--accent);pointer-events:none;}
+#hudCarretel.visivel{display:block;}
+#hudCarretel.travado{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
 #hudTimeline{position:fixed;top:58px;left:14px;z-index:61;width:280px;max-width:58vw;height:38px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:9px;padding:3px;display:none;pointer-events:none;}
 #hudTimeline.visivel{display:block;}
 #tlCanvas{width:100%;height:100%;display:block;border-radius:6px;}
@@ -122,12 +125,14 @@ input[type=text]:focus{border-color:var(--accent);}
 
 <div id="hudLinha">🎣 0.0 m</div>
 <div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
+<div id="hudCarretel">📍 0.0 m</div>
 <div id="hudTimeline"><canvas id="tlCanvas" width="600" height="80"></canvas></div>
 <div id="hudConfig">
   <div class="hc-tit">👁 Exibir na tela</div>
   <label><input type="checkbox" id="cfgLinha" checked> Linha enrolada</label>
   <label><input type="checkbox" id="cfgEstado" checked> Estado (puxa/recolhe)</label>
   <label><input type="checkbox" id="cfgBarra" checked> Barra de antecipação</label>
+  <label><input type="checkbox" id="cfgCarretel"> Linha no carretel / trava</label>
 </div>
 
 <div class="fs-overlay" id="nomeOverlay">
@@ -211,7 +216,9 @@ function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_li
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
-function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🧵 Enrolada: '+m.toFixed(1)+' m'; }
+function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🧵 Enrolada: '+m.toFixed(1)+' m';
+  const car=linhaCarretel(), L=limiteLinha(), hc=document.getElementById('hudCarretel');
+  hc.textContent='📍 Carretel: '+car.toFixed(1)+' / '+L.toFixed(0)+' m'; hc.classList.toggle('travado', Math.abs(car)>=Math.abs(L)); }
 // Linha ABSOLUTA do carretel (posição líquida do encoder) — ACUMULA entre jogadores, NÃO zera por jogo
 function linhaCarretel(){ return contagemParaMetros(contagemEncoder); }
 // SEGURANÇA: a linha do carretel atingiu o limite físico -> para o motor
@@ -293,7 +300,7 @@ function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
 // ── BARRA DE ANTECIPAÇÃO (estilo waveform) + visibilidade configurável dos HUDs ──
 let simTocando=null, tlRAF=null, emJogo=false;
 const TL_PASSADO=1.4, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
-const hudCfg={linha:true, estado:true, barra:true};
+const hudCfg={linha:true, estado:true, barra:true, carretel:false};
 function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocando!=null) desenharTimeline(SIMS[simTocando]); }
 function desenharTimeline(sim){
   const cv=document.getElementById('tlCanvas'); if(!cv) return;
@@ -320,20 +327,22 @@ function atualizarVisibilidadeHUD(){
   document.getElementById('hudLinha').classList.toggle('visivel', emJogo && hudCfg.linha);
   document.getElementById('hudEstado').classList.toggle('visivel', emJogo && hudCfg.estado);
   document.getElementById('hudTimeline').classList.toggle('visivel', emJogo && hudCfg.barra);
+  document.getElementById('hudCarretel').classList.toggle('visivel', emJogo && hudCfg.carretel);
   const rodar = simTocando!=null && hudCfg.barra;
   if(rodar){ if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
   else if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; }
 }
 function toggleConfig(){ document.getElementById('hudConfig').classList.toggle('visivel'); }
-function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); }
+function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); localStorage.setItem('simpesca_hud_carretel',hudCfg.carretel?'1':'0'); }
 function carregarHudCfg(){
-  const g=(k)=>{ const v=localStorage.getItem(k); return v===null?true:v==='1'; };
-  hudCfg.linha=g('simpesca_hud_linha'); hudCfg.estado=g('simpesca_hud_estado'); hudCfg.barra=g('simpesca_hud_barra');
-  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra');
-  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra;
+  const g=(k,d)=>{ const v=localStorage.getItem(k); return v===null?d:v==='1'; };
+  hudCfg.linha=g('simpesca_hud_linha',true); hudCfg.estado=g('simpesca_hud_estado',true); hudCfg.barra=g('simpesca_hud_barra',true); hudCfg.carretel=g('simpesca_hud_carretel',false);
+  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra'), cc=document.getElementById('cfgCarretel');
+  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra; cc.checked=hudCfg.carretel;
   cl.addEventListener('change',()=>{ hudCfg.linha=cl.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   ce.addEventListener('change',()=>{ hudCfg.estado=ce.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cb.addEventListener('change',()=>{ hudCfg.barra=cb.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cc.addEventListener('change',()=>{ hudCfg.carretel=cc.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
 }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
@@ -343,7 +352,7 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline'];
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudCarretel','hudTimeline'];
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
