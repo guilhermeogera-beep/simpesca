@@ -534,9 +534,36 @@ function suavizar(pts){
 // MODELO: orçamento de PUXADA = 20–30s no total (motor ligado) dentro dos ~90s. O resto do tempo
 // vira JANELAS DE 0% (longas, 4–9s), onde o pescador recolhe a linha (só recolhe com motor em 0%).
 const PUXADA_MIN=20, PUXADA_MAX=30;
-// Monta a briga: N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos enfraquecem (fat)
-// e as janelas de 0% (recolhimento) ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
-function buildFight(pe, nMin, nMax, teto, fadiga, puxada){
+// FISGADA (saque inicial) — caráter por espécie: explosiva sai voando, lenta carrega o peso devagar...
+function fazerFisgada(pts, t, estilo){
+  if(estilo==='explosiva'){            // já sai rapidão (tucunaré, dourado, trairão)
+    t+=rnd(0.10,0.20); pts.push({t,pot:rnd(93,100)});    // SNAP — pico quase instantâneo
+    t+=rnd(0.8,1.4);   pts.push({t,pot:rnd(82,94)});      // primeira corrida forte
+    t+=rnd(0.6,1.0);   pts.push({t,pot:rnd(70,82)});
+    return t;
+  }
+  if(estilo==='lenta'){                // peixe pesado: hesita e vai carregando o peso (jaú)
+    t+=rnd(0.4,0.7); pts.push({t,pot:rnd(6,14)});         // toque leve (mal sente)
+    t+=rnd(0.9,1.4); pts.push({t,pot:rnd(3,9)});          // quase parado (ele "pensa")
+    t+=rnd(2.0,3.2); pts.push({t,pot:rnd(60,75)});        // carrega o peso devagar
+    t+=rnd(1.0,1.6); pts.push({t,pot:rnd(80,92)});        // assenta forte
+    return t;
+  }
+  if(estilo==='teimosa'){              // testa, alivia e crava de novo (tambaqui)
+    t+=rnd(0.2,0.35); pts.push({t,pot:rnd(72,86)});
+    t+=rnd(0.5,0.8);  pts.push({t,pot:rnd(38,52)});       // alivia (testa o anzol)
+    t+=rnd(0.3,0.5);  pts.push({t,pot:rnd(86,96)});       // crava forte
+    t+=rnd(0.7,1.1);  pts.push({t,pot:rnd(66,78)});
+    return t;
+  }
+  // 'forte' (padrão): saque firme e rápido (pirarará)
+  t+=rnd(0.3,0.5); pts.push({t,pot:rnd(84,94)});
+  t+=rnd(0.9,1.5); pts.push({t,pot:rnd(76,88)});
+  return t;
+}
+// Monta a briga: FISGADA especial + N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos
+// enfraquecem (fat) e as janelas de 0% ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
+function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const pts=[{t:0,pot:0}];
   const base=(isFinite(puxada)&&puxada>0)?puxada:45;
@@ -551,8 +578,8 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada){
   for(let k=0;k<N;k++){
     const x=(N>1)?k/(N-1):0;
     const fat=1-(0.9*F)*x;                            // trancos enfraquecem MUITO no fim conforme a fadiga
-    const pdur=(pullBudget/N)*rnd(0.8,1.2);
-    t=pe(pts, t, pdur, fat);                          // tranco da espécie
+    if(k===0){ t=fazerFisgada(pts, t, fisEstilo); }   // FISGADA especial (saque inicial, por espécie)
+    else { const pdur=(pullBudget/N)*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }  // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
     let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
     wdur=Math.max(2.0, Math.min(16, wdur));
@@ -568,7 +595,7 @@ function pePirarara(pts,t,pdur,fat){
   while(t<end-1.0){ t+=rnd(2.4,3.8); pts.push({t,pot:rnd(84,98)*fat}); }   // sustenta alto e estável (ondas largas e suaves)
   return t;
 }
-function fightPirarara(teto,fadiga,puxada){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada); }
+function fightPirarara(teto,fadiga,puxada){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte'); }
 // TAMBAQUI — TEIMOSO: bombeio circular -> arranque forte (seco), alívio parcial (suave), repetindo
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
@@ -578,7 +605,7 @@ function peTambaqui(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTambaqui(teto,fadiga,puxada){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada); }
+function fightTambaqui(teto,fadiga,puxada){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa'); }
 // TUCUNARÉ — EXPLOSIVO: cabeçadas violentas e irregulares + mini-saltos (quedas profundas, quase frouxo)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
@@ -590,7 +617,7 @@ function peTucunare(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada); }
+function fightTucunare(teto,fadiga,puxada){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada, 'explosiva'); }
 // DOURADO — ACROBÁTICO: corrida forte sustentada + SALTOS espetaculares (alívio quase total -> tranco)
 function peDourado(pts,t,pdur,fat){
   const end=t+pdur;
@@ -601,7 +628,7 @@ function peDourado(pts,t,pdur,fat){
   }
   return t;
 }
-function fightDourado(teto,fadiga,puxada){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada); }
+function fightDourado(teto,fadiga,puxada){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva'); }
 // TRAIRÃO — BRUTAL e seco: golpes fortes e abruptos, pressão alta (recua pouco, sem alívio total)
 function peTrairao(pts,t,pdur,fat){
   const end=t+pdur;
@@ -612,7 +639,7 @@ function peTrairao(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTrairao(teto,fadiga,puxada){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada); }
+function fightTrairao(teto,fadiga,puxada){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'explosiva'); }
 // JAÚ — PESO MORTO: blocos longuíssimos, potência altíssima e quase CONSTANTE (mal se mexe)
 function peJau(pts,t,pdur,fat){
   const end=t+pdur;
@@ -620,7 +647,7 @@ function peJau(pts,t,pdur,fat){
   while(t<end-1.2){ t+=rnd(3.0,5.0); pts.push({t,pot:rnd(88,99)*fat}); }   // arrasta no fundo: altíssimo e plano
   return t;
 }
-function fightJau(teto,fadiga,puxada){ return buildFight(peJau, 3, 5, teto, fadiga, puxada); }
+function fightJau(teto,fadiga,puxada){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta'); }
 function gerarEspecie(nome){
   const idx=parseInt(document.getElementById('selEspecieSim').value);
   let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
