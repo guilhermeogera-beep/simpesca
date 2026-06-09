@@ -58,6 +58,11 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudTimeline{position:fixed;top:58px;left:14px;z-index:61;width:280px;max-width:58vw;height:38px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:9px;padding:3px;display:none;pointer-events:none;}
 #hudTimeline.visivel{display:block;}
 #tlCanvas{width:100%;height:100%;display:block;border-radius:6px;}
+#hudConfig{position:fixed;top:12px;right:14px;z-index:63;background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:10px;padding:8px 11px;display:none;font-size:0.74rem;color:var(--text);min-width:158px;}
+#hudConfig.visivel{display:block;}
+#hudConfig .hc-tit{font-size:0.6rem;letter-spacing:1.5px;color:#7e96ad;text-transform:uppercase;margin-bottom:6px;}
+#hudConfig label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;}
+#hudConfig input{accent-color:var(--accent);cursor:pointer;width:15px;height:15px;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
 .rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -117,6 +122,12 @@ input[type=text]:focus{border-color:var(--accent);}
 <div id="hudLinha">🎣 0.0 m</div>
 <div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
 <div id="hudTimeline"><canvas id="tlCanvas" width="600" height="80"></canvas></div>
+<div id="hudConfig">
+  <div class="hc-tit">👁 Exibir na tela</div>
+  <label><input type="checkbox" id="cfgLinha" checked> Linha enrolada</label>
+  <label><input type="checkbox" id="cfgEstado" checked> Estado (puxa/recolhe)</label>
+  <label><input type="checkbox" id="cfgBarra" checked> Barra de antecipação</label>
+</div>
 
 <div class="fs-overlay" id="nomeOverlay">
   <div class="lbl">Quem vai pescar?</div>
@@ -263,6 +274,7 @@ window.addEventListener('load',()=>{
     s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
   });
   document.getElementById('inputNome').value=localStorage.getItem('simpesca_ultimo_nome')||'';
+  carregarHudCfg();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   tentarReconectar();
 });
@@ -277,28 +289,50 @@ function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
   est.classList.toggle('puxando',puxando); est.classList.toggle('recolher',!puxando);
   est.textContent=puxando?'🐟 PEIXE PUXANDO — segure!':'🎣 RECOLHA A LINHA!'; }
 
-// ── BARRA DE ANTECIPAÇÃO (estilo Just Dance): mostra o que VEM (puxar × recolher) ──
-let simTocando=null, tlRAF=null;
-const TL_PASSADO=1.5, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
-function iniciarTimeline(id){ simTocando=id; document.getElementById('hudTimeline').classList.add('visivel'); if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
-function pararTimeline(){ simTocando=null; if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; } }
+// ── BARRA DE ANTECIPAÇÃO (estilo waveform) + visibilidade configurável dos HUDs ──
+let simTocando=null, tlRAF=null, emJogo=false;
+const TL_PASSADO=1.4, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
+const hudCfg={linha:true, estado:true, barra:true};
 function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocando!=null) desenharTimeline(SIMS[simTocando]); }
 function desenharTimeline(sim){
   const cv=document.getElementById('tlCanvas'); if(!cv) return;
-  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
-  const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, step=3;
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, P=sim.pontos;
+  const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;
+  const yOf=t=>H-(interpolarPontos(P,t)/100)*(H-4)-2;
   ctx.clearRect(0,0,W,H);
-  for(let x=0;x<W;x+=step){
-    const t=t0+(x/W)*span, pot=interpolarPontos(sim.pontos,t), puxando=pot>=1;
-    ctx.fillStyle=puxando?'rgba(255,23,68,0.20)':'rgba(0,230,118,0.20)';     // banda de fundo (estado)
-    ctx.fillRect(x,0,step+1,H);
-    const h=Math.max(3,(pot/100)*H);
-    ctx.fillStyle=puxando?'rgba(255,70,100,0.92)':'rgba(0,230,118,0.92)';     // nível de potência
-    ctx.fillRect(x,H-h,step+1,h);
-  }
-  const xn=(TL_PASSADO/span)*W;                                              // linha "AGORA"
-  ctx.fillStyle='#fff'; ctx.fillRect(xn-1.5,0,3,H);
-  ctx.beginPath(); ctx.moveTo(xn-8,0); ctx.lineTo(xn+8,0); ctx.lineTo(xn,11); ctx.closePath(); ctx.fill();
+  // área preenchida (degradê)
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for(let i=0;i<=N;i++) ctx.lineTo((i/N)*W, yOf(t0+(i/N)*span));
+  ctx.lineTo(W,H); ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(0,212,255,0.40)'); g.addColorStop(1,'rgba(0,212,255,0.02)'); ctx.fillStyle=g; ctx.fill();
+  // linha brilhante, cor pelo estado (verde=recolher · vermelho=puxando)
+  ctx.lineWidth=3; ctx.lineJoin='round'; ctx.save(); ctx.shadowBlur=8;
+  let px=0, py=yOf(t0);
+  for(let i=1;i<=N;i++){ const x=(i/N)*W, t=t0+(i/N)*span, pot=interpolarPontos(P,t), y=yOf(t); const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
+  ctx.restore();
+  // marcador losango "AGORA"
+  const xn=(TL_PASSADO/span)*W; ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.fillRect(xn-0.5,0,1,H);
+  ctx.save(); ctx.translate(xn,H/2); ctx.rotate(Math.PI/4); ctx.shadowBlur=10; ctx.shadowColor='#fff'; ctx.fillStyle='#fff'; ctx.fillRect(-6,-6,12,12); ctx.restore();
+}
+// Mostra/oculta cada HUD conforme as caixas + se está em jogo; controla o loop da barra
+function atualizarVisibilidadeHUD(){
+  document.getElementById('hudLinha').classList.toggle('visivel', emJogo && hudCfg.linha);
+  document.getElementById('hudEstado').classList.toggle('visivel', emJogo && hudCfg.estado);
+  document.getElementById('hudTimeline').classList.toggle('visivel', emJogo && hudCfg.barra);
+  document.getElementById('hudConfig').classList.toggle('visivel', emJogo);
+  const rodar = simTocando!=null && hudCfg.barra;
+  if(rodar){ if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
+  else if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; }
+}
+function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); }
+function carregarHudCfg(){
+  const g=(k)=>{ const v=localStorage.getItem(k); return v===null?true:v==='1'; };
+  hudCfg.linha=g('simpesca_hud_linha'); hudCfg.estado=g('simpesca_hud_estado'); hudCfg.barra=g('simpesca_hud_barra');
+  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra');
+  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra;
+  cl.addEventListener('change',()=>{ hudCfg.linha=cl.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  ce.addEventListener('change',()=>{ hudCfg.estado=ce.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cb.addEventListener('change',()=>{ hudCfg.barra=cb.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
 }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
@@ -308,7 +342,7 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline'];
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline','hudConfig'];
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
@@ -335,21 +369,16 @@ function iniciarSim(id){
   sim.overlay.classList.add('oculto');
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
   contando=true;                          // começa a contar a linha recolhida
-  document.getElementById('hudLinha').classList.add('visivel');
-  document.getElementById('hudEstado').classList.add('visivel');
-  iniciarTimeline(id);
+  emJogo=true; simTocando=id; atualizarVisibilidadeHUD();
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
   sim.intervalo=loopSim(sim);
 }
-function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); pararTimeline(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
-function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; iniciarTimeline(simEmPausa); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; simTocando=simEmPausa; atualizarVisibilidadeHUD(); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
 function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
 function encerrarSim(id, sairFS, salvar){
   const sim=SIMS[id]; clearInterval(sim.intervalo);
-  sim.estaRodando=false; contando=false; pararTimeline(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s: para de contar
-  document.getElementById('hudLinha').classList.remove('visivel');
-  document.getElementById('hudEstado').classList.remove('visivel');
-  document.getElementById('hudTimeline').classList.remove('visivel');
+  sim.estaRodando=false; contando=false; emJogo=false; simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
   devolverOverlays();
