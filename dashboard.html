@@ -541,6 +541,9 @@ function fazerFisgada(pts, t, estilo, fisDur, fisPico){
   const P=(isFinite(fisPico)&&fisPico>0)?Math.min(100,fisPico):95;
   const p=(lo,hi)=>({t, pot:rnd(lo,hi)/100*P, fis:true});   // fração do pico-alvo; marca como fisgada
   const dt=(lo,hi)=>{ t+=rnd(lo,hi)*D; };                   // tempo escalado pela duração
+  // MINI RAMPA de preparação (~2s fixos): o motor sobe devagar pra o usuário se preparar antes do saque
+  t+=rnd(0.8,1.1); pts.push({t, pot:rnd(6,11), fis:true});
+  t+=rnd(0.9,1.2); pts.push({t, pot:rnd(13,20), fis:true});
   if(estilo==='explosiva'){            // já sai rapidão (tucunaré, dourado, trairão)
     dt(0.10,0.20); pts.push(p(96,100));   // SNAP — pico quase instantâneo
     dt(0.8,1.4);   pts.push(p(82,94));    // primeira corrida forte
