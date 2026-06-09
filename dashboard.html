@@ -558,31 +558,36 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada){
   }
   return finalizarFight(suavizar(pts), teto);
 }
-// PIRARARÁ — força bruta: trancos longos e PESADOS, sustentados em potência alta
+// PIRARARÁ — força BRUTA: blocos longos, potência ALTA e ESTÁVEL (mergulho pesado, quase sem alívio)
 function pePirarara(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.6,pdur*0.25); pts.push({t,pot:rnd(84,95)*fat});
-  while(t<end-0.9){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(76,94)*fat}); }
-  if(Math.random()<0.3){ t+=rnd(0.4,0.7); pts.push({t,pot:rnd(95,99)*fat}); }
+  t+=Math.min(0.8,pdur*0.18); pts.push({t,pot:rnd(88,98)*fat});            // crava forte
+  while(t<end-1.0){ t+=rnd(2.4,3.8); pts.push({t,pot:rnd(84,98)*fat}); }   // sustenta alto e estável (ondas largas e suaves)
   return t;
 }
-function fightPirarara(teto,fadiga,puxada){ return buildFight(pePirarara, 6, 8, teto, fadiga, puxada); }
-// TAMBAQUI — forte e teimoso: surto inicial + pressão média, às vezes 2º pico
+function fightPirarara(teto,fadiga,puxada){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada); }
+// TAMBAQUI — TEIMOSO: bombeio circular -> arranque forte (seco), alívio parcial (suave), repetindo
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.45,pdur*0.3); pts.push({t,pot:rnd(82,95)*fat});
-  while(t<end-0.7){ t+=rnd(0.9,1.6); pts.push({t,pot:rnd(56,74)*fat});
-    if(t<end-0.7 && Math.random()<0.55){ t+=rnd(0.4,0.8); pts.push({t,pot:rnd(85,96)*fat}); } }
+  while(t<end-0.4){
+    t+=rnd(0.3,0.5); pts.push({t,pot:rnd(85,97)*fat});                     // arranque (subida seca)
+    t+=rnd(0.7,1.2); pts.push({t,pot:rnd(42,60)*fat});                     // alívio parcial (descida)
+  }
   return t;
 }
-function fightTambaqui(teto,fadiga,puxada){ return buildFight(peTambaqui, 8, 11, teto, fadiga, puxada); }
-// TUCUNARÉ — explosivo: rajada de cabeçadas rápidas (oscila alto<->médio)
+function fightTambaqui(teto,fadiga,puxada){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada); }
+// TUCUNARÉ — EXPLOSIVO: cabeçadas violentas e irregulares + mini-saltos (quedas profundas, quase frouxo)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
-  while(t<end){ t+=rnd(0.22,0.45); pts.push({t,pot:rnd(80,99)*fat}); if(t>=end)break; t+=rnd(0.22,0.45); pts.push({t,pot:rnd(40,60)*fat}); }
+  while(t<end){
+    t+=rnd(0.16,0.34); pts.push({t,pot:rnd(86,99)*fat});                   // pico violento
+    if(t>=end)break;
+    const baixo=(Math.random()<0.35)?rnd(6,20):rnd(34,54);                 // às vezes mini-salto (quase frouxo)
+    t+=rnd(0.16,0.38); pts.push({t,pot:baixo*fat});
+  }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada){ return buildFight(peTucunare, 9, 13, teto, fadiga, puxada); }
+function fightTucunare(teto,fadiga,puxada){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada); }
 function gerarEspecie(nome){
   const idx=parseInt(document.getElementById('selEspecieSim').value);
   let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
@@ -590,8 +595,12 @@ function gerarEspecie(nome){
   let puxada=parseFloat(document.getElementById('selEspeciePuxada').value); if(!(puxada>0)) puxada=45;
   const pts = nome==='pirarara'?fightPirarara(teto,fadiga,puxada) : nome==='tambaqui'?fightTambaqui(teto,fadiga,puxada) : fightTucunare(teto,fadiga,puxada);
   SIMS[idx].pontos=pts; salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
+  salvarGenCfg();
   log('🐟 '+nome+' (teto '+teto+'% · fadiga '+fadiga+'% · puxada '+puxada+'s) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
 }
+// Persiste/recupera os últimos valores de teto, fadiga e puxada
+function salvarGenCfg(){ localStorage.setItem('simpesca_gen_teto',document.getElementById('selEspecieTeto').value); localStorage.setItem('simpesca_gen_fadiga',document.getElementById('selEspecieFadiga').value); localStorage.setItem('simpesca_gen_puxada',document.getElementById('selEspeciePuxada').value); }
+function carregarGenCfg(){ const m={selEspecieTeto:'simpesca_gen_teto',selEspecieFadiga:'simpesca_gen_fadiga',selEspeciePuxada:'simpesca_gen_puxada'}; for(const id in m){ const el=document.getElementById(id); const v=localStorage.getItem(m[id]); if(v!==null) el.value=v; el.addEventListener('change',salvarGenCfg); } }
 
 // ══ INIT ══════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
@@ -600,6 +609,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calInv').checked=inverterDir();
+  carregarGenCfg();
   for(let i=0;i<3;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();
   reconectar();
