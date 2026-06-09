@@ -206,6 +206,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);">
     <span class="cal-sub">🐟 Gerar briga por espécie na</span>
     <select id="selEspecieSim"><option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option></select>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="selEspecieTeto" min="0" max="100" value="100" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
     <button class="btn btn-accent" onclick="gerarEspecie('pirarara')" title="Força bruta, mergulhos longos">🐟 Pirarará</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tambaqui')" title="Forte e teimoso, arranques circulares">🐟 Tambaqui</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tucunare')" title="Explosivo, cabeçadas e saltos">🐟 Tucunaré</button>
@@ -489,60 +490,84 @@ function importarJSON(ev){
 // Cada peixe vira uma curva de potência {t,pot} com a "assinatura" da espécie.
 // Há aleatoriedade: cada clique gera uma variação. Edite os pontos depois se quiser.
 function rnd(a,b){ return a + Math.random()*(b-a); }
-function finalizarFight(pts){ return pts.filter(p=>p.t<=DURACAO).map(p=>({t:Math.round(p.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(p.pot)))})).sort((a,b)=>a.t-b.t); }
+function finalizarFight(pts, teto){
+  const f=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;   // teto = pico da briga (0–100%)
+  return pts.filter(p=>p.t<=DURACAO).map(p=>({t:Math.round(p.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(p.pot*f)))})).sort((a,b)=>a.t-b.t);
+}
+// Suaviza (ease senoidal de cosseno) os trechos longos -> curva em vez de reta
+function suavizar(pts){
+  if(pts.length<2) return pts;
+  const out=[pts[0]];
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1], dt=b.t-a.t;
+    if(dt>0.6 && Math.abs(b.pot-a.pot)>3){
+      const steps=Math.min(6, Math.max(2, Math.round(dt/0.35)));
+      for(let s=1;s<steps;s++){ const u=s/steps, e=0.5-0.5*Math.cos(Math.PI*u); out.push({t:a.t+dt*u, pot:a.pot+(b.pot-a.pot)*e}); }
+    }
+    out.push(b);
+  }
+  return out;
+}
 
 // MODELO: orçamento de PUXADA = 20–30s no total (motor ligado) dentro dos ~90s. O resto do tempo
 // vira JANELAS DE 0% (longas, 4–9s), onde o pescador recolhe a linha (só recolhe com motor em 0%).
 const PUXADA_MIN=20, PUXADA_MAX=30;
-// Monta a briga: N trancos com a "cara" da espécie (pe), separados por janelas de 0% que preenchem o tempo.
-function buildFight(pe, nMin, nMax){
+// Monta a briga: N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos enfraquecem (fat)
+// e as janelas de 0% (recolhimento) ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
+function buildFight(pe, nMin, nMax, teto){
   const pts=[{t:0,pot:0}];
   const pullBudget=rnd(PUXADA_MIN,PUXADA_MAX);        // total de segundos PUXANDO
   const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
-  const fill=rnd(82,89);                              // até onde preencher (s)
+  const fill=rnd(82,89);
   const restTotal=Math.max(N*3, fill-pullBudget);     // total de segundos em 0% (recolhimento)
+  // pesos das janelas CRESCENTES (cansa -> descansa mais no fim)
+  const w=[]; let wsum=0;
+  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=0.45+1.7*x; w.push(wk); wsum+=wk; }
   let t=0;
   for(let k=0;k<N;k++){
-    const pdur=(pullBudget/N)*rnd(0.7,1.3);           // duração deste tranco
-    t=pe(pts, t, pdur, k);                            // adiciona o tranco (espécie)
-    t+=rnd(0.5,0.9); pts.push({t,pot:0});             // rampa pra 0
-    let wdur=(restTotal/N)*rnd(0.8,1.2);
-    wdur=Math.max(4.0, Math.min(9.0, wdur));          // JANELA 0% longa: 4–9s (dá pra recolher)
+    const x=(N>1)?k/(N-1):0;
+    const fat=1-0.45*x;                               // fadiga: trancos finais mais fracos
+    const pdur=(pullBudget/N)*rnd(0.8,1.2);
+    t=pe(pts, t, pdur, fat);                          // tranco da espécie
+    t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
+    let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
+    wdur=Math.max(2.5, Math.min(12, wdur));
     t+=wdur; pts.push({t,pot:0});
     if(t>DURACAO-4) break;
   }
-  return finalizarFight(pts);
+  return finalizarFight(suavizar(pts), teto);
 }
 // PIRARARÁ — força bruta: trancos longos e PESADOS, sustentados em potência alta
-function pePirarara(pts,t,pdur){
+function pePirarara(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.6,pdur*0.25); pts.push({t,pot:rnd(84,95)});         // mergulho forte
-  while(t<end-0.9){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(76,94)}); } // sustenta com leve ondulação
-  if(Math.random()<0.3){ t+=rnd(0.4,0.7); pts.push({t,pot:rnd(95,99)}); } // mergulhão
+  t+=Math.min(0.6,pdur*0.25); pts.push({t,pot:rnd(84,95)*fat});
+  while(t<end-0.9){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(76,94)*fat}); }
+  if(Math.random()<0.3){ t+=rnd(0.4,0.7); pts.push({t,pot:rnd(95,99)*fat}); }
   return t;
 }
-function fightPirarara(){ return buildFight(pePirarara, 6, 8); }
+function fightPirarara(teto){ return buildFight(pePirarara, 6, 8, teto); }
 // TAMBAQUI — forte e teimoso: surto inicial + pressão média, às vezes 2º pico
-function peTambaqui(pts,t,pdur){
+function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.45,pdur*0.3); pts.push({t,pot:rnd(82,95)});         // surto
-  while(t<end-0.7){ t+=rnd(0.9,1.6); pts.push({t,pot:rnd(56,74)});  // pressão sustentada
-    if(t<end-0.7 && Math.random()<0.55){ t+=rnd(0.4,0.8); pts.push({t,pot:rnd(85,96)}); } } // surto extra (teimoso)
+  t+=Math.min(0.45,pdur*0.3); pts.push({t,pot:rnd(82,95)*fat});
+  while(t<end-0.7){ t+=rnd(0.9,1.6); pts.push({t,pot:rnd(56,74)*fat});
+    if(t<end-0.7 && Math.random()<0.55){ t+=rnd(0.4,0.8); pts.push({t,pot:rnd(85,96)*fat}); } }
   return t;
 }
-function fightTambaqui(){ return buildFight(peTambaqui, 8, 11); }
+function fightTambaqui(teto){ return buildFight(peTambaqui, 8, 11, teto); }
 // TUCUNARÉ — explosivo: rajada de cabeçadas rápidas (oscila alto<->médio)
-function peTucunare(pts,t,pdur){
+function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
-  while(t<end){ t+=rnd(0.22,0.45); pts.push({t,pot:rnd(80,99)}); if(t>=end)break; t+=rnd(0.22,0.45); pts.push({t,pot:rnd(40,60)}); }
+  while(t<end){ t+=rnd(0.22,0.45); pts.push({t,pot:rnd(80,99)*fat}); if(t>=end)break; t+=rnd(0.22,0.45); pts.push({t,pot:rnd(40,60)*fat}); }
   return t;
 }
-function fightTucunare(){ return buildFight(peTucunare, 9, 13); }
+function fightTucunare(teto){ return buildFight(peTucunare, 9, 13, teto); }
 function gerarEspecie(nome){
   const idx=parseInt(document.getElementById('selEspecieSim').value);
-  const pts = nome==='pirarara'?fightPirarara() : nome==='tambaqui'?fightTambaqui() : fightTucunare();
+  let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
+  const pts = nome==='pirarara'?fightPirarara(teto) : nome==='tambaqui'?fightTambaqui(teto) : fightTucunare(teto);
   SIMS[idx].pontos=pts; salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
-  log('🐟 '+nome+' gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos) — ajuste à vontade','ok');
+  log('🐟 '+nome+' (teto '+teto+'%) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
 }
 
 // ══ INIT ══════════════════════════════════════════════════════
