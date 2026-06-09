@@ -217,6 +217,9 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <button class="btn btn-accent" onclick="gerarEspecie('pirarara')" title="Força bruta, mergulhos longos">🐟 Pirarará</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tambaqui')" title="Forte e teimoso, arranques circulares">🐟 Tambaqui</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tucunare')" title="Explosivo, cabeçadas e saltos">🐟 Tucunaré</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('dourado')" title="Corridas fortes + saltos espetaculares">🐟 Dourado</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('trairao')" title="Ataque curto e brutal, investidas secas">🐟 Trairão</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('jau')" title="Peso morto no fundo, força bruta constante">🐟 Jaú</button>
     <span class="cal-sub">clique de novo = nova variação</span>
   </div>
 
@@ -588,12 +591,43 @@ function peTucunare(pts,t,pdur,fat){
   return t;
 }
 function fightTucunare(teto,fadiga,puxada){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada); }
+// DOURADO — ACROBÁTICO: corrida forte sustentada + SALTOS espetaculares (alívio quase total -> tranco)
+function peDourado(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(0.5,pdur*0.22); pts.push({t,pot:rnd(84,97)*fat});             // arrancada
+  while(t<end-0.4){
+    t+=rnd(0.6,1.2); pts.push({t,pot:rnd(72,92)*fat});                      // corrida forte
+    if(t<end-0.5 && Math.random()<0.6){ t+=rnd(0.2,0.4); pts.push({t,pot:rnd(4,14)*fat}); t+=rnd(0.18,0.35); pts.push({t,pot:rnd(86,99)*fat}); } // SALTO: frouxo -> tranco
+  }
+  return t;
+}
+function fightDourado(teto,fadiga,puxada){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada); }
+// TRAIRÃO — BRUTAL e seco: golpes fortes e abruptos, pressão alta (recua pouco, sem alívio total)
+function peTrairao(pts,t,pdur,fat){
+  const end=t+pdur;
+  while(t<end){
+    t+=rnd(0.18,0.38); pts.push({t,pot:rnd(88,99)*fat});                   // golpe seco e forte
+    if(t>=end)break;
+    t+=rnd(0.4,0.9);  pts.push({t,pot:rnd(50,70)*fat});                    // recua pouco (mantém pressão alta)
+  }
+  return t;
+}
+function fightTrairao(teto,fadiga,puxada){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada); }
+// JAÚ — PESO MORTO: blocos longuíssimos, potência altíssima e quase CONSTANTE (mal se mexe)
+function peJau(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(1.0,pdur*0.15); pts.push({t,pot:rnd(90,99)*fat});            // ferra pesado
+  while(t<end-1.2){ t+=rnd(3.0,5.0); pts.push({t,pot:rnd(88,99)*fat}); }   // arrasta no fundo: altíssimo e plano
+  return t;
+}
+function fightJau(teto,fadiga,puxada){ return buildFight(peJau, 3, 5, teto, fadiga, puxada); }
 function gerarEspecie(nome){
   const idx=parseInt(document.getElementById('selEspecieSim').value);
   let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
   let fadiga=parseInt(document.getElementById('selEspecieFadiga').value); if(!isFinite(fadiga)) fadiga=50; fadiga=Math.max(0,Math.min(100,fadiga));
   let puxada=parseFloat(document.getElementById('selEspeciePuxada').value); if(!(puxada>0)) puxada=45;
-  const pts = nome==='pirarara'?fightPirarara(teto,fadiga,puxada) : nome==='tambaqui'?fightTambaqui(teto,fadiga,puxada) : fightTucunare(teto,fadiga,puxada);
+  const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
+  const pts=(FIGHTS[nome]||fightTucunare)(teto,fadiga,puxada);
   SIMS[idx].pontos=pts; salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
   salvarGenCfg();
   log('🐟 '+nome+' (teto '+teto+'% · fadiga '+fadiga+'% · puxada '+puxada+'s) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
