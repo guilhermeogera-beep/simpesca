@@ -491,52 +491,59 @@ function importarJSON(ev){
 function rnd(a,b){ return a + Math.random()*(b-a); }
 function finalizarFight(pts){ return pts.filter(p=>p.t<=DURACAO).map(p=>({t:Math.round(p.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(p.pot)))})).sort((a,b)=>a.t-b.t); }
 
-// PIRARARÁ — força bruta: corrida inicial pesada, mergulhos longos, bombeio lento, cansa devagar
+// Obs.: o pescador SÓ RECOLHE com o motor em 0%. Por isso toda espécie tem JANELAS DE 0%
+// (dois pontos em 0 = patamar plano) entre os trancos, dando tempo de enrolar a linha.
+
+// PIRARARÁ — força bruta: trancos longos e pesados, janelas de 0% curtas (peixe duro)
 function fightPirarara(){
-  const pts=[{t:0,pot:0}]; let t=rnd(0.4,0.8);
-  pts.push({t,pot:rnd(55,68)});                                   // fisgada
-  t+=rnd(0.7,1.1); pts.push({t,pot:rnd(82,92)});                 // 1ª corrida forte
-  t+=rnd(3,5);     pts.push({t,pot:rnd(74,86)});                 // platô longo
-  while(t<76){
-    t+=rnd(2.6,4.2); pts.push({t,pot:rnd(45,60)});               // pescador ganha um pouco
-    t+=rnd(2.0,3.4); pts.push({t,pot:rnd(78,92)});               // mergulho forte de novo
-    if(Math.random()<0.35){ t+=rnd(0.6,1.0); pts.push({t,pot:rnd(93,99)}); t+=rnd(1.6,2.6); pts.push({t,pot:rnd(80,88)}); } // mergulhão
-  }
-  t+=rnd(2,3); pts.push({t,pot:rnd(40,54)});                     // cansaço
-  t+=rnd(2,3); pts.push({t,pot:rnd(20,30)});
-  t+=rnd(1,2); pts.push({t,pot:rnd(6,12)});
-  return finalizarFight(pts);
-}
-// TAMBAQUI — forte e teimoso: arranque inicial e séries de surtos circulares com pressão sustentada
-function fightTambaqui(){
   const pts=[{t:0,pot:0}]; let t=rnd(0.3,0.6);
-  pts.push({t,pot:rnd(50,64)});
-  t+=rnd(0.5,0.9); pts.push({t,pot:rnd(80,90)});                 // arranque inicial
-  while(t<78){
-    t+=rnd(1.2,2.2); pts.push({t,pot:rnd(40,55)});               // recolhe
-    t+=rnd(0.5,0.9); pts.push({t,pot:rnd(82,95)});               // surto rápido (volta a brigar)
-    t+=rnd(1.0,1.8); pts.push({t,pot:rnd(58,74)});               // pressão sustentada
-    if(Math.random()<0.4){ t+=rnd(0.4,0.7); pts.push({t,pot:rnd(86,96)}); } // surto extra (teimoso)
+  pts.push({t,pot:rnd(60,72)});                                   // fisgada
+  t+=rnd(0.8,1.2); pts.push({t,pot:rnd(85,95)});                 // corrida pesada
+  t+=rnd(3.0,4.5); pts.push({t,pot:rnd(80,92)});                 // mergulho sustentado (longo)
+  while(t<74){
+    t+=rnd(0.6,1.0); pts.push({t,pot:0});                        // rampa pra baixo
+    t+=rnd(0.7,1.4); pts.push({t,pot:0});                        // JANELA 0% (recolhe — curta)
+    t+=rnd(0.5,0.9); pts.push({t,pot:rnd(82,94)});               // volta a mergulhar forte
+    t+=rnd(2.2,3.6); pts.push({t,pot:rnd(78,90)});               // sustenta
+    if(Math.random()<0.3){ t+=rnd(0.5,0.9); pts.push({t,pot:rnd(94,99)}); t+=rnd(1.2,2.0); pts.push({t,pot:rnd(82,90)}); } // mergulhão
   }
-  t+=rnd(1.5,2.5); pts.push({t,pot:rnd(44,58)});
-  t+=rnd(1.5,2.5); pts.push({t,pot:rnd(22,33)});
-  t+=rnd(1,2);     pts.push({t,pot:rnd(8,15)});
+  t+=rnd(0.6,1.0); pts.push({t,pot:0}); t+=rnd(1.6,2.6); pts.push({t,pot:0});   // cansaço: janela maior
+  t+=rnd(0.5,0.9); pts.push({t,pot:rnd(38,52)});                 // última investida
+  t+=rnd(0.6,1.0); pts.push({t,pot:0}); t+=rnd(2.0,3.0); pts.push({t,pot:0});   // recolhe pra finalizar
   return finalizarFight(pts);
 }
-// TUCUNARÉ — explosivo: ataque forte, cabeçadas rápidas, saltos (alívio + tranco), errático
-function fightTucunare(){
-  const pts=[{t:0,pot:0}]; let t=rnd(0.15,0.3);
-  pts.push({t,pot:rnd(86,99)});                                  // ataque explosivo
-  t+=rnd(0.4,0.8); pts.push({t,pot:rnd(68,84)});
-  while(t<78){
-    const n=2+Math.floor(Math.random()*3);
-    for(let i=0;i<n;i++){ t+=rnd(0.25,0.5); pts.push({t,pot:rnd(76,98)}); t+=rnd(0.25,0.5); pts.push({t,pot:rnd(34,54)}); } // cabeçadas
-    if(Math.random()<0.5){ t+=rnd(0.3,0.6); pts.push({t,pot:rnd(5,15)}); t+=rnd(0.2,0.4); pts.push({t,pot:rnd(80,99)}); }  // salto (slack -> tranco)
-    t+=rnd(0.8,1.6); pts.push({t,pot:rnd(24,44)});               // pausa nervosa
+// TAMBAQUI — forte e teimoso: surtos circulares; janelas de 0% médias entre eles
+function fightTambaqui(){
+  const pts=[{t:0,pot:0}]; let t=rnd(0.3,0.5);
+  pts.push({t,pot:rnd(55,68)});
+  t+=rnd(0.5,0.9); pts.push({t,pot:rnd(82,92)});                 // arranque inicial
+  while(t<76){
+    t+=rnd(0.5,0.8); pts.push({t,pot:0});                        // rampa pra baixo
+    t+=rnd(1.0,1.9); pts.push({t,pot:0});                        // JANELA 0% (recolhe)
+    t+=rnd(0.4,0.7); pts.push({t,pot:rnd(84,96)});               // surto rápido (volta a brigar)
+    t+=rnd(0.8,1.4); pts.push({t,pot:rnd(58,74)});               // pressão sustentada curta
+    if(Math.random()<0.35){ t+=rnd(0.3,0.6); pts.push({t,pot:rnd(88,97)}); } // surto extra (teimoso)
   }
-  t+=rnd(1,1.8); pts.push({t,pot:rnd(58,78)});                   // tranco final
-  t+=rnd(1,1.8); pts.push({t,pot:rnd(24,40)});
-  t+=rnd(1,2);   pts.push({t,pot:rnd(8,16)});
+  t+=rnd(0.5,0.8); pts.push({t,pot:0}); t+=rnd(1.5,2.5); pts.push({t,pot:0});
+  t+=rnd(0.5,0.9); pts.push({t,pot:rnd(45,60)});                 // última investida
+  t+=rnd(0.5,0.8); pts.push({t,pot:0}); t+=rnd(2.0,3.0); pts.push({t,pot:0});
+  return finalizarFight(pts);
+}
+// TUCUNARÉ — explosivo: cabeçadas rápidas + saltos; janelas de 0% curtas e frequentes
+function fightTucunare(){
+  const pts=[{t:0,pot:0}]; let t=rnd(0.12,0.25);
+  pts.push({t,pot:rnd(88,99)});                                  // ataque explosivo
+  t+=rnd(0.4,0.7); pts.push({t,pot:rnd(70,86)});
+  while(t<76){
+    const n=2+Math.floor(Math.random()*3);
+    for(let i=0;i<n;i++){ t+=rnd(0.22,0.45); pts.push({t,pot:rnd(78,98)}); t+=rnd(0.22,0.45); pts.push({t,pot:rnd(38,58)}); } // cabeçadas
+    t+=rnd(0.25,0.5); pts.push({t,pot:0});                       // salto: alívio total
+    t+=rnd(0.5,1.0);  pts.push({t,pot:0});                       // JANELA 0% (recolhe rápido)
+    if(Math.random()<0.6){ t+=rnd(0.15,0.3); pts.push({t,pot:rnd(82,99)}); } // tranco pós-salto
+  }
+  t+=rnd(0.4,0.7); pts.push({t,pot:0}); t+=rnd(1.0,1.8); pts.push({t,pot:0});
+  t+=rnd(0.6,1.0); pts.push({t,pot:rnd(55,75)});                 // tranco final
+  t+=rnd(0.4,0.7); pts.push({t,pot:0}); t+=rnd(1.5,2.5); pts.push({t,pot:0});
   return finalizarFight(pts);
 }
 function gerarEspecie(nome){
