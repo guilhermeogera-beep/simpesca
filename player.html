@@ -51,6 +51,10 @@ input[type=text]:focus{border-color:var(--accent);}
 .btn-ok{border-color:var(--green);color:var(--green);} .btn-sec{border-color:var(--dim);color:var(--dim);} .btn-red{border-color:var(--red);color:var(--red);}
 #hudLinha{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.55);border:1px solid var(--green);border-radius:20px;padding:6px 16px;color:var(--green);font-size:1rem;font-weight:700;letter-spacing:1px;display:none;}
 #hudLinha.visivel{display:block;}
+#hudEstado{position:fixed;top:12px;left:14px;z-index:62;border:2px solid;border-radius:14px;padding:8px 16px;font-size:1rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);}
+#hudEstado.visivel{display:block;}
+#hudEstado.puxando{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
+#hudEstado.recolher{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.22);}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
 .rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -108,6 +112,7 @@ input[type=text]:focus{border-color:var(--accent);}
 </div>
 
 <div id="hudLinha">🎣 0.0 m</div>
+<div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
 
 <div class="fs-overlay" id="nomeOverlay">
   <div class="lbl">Quem vai pescar?</div>
@@ -190,7 +195,7 @@ function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_li
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
-function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🎣 '+m.toFixed(1)+' m'; }
+function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🧵 Enrolada: '+m.toFixed(1)+' m'; }
 // Linha ABSOLUTA do carretel (posição líquida do encoder) — ACUMULA entre jogadores, NÃO zera por jogo
 function linhaCarretel(){ return contagemParaMetros(contagemEncoder); }
 // SEGURANÇA: a linha do carretel atingiu o limite físico -> para o motor
@@ -263,7 +268,10 @@ let ultimoToastTrava=0;
 function travado(){ return Math.abs(linhaCarretel()) >= Math.abs(limiteLinha()); }
 function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
   if(travado()){ if(pct>0 && Date.now()-ultimoToastTrava>2500){ ultimoToastTrava=Date.now(); mostrarToast('🛑 Motor travado pelo limite de linha'); } pct=0; }
-  escreverMotorBLE(pct); const b=document.getElementById('motorBadge'); b.textContent='MOTOR '+pct.toFixed(0)+'%'; b.className='badge '+(pct>70?'alto':pct>0?'ativo':''); }
+  escreverMotorBLE(pct); const b=document.getElementById('motorBadge'); b.textContent='MOTOR '+pct.toFixed(0)+'%'; b.className='badge '+(pct>70?'alto':pct>0?'ativo':'');
+  const est=document.getElementById('hudEstado'); const puxando=pct>=1;
+  est.classList.toggle('puxando',puxando); est.classList.toggle('recolher',!puxando);
+  est.textContent=puxando?'🐟 PEIXE PUXANDO — segure!':'🎣 RECOLHA A LINHA!'; }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
 function pedirNome(id){ simEmContagem=id; document.getElementById('nomeOverlay').classList.add('visivel'); setTimeout(()=>document.getElementById('inputNome').focus(),100); }
@@ -272,8 +280,9 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-function moverOverlaysPara(parent){ ['countdownOverlay','pauseOverlay','resultadoOverlay'].forEach(id=>parent.appendChild(document.getElementById(id))); }
-function devolverOverlays(){ ['countdownOverlay','pauseOverlay','resultadoOverlay'].forEach(id=>document.body.appendChild(document.getElementById(id))); }
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado'];
+function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
+function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
 function iniciarContagem(id){
   const sim=SIMS[id], w=sim.wrapper;
@@ -299,6 +308,7 @@ function iniciarSim(id){
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
   contando=true;                          // começa a contar a linha recolhida
   document.getElementById('hudLinha').classList.add('visivel');
+  document.getElementById('hudEstado').classList.add('visivel');
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
   sim.intervalo=loopSim(sim);
 }
@@ -309,6 +319,7 @@ function encerrarSim(id, sairFS, salvar){
   const sim=SIMS[id]; clearInterval(sim.intervalo);
   sim.estaRodando=false; contando=false; sim.video.pause(); aplicarMotor(0);  // fim dos 90s: para de contar
   document.getElementById('hudLinha').classList.remove('visivel');
+  document.getElementById('hudEstado').classList.remove('visivel');
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
   devolverOverlays();
