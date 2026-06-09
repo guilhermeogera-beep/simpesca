@@ -76,6 +76,24 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   🏆 RANKING **não navega** e o **Bluetooth não cai** (Web Bluetooth morre ao trocar de página).
 - Ao terminar, o `player.html` mostra a **posição dentro da mesma Sim** (🥇/🥈/🥉 + "Nº de N"),
   com aviso de **"Novo recorde!"** (1º lugar) ou **"Primeira jogada!"** (1ª vez na sim).
+- **Barra de antecipação (`hudTimeline`/`tlCanvas`):** faixa compacta **estilo waveform** (linha
+  brilhante + área em degradê, marcador losango "AGORA") no canto sup. esquerdo, abaixo do `hudEstado`.
+  Mostra o que **vem** (verde = recolher/motor 0 · vermelho = puxar). `desenharTimeline` num loop
+  `requestAnimationFrame`, janela `TL_PASSADO=1.4s` + `TL_FUTURO=6s`.
+- **Caixa "👁 EXIBIR" (`hudConfig`):** botão no **cabeçalho** (ao lado do ⟲ LINHA) abre um painel
+  (`toggleConfig`) com 4 caixas (`cfgLinha/cfgEstado/cfgBarra/cfgCarretel`) que ligam/desligam cada HUD,
+  persistido em `simpesca_hud_linha|estado|barra|carretel` (carretel **off** por padrão). O
+  **`hudCarretel`** (canto sup. direito) mostra **📍 Carretel: linhaCarretel / limite m** (atualizado em
+  `atualizarLinha`), ficando **vermelho** (`.travado`) quando `|linhaCarretel| ≥ |limite|`. **NÃO** entra no fullscreen (fica fora da
+  `OVERLAYS_FS`) — configura-se na tela inicial; fecha ao iniciar o jogo. `hudCfg{}` + flag `emJogo`
+  + `simTocando` controlam a visibilidade via **`atualizarVisibilidadeHUD()`**. Os HUDs em si
+  (`hudLinha/hudEstado/hudTimeline`) entram na `OVERLAYS_FS` (movidos pro `wrapper` no fullscreen).
+- **HUD em tela cheia:** ao dar play o vídeo entra em **fullscreen** (pedido no gesto do clique
+  "Começar"). Os elementos `countdownOverlay/pauseOverlay/resultadoOverlay/hudLinha/hudEstado` são
+  movidos **pra dentro** do `wrapper` (`OVERLAYS_FS`/`moverOverlaysPara`/`devolverOverlays`) pra
+  aparecerem no fullscreen. `hudLinha` mostra **🧵 Enrolada: X m** (= `metrosGanhos`); `hudEstado`
+  é a legenda viva (atualizada em `aplicarMotor`): **🐟 PEIXE PUXANDO** (motor≥1%, vermelho) vs
+  **🎣 RECOLHA A LINHA** (motor 0, verde).
 
 ---
 
@@ -114,6 +132,36 @@ do vídeo (player) ou no preview (dashboard).
   `gerarEspecie(nome)`. Têm **aleatoriedade** (`rnd`): cada clique gera uma variação; os pontos
   ficam editáveis normalmente depois. Modelo: Pirarará = alta sustentada + mergulhos longos;
   Tambaqui = surtos circulares repetidos; Tucunaré = cabeçadas rápidas + saltos (slack→tranco), errático.
+- **Modelo de orçamento de puxada (`buildFight(pe, nMin, nMax, teto, fadiga, puxada)`):** cada briga usa
+  um total de **PUXADA** (motor ligado) = campo `selEspeciePuxada` (s, padrão **45**, com ±10% de variação)
+  distribuído em N trancos com a "cara" da espécie (`pePirarara/peTambaqui/peTucunare`); o resto dos ~90s
+  vira **JANELAS DE 0%** onde o pescador recolhe. Puxada maior = **blocos de motor mais longos** = peixe
+  puxa mais linha (equilibra contra o recolhimento do pescador; confira na estimativa `🐟 ≈ X m`).
+- **Fisgada (saque inicial, `fazerFisgada`):** o 1º tranco (`k===0`) usa uma abertura especial por
+  espécie (`fisEstilo`): **explosiva** (snap instantâneo + corrida — tucunaré/dourado/trairão),
+  **lenta** (toque leve → hesita → carrega o peso devagar — jaú), **teimosa** (testa→alivia→crava —
+  tambaqui), **forte** (saque firme — pirarará). Toda fisgada começa com uma **mini rampa de ~2s fixos**
+  (sobe devagar a ~6→20%) pra o usuário **se preparar** antes do saque. **Ajustável** por `selFisPico` (% — pico do saque,
+  marcado com `fis:true` e **isento do teto**, então pode ser mais forte que o corpo da briga) e
+  `selFisDur` (× — alonga/encurta a duração). Persistem em `simpesca_gen_fispico|fisdur`.
+- **Assinaturas distintas:** Pirarará = blocos longos, alta e **estável** (N 4–6, mergulho pesado);
+  Tambaqui = **bombeio** arranque-seco→alívio-suave repetindo (N 7–9); Tucunaré = cabeçadas violentas
+  irregulares + **mini-saltos** (quedas a ~6–20%, N 10–14); Dourado = **corrida forte + saltos**
+  espetaculares (frouxo ~4–14% → tranco, N 7–10); Trairão = golpes **secos e brutais**, pressão alta
+  (recua só a 50–70%, N 8–11); Jaú = **peso morto**, altíssimo e quase constante (88–99%, N 3–5).
+  Espécies num mapa `FIGHTS={...}` (fácil de estender). Teto/fadiga/puxada **persistem** em
+  `simpesca_gen_teto|fadiga|puxada` (salvos no `change`/ao gerar, recarregados em `carregarGenCfg`).
+- **Fadiga (`selEspecieFadiga`, 0–100%):** controla o quanto o peixe cansa. `F=fadiga/100` alimenta
+  os trancos (`fat=1-(0.9·F)·x`, `x=k/(N-1)`) e o crescimento das janelas (`peso=1+(6.0·F)·x`,
+  janela 2–16s). F=0 → briga constante; F=1 → trancos caem até ~90% e janelas bem maiores no fim.
+- **Teto (`selEspecieTeto`, 0–100%):** escala o **pico dos trancos** (peixe menor = puxada mais fraca);
+  aplicado em `buildFight` via `forEach` **só nos pontos sem `fis`** (a fisgada usa seu próprio `fisPico`).
+- **Curva senoidal:** `suavizar()` insere pontos com *ease* de cosseno (`0.5-0.5·cos(π·u)`) nos trechos
+  longos (>0,6s) — fica curva em vez de reta; trancos rápidos (cabeçadas) seguem secos.
+- **Estimativa de linha puxada:** cada Sim mostra `🐟 ≈ X m` no cabeçalho = `velMotor()·∫pot dt/100`
+  (`integralPot`/`estimarLinha`), onde `velMotor()` = `simpesca_cal_velmax` (m/s a 100%, padrão 0.5,
+  ajustável no card de calibração). Atualiza em `renderCurva`/`atualizarEstimativas`. É a linha que o
+  **peixe puxa** na briga — compare com o limite do carretel. Calibre rodando 100% por Ns e vendo metros÷N.
 
 ### Duração da simulação
 - A timeline do dashboard vai até **90s** (constante `DURACAO=90`).
