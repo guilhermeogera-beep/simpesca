@@ -49,12 +49,16 @@ input[type=text]:focus{border-color:var(--accent);}
 .fs-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
 .btn-fs{padding:12px 26px;border-radius:30px;border:1px solid;font-family:inherit;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:transparent;}
 .btn-ok{border-color:var(--green);color:var(--green);} .btn-sec{border-color:var(--dim);color:var(--dim);} .btn-red{border-color:var(--red);color:var(--red);}
-#hudLinha{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.55);border:1px solid var(--green);border-radius:20px;padding:6px 16px;color:var(--green);font-size:1rem;font-weight:700;letter-spacing:1px;display:none;}
+#hudLinha{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.55);border:1px solid var(--green);border-radius:20px;padding:6px 16px;color:var(--green);font-size:1rem;font-weight:700;letter-spacing:1px;display:none;pointer-events:none;}
 #hudLinha.visivel{display:block;}
-#hudEstado{position:fixed;top:12px;left:14px;z-index:62;border:2px solid;border-radius:14px;padding:8px 16px;font-size:1rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);}
+#hudEstado{position:fixed;top:12px;left:14px;z-index:62;border:2px solid;border-radius:14px;padding:8px 16px;font-size:1rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);pointer-events:none;}
 #hudEstado.visivel{display:block;}
 #hudEstado.puxando{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
 #hudEstado.recolher{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.22);}
+#hudTimeline{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:61;width:min(82vw,780px);height:66px;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:12px;padding:5px;display:none;pointer-events:none;}
+#hudTimeline.visivel{display:block;}
+#tlCanvas{width:100%;height:100%;display:block;border-radius:8px;}
+#hudTimeline .tl-leg{position:absolute;top:-20px;left:0;right:0;text-align:center;font-size:0.62rem;letter-spacing:1px;color:var(--text);opacity:0.85;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
 .rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -113,6 +117,7 @@ input[type=text]:focus{border-color:var(--accent);}
 
 <div id="hudLinha">🎣 0.0 m</div>
 <div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
+<div id="hudTimeline"><div class="tl-leg">🟢 recolher · 🔴 peixe puxa · a linha branca é o AGORA (o que vem chega pela direita)</div><canvas id="tlCanvas" width="900" height="120"></canvas></div>
 
 <div class="fs-overlay" id="nomeOverlay">
   <div class="lbl">Quem vai pescar?</div>
@@ -273,6 +278,30 @@ function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
   est.classList.toggle('puxando',puxando); est.classList.toggle('recolher',!puxando);
   est.textContent=puxando?'🐟 PEIXE PUXANDO — segure!':'🎣 RECOLHA A LINHA!'; }
 
+// ── BARRA DE ANTECIPAÇÃO (estilo Just Dance): mostra o que VEM (puxar × recolher) ──
+let simTocando=null, tlRAF=null;
+const TL_PASSADO=1.5, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
+function iniciarTimeline(id){ simTocando=id; document.getElementById('hudTimeline').classList.add('visivel'); if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
+function pararTimeline(){ simTocando=null; if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; } }
+function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocando!=null) desenharTimeline(SIMS[simTocando]); }
+function desenharTimeline(sim){
+  const cv=document.getElementById('tlCanvas'); if(!cv) return;
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, step=3;
+  ctx.clearRect(0,0,W,H);
+  for(let x=0;x<W;x+=step){
+    const t=t0+(x/W)*span, pot=interpolarPontos(sim.pontos,t), puxando=pot>=1;
+    ctx.fillStyle=puxando?'rgba(255,23,68,0.20)':'rgba(0,230,118,0.20)';     // banda de fundo (estado)
+    ctx.fillRect(x,0,step+1,H);
+    const h=Math.max(3,(pot/100)*H);
+    ctx.fillStyle=puxando?'rgba(255,70,100,0.92)':'rgba(0,230,118,0.92)';     // nível de potência
+    ctx.fillRect(x,H-h,step+1,h);
+  }
+  const xn=(TL_PASSADO/span)*W;                                              // linha "AGORA"
+  ctx.fillStyle='#fff'; ctx.fillRect(xn-1.5,0,3,H);
+  ctx.beginPath(); ctx.moveTo(xn-8,0); ctx.lineTo(xn+8,0); ctx.lineTo(xn,11); ctx.closePath(); ctx.fill();
+}
+
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
 function pedirNome(id){ simEmContagem=id; document.getElementById('nomeOverlay').classList.add('visivel'); setTimeout(()=>document.getElementById('inputNome').focus(),100); }
 function fecharNome(){ document.getElementById('nomeOverlay').classList.remove('visivel'); simEmContagem=null; }
@@ -280,7 +309,7 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado'];
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudTimeline'];
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
@@ -309,17 +338,19 @@ function iniciarSim(id){
   contando=true;                          // começa a contar a linha recolhida
   document.getElementById('hudLinha').classList.add('visivel');
   document.getElementById('hudEstado').classList.add('visivel');
+  iniciarTimeline(id);
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
   sim.intervalo=loopSim(sim);
 }
-function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
-function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); pararTimeline(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; iniciarTimeline(simEmPausa); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
 function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
 function encerrarSim(id, sairFS, salvar){
   const sim=SIMS[id]; clearInterval(sim.intervalo);
-  sim.estaRodando=false; contando=false; sim.video.pause(); aplicarMotor(0);  // fim dos 90s: para de contar
+  sim.estaRodando=false; contando=false; pararTimeline(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s: para de contar
   document.getElementById('hudLinha').classList.remove('visivel');
   document.getElementById('hudEstado').classList.remove('visivel');
+  document.getElementById('hudTimeline').classList.remove('visivel');
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
   devolverOverlays();
