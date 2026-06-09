@@ -137,7 +137,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
       <div class="cal-val" id="ctPerdidos" style="font-size:2.1rem;margin-top:4px;color:var(--red);">0.0 m</div>
     </div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
-      <div class="cal-sub">= Saldo líquido</div>
+      <div class="cal-sub">📍 Linha no carretel (TRAVA)</div>
       <div class="cal-val cont" id="ctSaldo" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
     </div>
   </div>
@@ -245,14 +245,14 @@ async function ligar(device){
 }
 async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
 function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
-function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Contagem do encoder zerada','info'); }
-function atualizarContadores(){ const g=document.getElementById('ctGanhos'); if(!g) return; const saldo=metrosGanhos-metrosPerdidos, L=limiteLinha(); g.textContent=metrosGanhos.toFixed(1)+' m'; document.getElementById('ctPerdidos').textContent=metrosPerdidos.toFixed(1)+' m'; const s=document.getElementById('ctSaldo'); s.textContent=saldo.toFixed(1)+' / '+L.toFixed(0)+' m'; s.style.color=(Math.abs(saldo)>=Math.abs(L))?'var(--red)':''; }
+function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; travaAtiva=false; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Linha do carretel zerada (re-spool)','info'); }
+function atualizarContadores(){ const g=document.getElementById('ctGanhos'); if(!g) return; const net=linhaCarretel(), L=limiteLinha(); g.textContent=metrosGanhos.toFixed(1)+' m'; document.getElementById('ctPerdidos').textContent=metrosPerdidos.toFixed(1)+' m'; const s=document.getElementById('ctSaldo'); s.textContent=net.toFixed(1)+' / '+L.toFixed(0)+' m'; s.style.color=(Math.abs(net)>=Math.abs(L))?'var(--red)':''; }
 function zerarContadores(){ metrosGanhos=0; metrosPerdidos=0; contAnt=contagemEncoder; travaAtiva=false; atualizarContadores(); log('Contadores ganhos/perdidos zerados','info'); }
 // SEGURANÇA (teste): saldo líquido atingiu o limite -> para o motor e a prévia
 let travaAtiva=false;
 function checarLimiteSegurancaDash(){
-  const saldo=metrosGanhos-metrosPerdidos, L=limiteLinha();
-  if(Math.abs(saldo)>=Math.abs(L)){
+  const net=linhaCarretel(), L=limiteLinha();
+  if(Math.abs(net)>=Math.abs(L)){
     if(!travaAtiva){ travaAtiva=true; SIMS.forEach((s,i)=>{ if(s.estaRodando) stopSim(i); }); aplicarMotor(0); document.getElementById('motorSlider').value=0; log('🛑 Limite de linha ('+L+'m) atingido — motor parado','err'); }
   } else travaAtiva=false;
 }
@@ -268,7 +268,12 @@ function salvarLimite(){ const lim=parseFloat(document.getElementById('calLimite
 function calcularMpv(){ const real=parseFloat(document.getElementById('calReal').value); const voltas=Math.abs(contagemEncoder)/4096; if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; } if(voltas<0.01){ log('Recolha a linha antes de calcular','err'); return; } const mpv=real/voltas; document.getElementById('calMpv').value=mpv.toFixed(4); localStorage.setItem('simpesca_cal_mpv',mpv); atualizarCalLive(); log('Calibrado: '+mpv.toFixed(4)+' m/volta','ok'); }
 
 // ══ GAUGES / LOG ──────────────────────────────────────────────
-function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct)); escreverMotor(pct); atualizarGauge(pct); }
+let ultimoLogTrava=0;
+function linhaCarretel(){ return contagemParaMetros(contagemEncoder); }   // posição absoluta do carretel (acumula)
+function travado(){ return Math.abs(linhaCarretel()) >= Math.abs(limiteLinha()); }
+function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
+  if(travado()){ if(pct>0 && Date.now()-ultimoLogTrava>2000){ ultimoLogTrava=Date.now(); log('🛑 Motor travado pelo limite — use "Zerar contadores" para liberar','err'); } pct=0; }
+  escreverMotor(pct); atualizarGauge(pct); }
 function atualizarGauge(pct){ pct=Math.max(0,Math.min(100,pct)); document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%'; document.getElementById('gaugeBarFill').style.width=pct+'%'; document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V'; }
 function atualizarSimGauge(idx,pct){ pct=Math.max(0,Math.min(100,pct)); const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx); if(!p)return; p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%'; f.style.background=pct>70?'linear-gradient(90deg,#c1121f,#e63946)':pct>40?'linear-gradient(90deg,#e07b00,#ffd600)':'linear-gradient(90deg,var(--accent2),var(--accent))'; }
 function log(msg,tipo=''){ const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo; const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`; el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild); }
