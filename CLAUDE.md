@@ -52,12 +52,24 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
 - **Player conta só o que RECOLHEU (ganhos):** acumula apenas os deltas positivos (`metrosGanhos`)
   enquanto a flag `contando` está ligada. Liga em `iniciarSim`, desliga em `pausarSim`/`encerrarSim`
   — ou seja, **ao acabar os 90s a leitura para**. `metrosAtuais()` retorna `metrosGanhos` (vai pro HUD e ranking).
-- **Dashboard (teste):** card mostra Ganhos / Perdidos / Saldo ao vivo (acumula deltas + e − separados).
+- **Por jogada vs. acumulado:** o `metrosGanhos` (HUD/ranking) **zera a cada jogo** via
+  `novoJogoContadores()` (em `iniciarSim`) — mas isso **NÃO zera o encoder**. A **linha do carretel**
+  (`linhaCarretel()` = `contagemParaMetros(contagemEncoder)`, posição absoluta) **acumula entre jogadores**
+  e só zera no **re-spool manual** (`zerarEncoder`: botão **⟲ LINHA** no player / **⟲ Zerar contagem** no dashboard).
+- **Dashboard (teste):** card mostra Ganhos / Perdidos (deltas do teste) e **📍 Linha no carretel** (= `linhaCarretel`, o que dispara a trava).
 - Calibração em `localStorage`: `simpesca_cal_mpv` (metros por volta), `simpesca_cal_inv` ('0'/'1'),
   `simpesca_cal_limite` (**limite de linha em m**, padrão 50 — total que o carretel/vara comporta).
   Ajustável no dashboard (inclui assistente: zerar → recolher X m → calcular m/volta).
-- **Limite de linha:** `metrosGanhos` é travado em `limiteLinha()` (`Math.min`). HUD mostra `X.X / L m`
-  e troca 🎣→✅ ao encher. O carretel começa zerado a cada jogada; não passa do limite.
+- **Limite de linha (trava de segurança):** `simpesca_cal_limite` (padrão **-50**; aceita **+ ou −**),
+  ajustável no dashboard (card de contadores). O **player NÃO mostra** o limite (HUD exibe só os metros).
+  A trava usa a **linha absoluta do carretel** `linhaCarretel()` (posição líquida do encoder, que
+  **ACUMULA entre jogadores**) comparada por **valor absoluto**: quando `|linhaCarretel| ≥ |limite|`,
+  o motor para — no player `pausarSim`, no dashboard `stopSim`+`aplicarMotor(0)` (flag `travaAtiva`).
+- **Bloqueio enquanto travado:** `aplicarMotor` (player e dashboard) força **0** enquanto `travado()`,
+  então play/manual **não rodam o motor** acima do limite. A linha mora **no app/encoder** (não precisa
+  reiniciar o ESP): libera no **re-spool** (`zerarEncoder` — ⟲ LINHA no player / ⟲ Zerar contagem no
+  dashboard, que também manda zerar a contagem no ESP) ou quando a linha cai abaixo do limite.
+  **Não zera entre jogadas** (de propósito: a linha é compartilhada e pode acabar ao longo das jogadas).
 - Ranking em `localStorage` `simpesca_ranking`: `[{nome, metros, sim, data}]`. Nome digitado
   antes de cada jogada; salvo ao terminar o vídeo. Visualização em `ranking.html` **e** num
   **painel sobreposto dentro do `player.html`** (`abrirRanking()`/`rankingOverlay`) — assim o botão
@@ -95,6 +107,13 @@ do vídeo (player) ou no preview (dashboard).
   marcados, **Esc** limpa.
 - Clipboard único `clip={pts,modo}`: 📄 copia a curva inteira (`modo:'replace'`), Ctrl+C copia os
   pontos marcados (`modo:'add'`); 📋/Ctrl+V colam respeitando o modo. `simHover` define o destino do Ctrl+V.
+
+### Gerador de briga por espécie (dashboard)
+- Botões 🐟 **Pirarará / Tambaqui / Tucunaré** geram uma curva de pontos `{t,pot}` com a "assinatura"
+  de cada peixe na Sim escolhida (`selEspecieSim`). Funções `fightPirarara/Tambaqui/Tucunare()` +
+  `gerarEspecie(nome)`. Têm **aleatoriedade** (`rnd`): cada clique gera uma variação; os pontos
+  ficam editáveis normalmente depois. Modelo: Pirarará = alta sustentada + mergulhos longos;
+  Tambaqui = surtos circulares repetidos; Tucunaré = cabeçadas rápidas + saltos (slack→tranco), errático.
 
 ### Duração da simulação
 - A timeline do dashboard vai até **90s** (constante `DURACAO=90`).
