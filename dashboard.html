@@ -523,18 +523,18 @@ function buildFight(pe, nMin, nMax, teto, fadiga){
   const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
   const fill=rnd(82,89);
   const restTotal=Math.max(N*3, fill-pullBudget);     // total de segundos em 0% (recolhimento)
-  // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: bem maiores no fim)
+  // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: MUITO maiores no fim)
   const w=[]; let wsum=0;
-  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(2.5*F)*x; w.push(wk); wsum+=wk; }
+  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(6.0*F)*x; w.push(wk); wsum+=wk; }
   let t=0;
   for(let k=0;k<N;k++){
     const x=(N>1)?k/(N-1):0;
-    const fat=1-(0.6*F)*x;                            // trancos enfraquecem conforme a fadiga
+    const fat=1-(0.9*F)*x;                            // trancos enfraquecem MUITO no fim conforme a fadiga
     const pdur=(pullBudget/N)*rnd(0.8,1.2);
     t=pe(pts, t, pdur, fat);                          // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
     let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
-    wdur=Math.max(2.5, Math.min(12, wdur));
+    wdur=Math.max(2.0, Math.min(16, wdur));
     t+=wdur; pts.push({t,pot:0});
     if(t>DURACAO-4) break;
   }
