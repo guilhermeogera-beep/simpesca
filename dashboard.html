@@ -53,10 +53,11 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .timeline-wrap{position:relative;height:130px;background:#03070b;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 .curve-area{position:absolute;top:0;left:0;right:0;bottom:20px;z-index:2;cursor:crosshair;}
 .curve-svg{position:absolute;inset:0;width:100%;height:100%;}
-.ponto-handle{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid #fff;transform:translate(-50%,-50%);cursor:grab;z-index:12;box-shadow:0 0 6px rgba(0,212,255,0.7);}
+.ponto-handle{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--accent);border:1.5px solid #fff;transform:translate(-50%,-50%);cursor:grab;z-index:12;box-shadow:0 0 3px rgba(0,212,255,0.6);}
+.ponto-handle::before{content:'';position:absolute;inset:-7px;border-radius:50%;}  /* área de clique maior, invisível */
 .ponto-handle:active{cursor:grabbing;}
-.ponto-handle.sel{background:var(--yellow);box-shadow:0 0 10px var(--yellow);width:16px;height:16px;}
-.ponto-handle.multi{background:var(--green);box-shadow:0 0 10px var(--green);border-color:#fff;width:16px;height:16px;}
+.ponto-handle.sel{background:var(--yellow);box-shadow:0 0 6px var(--yellow);width:10px;height:10px;}
+.ponto-handle.multi{background:var(--green);box-shadow:0 0 6px var(--green);border-color:#fff;width:10px;height:10px;}
 .tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:9;}
 #pontoEditor{display:none;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
 #pontoEditor .campo{display:flex;flex-direction:column;gap:3px;}
@@ -207,6 +208,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <span class="cal-sub">🐟 Gerar briga por espécie na</span>
     <select id="selEspecieSim"><option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option></select>
     <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="selEspecieTeto" min="0" max="100" value="100" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="selEspecieFadiga" min="0" max="100" value="50" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
     <button class="btn btn-accent" onclick="gerarEspecie('pirarara')" title="Força bruta, mergulhos longos">🐟 Pirarará</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tambaqui')" title="Forte e teimoso, arranques circulares">🐟 Tambaqui</button>
     <button class="btn btn-accent" onclick="gerarEspecie('tucunare')" title="Explosivo, cabeçadas e saltos">🐟 Tucunaré</button>
@@ -514,19 +516,20 @@ function suavizar(pts){
 const PUXADA_MIN=20, PUXADA_MAX=30;
 // Monta a briga: N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos enfraquecem (fat)
 // e as janelas de 0% (recolhimento) ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
-function buildFight(pe, nMin, nMax, teto){
+function buildFight(pe, nMin, nMax, teto, fadiga){
+  const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const pts=[{t:0,pot:0}];
   const pullBudget=rnd(PUXADA_MIN,PUXADA_MAX);        // total de segundos PUXANDO
   const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
   const fill=rnd(82,89);
   const restTotal=Math.max(N*3, fill-pullBudget);     // total de segundos em 0% (recolhimento)
-  // pesos das janelas CRESCENTES (cansa -> descansa mais no fim)
+  // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: bem maiores no fim)
   const w=[]; let wsum=0;
-  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=0.45+1.7*x; w.push(wk); wsum+=wk; }
+  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(2.5*F)*x; w.push(wk); wsum+=wk; }
   let t=0;
   for(let k=0;k<N;k++){
     const x=(N>1)?k/(N-1):0;
-    const fat=1-0.45*x;                               // fadiga: trancos finais mais fracos
+    const fat=1-(0.6*F)*x;                            // trancos enfraquecem conforme a fadiga
     const pdur=(pullBudget/N)*rnd(0.8,1.2);
     t=pe(pts, t, pdur, fat);                          // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
@@ -545,7 +548,7 @@ function pePirarara(pts,t,pdur,fat){
   if(Math.random()<0.3){ t+=rnd(0.4,0.7); pts.push({t,pot:rnd(95,99)*fat}); }
   return t;
 }
-function fightPirarara(teto){ return buildFight(pePirarara, 6, 8, teto); }
+function fightPirarara(teto,fadiga){ return buildFight(pePirarara, 6, 8, teto, fadiga); }
 // TAMBAQUI — forte e teimoso: surto inicial + pressão média, às vezes 2º pico
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
@@ -554,20 +557,21 @@ function peTambaqui(pts,t,pdur,fat){
     if(t<end-0.7 && Math.random()<0.55){ t+=rnd(0.4,0.8); pts.push({t,pot:rnd(85,96)*fat}); } }
   return t;
 }
-function fightTambaqui(teto){ return buildFight(peTambaqui, 8, 11, teto); }
+function fightTambaqui(teto,fadiga){ return buildFight(peTambaqui, 8, 11, teto, fadiga); }
 // TUCUNARÉ — explosivo: rajada de cabeçadas rápidas (oscila alto<->médio)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
   while(t<end){ t+=rnd(0.22,0.45); pts.push({t,pot:rnd(80,99)*fat}); if(t>=end)break; t+=rnd(0.22,0.45); pts.push({t,pot:rnd(40,60)*fat}); }
   return t;
 }
-function fightTucunare(teto){ return buildFight(peTucunare, 9, 13, teto); }
+function fightTucunare(teto,fadiga){ return buildFight(peTucunare, 9, 13, teto, fadiga); }
 function gerarEspecie(nome){
   const idx=parseInt(document.getElementById('selEspecieSim').value);
   let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
-  const pts = nome==='pirarara'?fightPirarara(teto) : nome==='tambaqui'?fightTambaqui(teto) : fightTucunare(teto);
+  let fadiga=parseInt(document.getElementById('selEspecieFadiga').value); if(!isFinite(fadiga)) fadiga=50; fadiga=Math.max(0,Math.min(100,fadiga));
+  const pts = nome==='pirarara'?fightPirarara(teto,fadiga) : nome==='tambaqui'?fightTambaqui(teto,fadiga) : fightTucunare(teto,fadiga);
   SIMS[idx].pontos=pts; salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
-  log('🐟 '+nome+' (teto '+teto+'%) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
+  log('🐟 '+nome+' (teto '+teto+'% · fadiga '+fadiga+'%) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
 }
 
 // ══ INIT ══════════════════════════════════════════════════════
