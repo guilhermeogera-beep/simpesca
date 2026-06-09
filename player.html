@@ -181,7 +181,7 @@ function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; met
 
 // ══ CALIBRAÇÃO / LINHA ────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
-function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v>0)?v:50; }
+function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v!==0)?v:-50; }
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
@@ -189,7 +189,7 @@ function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linh
 // SEGURANÇA: saldo líquido (o que está enrolado no carretel) atingiu o limite -> para o motor
 function checarLimiteSeguranca(){
   if(!contando) return;
-  if((metrosGanhos - metrosPerdidos) >= limiteLinha()){
+  if(Math.abs(metrosGanhos - metrosPerdidos) >= Math.abs(limiteLinha())){
     Object.keys(SIMS).forEach(id=>{ if(SIMS[id].estaRodando) pausarSim(id); });
     mostrarToast('🛑 Limite de linha atingido — motor parado');
   }
