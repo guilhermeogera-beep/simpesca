@@ -271,18 +271,21 @@ function fecharNome(){ document.getElementById('nomeOverlay').classList.remove('
 function confirmarNome(){ const v=document.getElementById('inputNome').value.trim(); nomeJogador=v||'Jogador'; localStorage.setItem('simpesca_ultimo_nome',nomeJogador); document.getElementById('nomeOverlay').classList.remove('visivel'); iniciarContagem(simEmContagem); }
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
+// Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
+function moverOverlaysPara(parent){ ['countdownOverlay','pauseOverlay','resultadoOverlay'].forEach(id=>parent.appendChild(document.getElementById(id))); }
+function devolverOverlays(){ ['countdownOverlay','pauseOverlay','resultadoOverlay'].forEach(id=>document.body.appendChild(document.getElementById(id))); }
+// Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
 function iniciarContagem(id){
-  const ov=document.getElementById('countdownOverlay'), num=document.getElementById('countdownNum');
-  ov.classList.add('visivel'); let n=5; num.textContent=n;
-  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; }; tick();
-  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); entrarFullscreenEPlay(id); } else tick(); },1000);
-}
-function entrarFullscreenEPlay(id){
-  const sim=SIMS[id], w=sim.wrapper, req=w.requestFullscreen||w.webkitRequestFullscreen;
+  const sim=SIMS[id], w=sim.wrapper;
+  moverOverlaysPara(w);
+  const req=w.requestFullscreen||w.webkitRequestFullscreen;      // tela cheia JÁ no gesto do usuário
   if(req) req.call(w).catch(()=>{});
   const onFS=()=>{ if(!document.fullscreenElement&&!document.webkitFullscreenElement){ document.removeEventListener('fullscreenchange',onFS); document.removeEventListener('webkitfullscreenchange',onFS); if(sim.estaRodando) pausarSim(id); } };
   document.addEventListener('fullscreenchange',onFS); document.addEventListener('webkitfullscreenchange',onFS);
-  iniciarSim(id);
+  const ov=document.getElementById('countdownOverlay'), num=document.getElementById('countdownNum');
+  ov.classList.add('visivel'); let n=5; num.textContent=n;
+  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; }; tick();
+  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); iniciarSim(id); } else tick(); },1000);
 }
 function loopSim(sim){
   // A potência segue a CURVA DE PONTOS, no tempo do vídeo
@@ -308,6 +311,7 @@ function encerrarSim(id, sairFS, salvar){
   document.getElementById('hudLinha').classList.remove('visivel');
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
+  devolverOverlays();
   sim.overlay.classList.remove('oculto'); sim.video.currentTime=0;
   if(salvar){ salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id); }
 }
