@@ -56,6 +56,7 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudEstado.visivel{display:block;}
 #hudEstado.puxando{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
 #hudEstado.recolher{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.22);}
+#hudEstado.fisgada{color:#ffc061;border-color:#ffb84d;background:rgba(255,170,0,0.22);}
 #hudCarretel{position:fixed;top:12px;right:14px;z-index:62;border:2px solid var(--accent);border-radius:14px;padding:8px 14px;font-size:0.95rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);color:var(--accent);pointer-events:none;}
 #hudCarretel.visivel{display:block;}
 #hudCarretel.travado{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
@@ -309,6 +310,7 @@ function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
   pct=comOffset(pct);
   escreverMotorBLE(pct); const b=document.getElementById('motorBadge'); b.textContent='MOTOR '+pct.toFixed(0)+'%'; b.className='badge '+(pct>70?'alto':pct>0?'ativo':'');
   const est=document.getElementById('hudEstado'); const puxando=pct>=1;
+  est.classList.remove('fisgada');
   est.classList.toggle('puxando',puxando); est.classList.toggle('recolher',!puxando);
   est.textContent=puxando?'🐟 PEIXE PUXANDO — segure!':'🎣 RECOLHA A LINHA!'; }
 
@@ -333,6 +335,16 @@ function desenharTimeline(sim){
   let px=0, py=yOf(t0);
   for(let i=1;i<=N;i++){ const x=(i/N)*W, t=t0+(i/N)*span, pot=interpolarPontos(P,t), y=yOf(t); const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
   ctx.restore();
+  // zona da FISGADA FÍSICA (0..durFis) — laranja "vai-e-vem"
+  const durFis=fisgadaFisicaCfg().dur;
+  if(durFis>0){
+    const xa=Math.max(0,((0-t0)/span)*W), xb=Math.min(W,((durFis-t0)/span)*W);
+    if(xb>xa){
+      ctx.fillStyle='rgba(255,170,0,0.28)'; ctx.fillRect(xa,0,xb-xa,H);
+      ctx.fillStyle='rgba(255,170,0,0.85)'; ctx.fillRect(xb-1.5,0,3,H);
+      if(xb-xa>46){ ctx.fillStyle='#ffd089'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎣 vai-e-vem',(xa+xb)/2,H/2); }
+    }
+  }
   // marcador losango "AGORA"
   const xn=(TL_PASSADO/span)*W; ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.fillRect(xn-0.5,0,1,H);
   ctx.save(); ctx.translate(xn,H/2); ctx.rotate(Math.PI/4); ctx.shadowBlur=10; ctx.shadowColor='#fff'; ctx.fillStyle='#fff'; ctx.fillRect(-6,-6,12,12); ctx.restore();
@@ -400,7 +412,7 @@ function iniciarSim(id){
   if(fisgadaChar && fis.dur>0 && fis.pot>0){
     contando=false;                        // não conta as puxadinhas da fisgada física
     enviarFisgadaFisica(fis);              // ESP faz o vai-e-vem com o relé
-    const est=document.getElementById('hudEstado'); est.classList.add('puxando'); est.classList.remove('recolher'); est.textContent='🎣 FISGOU! segure...';
+    const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! vai-e-vem...';
     sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
   } else {
     contando=true;                         // sem fisgada física: curva já começa
