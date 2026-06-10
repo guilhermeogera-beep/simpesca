@@ -9,29 +9,47 @@
     <meta name="theme-color" content="#050a0f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SimPesca">
     <style>
         * { box-sizing: border-box; }
-        body { font-family:'Segoe UI',sans-serif; background:#050a0f; color:#e0e6ed; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; background-image:linear-gradient(rgba(0,180,216,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,216,0.03) 1px,transparent 1px); background-size:40px 40px; }
-        .logo { width:100px; height:100px; margin-bottom:20px; }
-        h1 { font-weight:800; color:#00d4ff; letter-spacing:4px; margin:0 0 6px 0; font-size:24px; text-transform:uppercase; }
-        .subtitulo { color:#7b8d9e; font-size:13px; margin-bottom:24px; letter-spacing:1px; }
-        .instrucao { background:#0d151d; border:1px solid #1a2736; border-radius:12px; padding:15px 20px; font-size:13px; color:#7b8d9e; max-width:340px; margin-bottom:16px; line-height:1.9; text-align:left; }
-        .instrucao strong { color:#e0e6ed; display:block; margin-bottom:4px; }
-        .instrucao span { color:#00d4ff; font-weight:bold; }
-        .btn { border:none; padding:15px 30px; font-weight:bold; border-radius:30px; cursor:pointer; text-transform:uppercase; font-size:14px; width:85%; max-width:320px; margin-bottom:14px; letter-spacing:1px; }
-        .btn:active { opacity:0.8; } .btn:disabled { opacity:0.5; cursor:default; }
-        #btnInstalar { background:linear-gradient(135deg,#0077b6,#00d4ff); color:white; display:none; box-shadow:0 4px 20px rgba(0,180,216,0.4); }
-        #btnBaixar { background:#102a1a; color:#00e676; border:1px solid #00e676; }
-        #btnConectar { background:#00d4ff; color:#050a0f; font-weight:900; box-shadow:0 4px 20px rgba(0,212,255,0.35); }
-        #dicaIOS { display:none; background:rgba(0,180,216,0.07); border:1px solid rgba(0,180,216,0.2); border-radius:12px; padding:14px 18px; font-size:12px; color:#7b8d9e; max-width:300px; margin-bottom:16px; line-height:1.7; }
-        #dicaIOS span { color:#00d4ff; font-weight:bold; }
-        .progresso-wrap { width:85%; max-width:320px; margin-bottom:14px; display:none; }
-        .progresso-bar { height:8px; background:#0d151d; border:1px solid #1a2736; border-radius:6px; overflow:hidden; }
-        .progresso-fill { height:100%; width:0%; background:linear-gradient(90deg,#0077b6,#00e676); transition:width 0.3s; }
-        .progresso-txt { font-size:11px; color:#7b8d9e; margin-top:6px; }
-        .status { font-size:12px; color:#555; margin-top:20px; }
-        .status.ok { color:#00e676; } .status.err { color:#ff1744; }
+        body {
+            font-family: 'Segoe UI', sans-serif; background: #050a0f; color: #e0e6ed;
+            margin: 0; padding: 20px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; min-height: 100vh; text-align: center;
+            background-image: linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .logo { width: 100px; height: 100px; margin-bottom: 20px; }
+        h1 { font-weight: 800; color: #00d4ff; letter-spacing: 4px; margin: 0 0 6px 0; font-size: 24px; text-transform: uppercase; }
+        .subtitulo { color: #7b8d9e; font-size: 13px; margin-bottom: 24px; letter-spacing: 1px; }
+        .instrucao {
+            background: #0d151d; border: 1px solid #1a2736; border-radius: 12px;
+            padding: 15px 20px; font-size: 13px; color: #7b8d9e; max-width: 340px;
+            margin-bottom: 16px; line-height: 1.9; text-align: left;
+        }
+        .instrucao strong { color: #e0e6ed; display: block; margin-bottom: 4px; }
+        .instrucao span { color: #00d4ff; font-weight: bold; }
+        .btn {
+            border: none; padding: 15px 30px; font-weight: bold; border-radius: 30px;
+            cursor: pointer; text-transform: uppercase; font-size: 14px; width: 85%;
+            max-width: 320px; margin-bottom: 14px; letter-spacing: 1px; transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        #btnInstalar { background: linear-gradient(135deg, #0077b6, #00d4ff); color: white; display: none; box-shadow: 0 4px 20px rgba(0,180,216,0.4); }
+        #btnBaixar { background: #102a1a; color: #00e676; border: 1px solid #00e676; }
+        #btnConectar { background: #00d4ff; color: #050a0f; font-weight: 900; box-shadow: 0 4px 20px rgba(0,212,255,0.35); }
+        #dicaIOS { display: none; background: rgba(0,180,216,0.07); border: 1px solid rgba(0,180,216,0.2); border-radius: 12px; padding: 14px 18px; font-size: 12px; color: #7b8d9e; max-width: 300px; margin-bottom: 16px; line-height: 1.7; }
+        #dicaIOS span { color: #00d4ff; font-weight: bold; }
+        .progresso-wrap { width: 85%; max-width: 320px; margin-bottom: 14px; display: none; }
+        .progresso-bar { height: 8px; background: #0d151d; border: 1px solid #1a2736; border-radius: 6px; overflow: hidden; }
+        .progresso-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0077b6, #00e676); transition: width 0.3s; }
+        .progresso-txt { font-size: 11px; color: #7b8d9e; margin-top: 6px; }
+        .status { font-size: 12px; color: #555; margin-top: 20px; }
+        .status.ok  { color: #00e676; }
+        .status.err { color: #ff1744; }
     </style>
 </head>
 <body>
@@ -55,58 +73,94 @@
 
     <button id="btnInstalar" class="btn">📥 Instalar Aplicativo</button>
     <button id="btnBaixar" class="btn" onclick="baixarVideos()">⬇️ Baixar vídeos (offline)</button>
+
     <div class="progresso-wrap" id="progressoWrap">
         <div class="progresso-bar"><div class="progresso-fill" id="progressoFill"></div></div>
         <div class="progresso-txt" id="progressoTxt">Baixando...</div>
     </div>
+
     <button id="btnConectar" class="btn" onclick="abrirPainel()">🎣 Abrir Painel</button>
+
     <p class="status" id="statusSW">Carregando...</p>
 
     <script>
-        const MEDIA_CACHE = 'simpesca-media-v1';
-        const VIDEOS = ['video0.mp4','video1.mp4','video2.mp4'];
-        function abrirPainel(){ window.location.href = 'player.html'; }
+        const CACHE_NAME = 'simpesca-v2';
+        const VIDEOS = ['video0.mp4', 'video1.mp4', 'video2.mp4'];
+
+        function abrirPainel() { window.location.href = 'player.html'; }
+
+        // iOS: Web Bluetooth não é suportado
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         if (isIOS) document.getElementById('dicaIOS').style.display = 'block';
 
-        async function baixarVideos(){
-            const wrap=document.getElementById('progressoWrap'), fill=document.getElementById('progressoFill'),
-                  txt=document.getElementById('progressoTxt'), btn=document.getElementById('btnBaixar');
-            wrap.style.display='block'; btn.disabled=true;
-            try{
-                const cache=await caches.open(MEDIA_CACHE);
-                for(let i=0;i<VIDEOS.length;i++){
-                    txt.textContent=`Baixando vídeo ${i+1} de ${VIDEOS.length}...`;
+        // ── Baixar vídeos para o cache (uso offline) ──────────────
+        async function baixarVideos() {
+            const wrap = document.getElementById('progressoWrap');
+            const fill = document.getElementById('progressoFill');
+            const txt  = document.getElementById('progressoTxt');
+            const btn  = document.getElementById('btnBaixar');
+            wrap.style.display = 'block'; btn.disabled = true;
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                for (let i = 0; i < VIDEOS.length; i++) {
+                    txt.textContent = `Baixando vídeo ${i+1} de ${VIDEOS.length}...`;
                     await cache.add(VIDEOS[i]);
-                    fill.style.width=Math.round(((i+1)/VIDEOS.length)*100)+'%';
+                    fill.style.width = Math.round(((i+1)/VIDEOS.length)*100) + '%';
                 }
-                txt.textContent='✅ Vídeos salvos! Pronto para uso offline.';
-                btn.textContent='✅ Vídeos baixados';
-            }catch(e){ txt.textContent='⚠️ Erro ao baixar. Verifique a internet.'; btn.disabled=false; }
-        }
-        async function verificarVideos(){
-            if(!('caches' in window)) return;
-            try{
-                const cache=await caches.open(MEDIA_CACHE); let todos=true;
-                for(const v of VIDEOS){ if(!(await cache.match(v))) todos=false; }
-                if(todos){ const b=document.getElementById('btnBaixar'); b.textContent='✅ Vídeos baixados'; b.disabled=true; }
-            }catch(e){}
+                txt.textContent = '✅ Vídeos salvos! Pronto para uso offline.';
+                btn.textContent = '✅ Vídeos baixados';
+                verificarVideos();
+            } catch (e) {
+                txt.textContent = '⚠️ Erro ao baixar. Verifique a internet e tente de novo.';
+                btn.disabled = false;
+            }
         }
 
+        // Marca o botão se os vídeos já estiverem no cache
+        async function verificarVideos() {
+            if (!('caches' in window)) return;
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                let todos = true;
+                for (const v of VIDEOS) { if (!(await cache.match(v))) todos = false; }
+                if (todos) {
+                    const btn = document.getElementById('btnBaixar');
+                    btn.textContent = '✅ Vídeos baixados';
+                    btn.disabled = true;
+                }
+            } catch (e) {}
+        }
+
+        // ── Instalação do PWA (Android/Chrome/Edge) ───────────────
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredPrompt=e; document.getElementById('btnInstalar').style.display='block'; });
-        document.getElementById('btnInstalar').addEventListener('click', async ()=>{
-            if(!deferredPrompt) return; deferredPrompt.prompt();
-            const {outcome}=await deferredPrompt.userChoice;
-            if(outcome==='accepted') document.getElementById('btnInstalar').style.display='none';
-            deferredPrompt=null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e;
+            document.getElementById('btnInstalar').style.display = 'block';
         });
-        window.addEventListener('appinstalled',()=>{ document.getElementById('btnInstalar').style.display='none'; deferredPrompt=null; });
+        document.getElementById('btnInstalar').addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') document.getElementById('btnInstalar').style.display = 'none';
+            deferredPrompt = null;
+        });
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('btnInstalar').style.display = 'none';
+            deferredPrompt = null;
+        });
 
-        if('serviceWorker' in navigator){
+        // ── Service Worker ────────────────────────────────────────
+        if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/simpesca/service-worker.js')
-                .then(()=>{ const s=document.getElementById('statusSW'); s.textContent='✅ App pronto para uso offline'; s.className='status ok'; verificarVideos(); })
-                .catch(()=>{ const s=document.getElementById('statusSW'); s.textContent='⚠️ Erro ao registrar service worker'; s.className='status err'; });
+                .then(() => {
+                    document.getElementById('statusSW').textContent = '✅ App pronto para uso offline';
+                    document.getElementById('statusSW').className = 'status ok';
+                    verificarVideos();
+                })
+                .catch(() => {
+                    document.getElementById('statusSW').textContent = '⚠️ Erro ao registrar service worker';
+                    document.getElementById('statusSW').className = 'status err';
+                });
         }
     </script>
 </body>
