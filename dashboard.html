@@ -115,7 +115,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <div class="secao-titulo"><span>📏</span> Encoder — Calibração da Linha (AS5600)</div>
   <div class="cal-grid">
     <div class="cal-campo"><label>Metros por volta</label><input type="number" id="calMpv" step="0.001" min="0" value="0.16"></div>
-    <div class="cal-campo"><label>Vel. motor a 100% (m/s)</label><input type="number" id="calVel" step="0.01" min="0" value="0.5"></div>
+    <div class="cal-campo"><label>Vel. motor a 100% (m/s)</label><input type="number" id="calVel" step="0.01" min="0" value="2.5"></div>
     <div class="cal-campo"><label>Offset motor (% p/ girar)</label><input type="number" id="calOffset" step="1" min="0" max="90" value="15"></div>
     <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
   </div>
@@ -253,7 +253,7 @@ function checarLimiteSegurancaDash(){
 // ══ CALIBRAÇÃO ────────────────────────────────────────────────
 function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
 function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v!==0)?v:-50; }
-function velMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_velmax')); return (isFinite(v)&&v>0)?v:0.5; }   // m/s a 100%
+function velMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_velmax')); return (isFinite(v)&&v>0)?v:2.5; }   // m/s a 100%
 function offsetMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_offset')); return (isFinite(v)&&v>=0&&v<100)?v:15; }   // % mínimo pra o motor girar
 function comOffset(pct){ return pct>0 ? Math.min(100, offsetMotor()+(100-offsetMotor())*pct/100) : 0; }   // 0=desligado; >0 começa no offset
 // ∫ pot dt (0..DURACAO) da curva contínua = "esforço" do peixe em %·s
@@ -320,11 +320,11 @@ function montarBlocosSims(){
         '</div>'+
       '</div>'+
       '<div class="gen-row">'+
-        '<label title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="fisPico'+i+'" min="0" max="100" value="100">%</label>'+
-        '<label title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="fisDur'+i+'" min="0.2" max="4" step="0.1" value="1">×</label>'+
-        '<label title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="teto'+i+'" min="0" max="100" value="100">%</label>'+
+        '<label title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="fisPico'+i+'" min="0" max="100" value="50">%</label>'+
+        '<label title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="fisDur'+i+'" min="0.2" max="4" step="0.1" value="2">×</label>'+
+        '<label title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="teto'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="fadiga'+i+'" min="0" max="100" value="50">%</label>'+
-        '<label title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="puxada'+i+'" min="5" max="80" value="45">s</label>'+
+        '<label title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="puxada'+i+'" min="5" max="80" value="55">s</label>'+
         '<span>🎲 = nova briga com estes ajustes</span>'+
       '</div>'+
       '<div id="tl'+i+'" class="timeline-wrap"><div class="curve-area" id="curva'+i+'"></div><div id="playhead'+i+'" class="tl-playhead"></div></div>';
@@ -683,11 +683,11 @@ const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucu
 // Ajustes do gerador POR PEIXE (inputs na linha de cada simulação)
 function cfgGerador(idx){
   const g=(id,d)=>{ const el=document.getElementById(id+idx); const v=el?parseFloat(el.value):NaN; return isFinite(v)?v:d; };
-  let teto=g('teto',100);   teto=Math.max(1,Math.min(100,teto));
+  let teto=g('teto',50);    teto=Math.max(1,Math.min(100,teto));
   let fadiga=g('fadiga',50); fadiga=Math.max(0,Math.min(100,fadiga));
-  let puxada=g('puxada',45); if(!(puxada>0)) puxada=45;
-  let fisPico=g('fisPico',100); if(!(fisPico>0)) fisPico=100; fisPico=Math.min(100,fisPico);
-  let fisDur=g('fisDur',1); if(!(fisDur>0)) fisDur=1;
+  let puxada=g('puxada',55); if(!(puxada>0)) puxada=55;
+  let fisPico=g('fisPico',50); if(!(fisPico>0)) fisPico=50; fisPico=Math.min(100,fisPico);
+  let fisDur=g('fisDur',2); if(!(fisDur>0)) fisDur=2;
   return {teto,fadiga,puxada,fisPico,fisDur};
 }
 function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico); }
