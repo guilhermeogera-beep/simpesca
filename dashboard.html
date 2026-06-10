@@ -572,15 +572,6 @@ function suavizar(pts){
 // MODELO: orçamento de PUXADA = 20–30s no total (motor ligado) dentro dos ~90s. O resto do tempo
 // vira JANELAS DE 0% (longas, 4–9s), onde o pescador recolhe a linha (só recolhe com motor em 0%).
 const PUXADA_MIN=20, PUXADA_MAX=30;
-// PREPARAÇÃO (só no começo): 3 picos pequenos 0→20→20→0 pra o usuário se preparar antes do saque
-function fisgadaPrep(pts, t){
-  for(let i=0;i<3;i++){
-    t+=rnd(0.22,0.36); pts.push({t, pot:rnd(16,22), fis:true});   // sobe a ~20
-    t+=rnd(0.28,0.45); pts.push({t, pot:rnd(16,22), fis:true});   // segura ~20
-    t+=rnd(0.22,0.36); pts.push({t, pot:0,          fis:true});   // volta a 0
-  }
-  return t;
-}
 // O SAQUE da fisgada (sem a preparação) — caráter por espécie. fisDur=alonga/encurta · fisPico=pico % (independe do teto)
 function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
   const D=(isFinite(fisDur)&&fisDur>0)?fisDur:1;
@@ -617,21 +608,23 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
 function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
+  const t0=fisFisDurSeg();                            // a briga começa DEPOIS da fisgada física (motor 0 até lá)
   const pts=[{t:0,pot:0}];
+  if(t0>0) pts.push({t:t0,pot:0});                    // segura em 0% durante a fisgada física
   const base=(isFinite(puxada)&&puxada>0)?puxada:45;
   const pullBudget=Math.min(DURACAO-8, base*rnd(0.9,1.1));  // total de segundos PUXANDO (blocos mais longos)
   const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
   const fill=rnd(82,89);
-  const restTotal=Math.max(N*3, fill-pullBudget);     // total de segundos em 0% (recolhimento)
+  const restTotal=Math.max(N*3, (fill-t0)-pullBudget); // tempo em 0% (recolhimento), descontando a fisgada
   // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: MUITO maiores no fim)
   const w=[]; let wsum=0;
   for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(6.0*F)*x; w.push(wk); wsum+=wk; }
   let kFis2=Math.round(rnd(N*0.5, N-1.2)); kFis2=Math.max(1,Math.min(N-1,kFis2));  // 2ª fisgada: uma vez do MEIO→FIM
-  let t=0;
+  let t=t0;
   for(let k=0;k<N;k++){
     const x=(N>1)?k/(N-1):0;
     const fat=1-(0.9*F)*x;                            // trancos enfraquecem MUITO no fim conforme a fadiga
-    if(k===0){ t=fisgadaPrep(pts, t); t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }  // 3 picos de preparação + saque inicial
+    if(k===0){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }  // saque inicial (a fisgada física já cobriu o começo)
     else if(k===kFis2){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }                // 2ª fisgada (meio→fim, sem preparação)
     else { const pdur=(pullBudget/N)*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }                 // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
