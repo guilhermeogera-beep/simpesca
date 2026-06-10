@@ -34,29 +34,9 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .btn-yellow{background:rgba(255,214,0,0.05);border-color:var(--yellow);color:var(--yellow);}
 .btn-accent{background:rgba(0,212,255,0.05);border-color:var(--accent);color:var(--accent);}
 .btn-outline{border-color:var(--text-dim);color:var(--text-dim);}
-.btn:hover{filter:brightness(1.2);}
-.btn:active{transform:scale(0.96);}
-.btn:disabled{opacity:0.35;cursor:default;filter:none;}
+.btn:hover{filter:brightness(1.2);} .btn:active{transform:scale(0.96);} .btn:disabled{opacity:0.35;cursor:default;filter:none;}
 .time-tick{position:absolute;bottom:3px;transform:translateX(-50%);font-size:0.6rem;color:var(--text-dim);font-family:monospace;pointer-events:none;}
-.time-line{position:absolute;top:0;bottom:20px;width:1px;background:rgba(26,39,54,0.25);pointer-events:none;}
-.timeline-marker{position:absolute;top:12px;height:68px;cursor:grab;z-index:5;min-width:10px;}
-.timeline-marker:active{cursor:grabbing;}
-.timeline-marker .lbl-pot{position:absolute;top:-13px;left:0;white-space:nowrap;font-size:0.55rem;font-family:monospace;color:var(--text-dim);background:var(--bg);padding:1px 3px;border-radius:3px;pointer-events:none;border:1px solid var(--border);}
-.timeline-marker.ativo .lbl-pot{color:var(--accent);border-color:var(--accent);}
-#blockEditor{display:none;background:rgba(13,21,29,0.95);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;animation:fadeIn 0.15s ease;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
-.editor-linha{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;}
-.editor-sep{width:1px;height:38px;background:var(--border);align-self:flex-end;margin:0 2px;flex-shrink:0;}
-.ef{display:flex;flex-direction:column;gap:2px;min-width:52px;flex:1;}
-.ef label{font-size:0.5rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;font-weight:600;}
-.ef input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:0.75rem;padding:4px 5px;height:26px;outline:none;text-align:center;}
-.ef input:focus{border-color:var(--accent2);}
-.estagio-badge{font-size:0.48rem;font-weight:700;letter-spacing:0.5px;padding:2px 5px;border-radius:4px;text-transform:uppercase;align-self:flex-end;margin-bottom:2px;flex-shrink:0;white-space:nowrap;}
-.badge-sub{background:rgba(255,214,0,0.12);color:var(--yellow);border:1px solid rgba(255,214,0,0.2);}
-.badge-trans{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.2);}
-.badge-fim{background:rgba(0,212,255,0.12);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
-.editor-acoes{display:flex;gap:6px;align-self:flex-end;flex-shrink:0;}
-.editor-acoes .btn{padding:4px 10px;font-size:0.65rem;height:26px;letter-spacing:0.5px;}
+.time-line{position:absolute;top:0;bottom:20px;width:1px;background:rgba(26,39,54,0.35);pointer-events:none;}
 .sim-bloco{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;}
 .sim-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .sim-label{font-size:0.75rem;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;white-space:nowrap;}
@@ -69,16 +49,39 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .sim-gauge-volt{font-size:0.65rem;font-family:monospace;color:var(--text-dim);min-width:36px;}
 .sim-gauge-bar{width:48px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;border:1px solid var(--border);}
 .sim-gauge-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width 0.15s;}
-.timeline-wrap{position:relative;height:120px;background:#03070b;border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:crosshair;}
-.tl-trackbg{position:absolute;bottom:20px;left:0;right:0;height:2px;background:var(--border);}
-.tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:10;}
-.sim-controls{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;}
+.sim-controls{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;flex-wrap:wrap;}
+.timeline-wrap{position:relative;height:130px;background:#03070b;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.curve-area{position:absolute;top:0;left:0;right:0;bottom:20px;z-index:2;cursor:crosshair;}
+.curve-svg{position:absolute;inset:0;width:100%;height:100%;}
+.ponto-handle{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--accent);border:1.5px solid #fff;transform:translate(-50%,-50%);cursor:grab;z-index:12;box-shadow:0 0 3px rgba(0,212,255,0.6);}
+.ponto-handle::before{content:'';position:absolute;inset:-7px;border-radius:50%;}  /* área de clique maior, invisível */
+.ponto-handle:active{cursor:grabbing;}
+.ponto-handle.sel{background:var(--yellow);box-shadow:0 0 6px var(--yellow);width:10px;height:10px;}
+.ponto-handle.multi{background:var(--green);box-shadow:0 0 6px var(--green);border-color:#fff;width:10px;height:10px;}
+.tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:9;}
+#pontoEditor{display:none;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
+#pontoEditor .campo{display:flex;flex-direction:column;gap:3px;}
+#pontoEditor label{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+#pontoEditor input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:0.9rem;padding:6px 8px;width:96px;text-align:center;outline:none;}
+#pontoEditor input:focus{border-color:var(--accent);}
+#pontoEditor .btn{padding:6px 12px;font-size:0.7rem;}
+.dica-editor{font-size:0.74rem;color:var(--text-dim);margin-bottom:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:8px 12px;}
+.dica-editor b{color:var(--text);}
+.cal-grid{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;}
+.cal-campo{display:flex;flex-direction:column;gap:4px;}
+.cal-campo label{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+.cal-campo input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:0.95rem;padding:8px 10px;width:130px;outline:none;text-align:center;}
+.cal-campo input:focus{border-color:var(--accent);}
+.cal-live{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.cal-val{font-size:1.6rem;font-weight:800;font-family:monospace;}
+.cal-val.metros{color:var(--green);} .cal-val.cont{color:var(--accent);}
+.cal-sub{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+.cal-help{font-size:0.78rem;color:var(--text-dim);background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:10px 14px;margin-top:14px;line-height:1.7;}
+.cal-help b{color:var(--text);}
 #log{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--text-dim);height:90px;overflow-y:auto;display:flex;flex-direction:column-reverse;font-family:monospace;}
-#log span{display:block;}
-#log .ok{color:var(--green);}
-#log .err{color:var(--red);}
-#log .info{color:var(--accent);}
+#log span{display:block;} #log .ok{color:var(--green);} #log .err{color:var(--red);} #log .info{color:var(--accent);}
 .copia-aviso{font-size:0.7rem;color:var(--yellow);margin-left:6px;}
+select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -86,6 +89,7 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
   <span style="font-size:1.8rem">🎣</span>
   <h1>Simulador de Pesca</h1>
   <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
+  <a href="ranking.html" class="btn-link">🏆 Ranking</a>
   <a href="player.html" class="btn-link">▶ Player</a>
 </header>
 
@@ -100,89 +104,134 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
   </div>
 </div>
 
+<!-- CALIBRAÇÃO DO ENCODER -->
 <div class="card">
-  <div class="secao-titulo" style="margin-bottom:16px"><span>⚡</span> Perfil de Trancos <span id="copiaAviso" class="copia-aviso"></span></div>
+  <div class="secao-titulo"><span>📏</span> Encoder — Calibração da Linha (AS5600)</div>
+  <div class="cal-grid">
+    <div class="cal-campo"><label>Metros por volta</label><input type="number" id="calMpv" step="0.001" min="0" value="0.16"></div>
+    <div class="cal-campo"><label>Vel. motor a 100% (m/s)</label><input type="number" id="calVel" step="0.01" min="0" value="0.5"></div>
+    <div class="cal-campo"><label>Offset motor (% p/ girar)</label><input type="number" id="calOffset" step="1" min="0" max="90" value="15"></div>
+    <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
+  </div>
+  <div class="cal-live">
+    <div><div class="cal-val cont" id="calCont">0</div><div class="cal-sub">contagem</div></div>
+    <div><div class="cal-val" id="calVoltas" style="color:var(--yellow)">0.00</div><div class="cal-sub">voltas</div></div>
+    <div><div class="cal-val metros" id="calMetros">0.0 m</div><div class="cal-sub">metros (calc.)</div></div>
+  </div>
+  <div class="cal-help"><b>Como calibrar:</b> conecte por Bluetooth → <b>Zerar</b> → recolha uma quantidade <b>conhecida</b> de linha (ex.: 5,0 m) → digite abaixo e clique <b>Calcular</b>.</div>
+  <div class="cal-grid" style="margin-top:12px;">
+    <button class="btn btn-yellow" onclick="zerarEncoder()">⟲ Zerar contagem</button>
+    <div class="cal-campo"><label>Metros reais recolhidos</label><input type="number" id="calReal" step="0.1" min="0" placeholder="ex: 5.0"></div>
+    <button class="btn btn-accent" onclick="calcularMpv()">🧮 Calcular m/volta</button>
+  </div>
+</div>
 
-  <div class="sim-bloco" id="simBloco0">
+<!-- CONTADORES DE LINHA (teste) -->
+<div class="card">
+  <div class="secao-titulo"><span>🎣</span> Linha — Ganhos / Perdidos (teste)</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.35);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">⬆ Ganhos (recolheu)</div>
+      <div class="cal-val metros" id="ctGanhos" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:rgba(255,23,68,0.06);border:1px solid rgba(255,23,68,0.35);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">⬇ Perdidos (soltou)</div>
+      <div class="cal-val" id="ctPerdidos" style="font-size:2.1rem;margin-top:4px;color:var(--red);">0.0 m</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div class="cal-sub">📍 Linha no carretel (TRAVA)</div>
+      <div class="cal-val cont" id="ctSaldo" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
+    </div>
+  </div>
+  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <button class="btn btn-yellow" onclick="zerarContadores()">⟲ Zerar contadores</button>
+    <button class="btn btn-accent" onclick="inverterLado()" title="Inverte o sentido do encoder (troca ganhos ⇄ perdidos)">⇄ Inverter lado</button>
+    <div class="cal-campo"><label>🛑 Limite de linha p/ TRAVA (m)</label><input type="number" id="calLimite" step="1" value="-50"></div>
+    <button class="btn btn-green" onclick="salvarLimite()">💾 Salvar limite</button>
+    <span class="cal-sub" id="limiteAviso" style="align-self:center;">trava quando <b>|saldo|</b> atinge o limite (pode ser <b>negativo</b>, ex.: -50)</span>
+  </div>
+</div>
+
+<!-- EDITOR DE CURVA POR PONTOS -->
+<div class="card">
+  <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
+  <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> marca vários pontos (verdes) · <b>arraste um deles para mover todos juntos</b> · <b>Ctrl+C</b> copia → passe o mouse na outra Sim e <b>Ctrl+V</b> cola (ou 📋). Delete remove os marcados · Esc limpa.</div>
+
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-a">🎣 Sim A</span>
+      <span class="cal-sub" id="estLinha0" title="Estimativa de linha que o peixe puxa nesta briga">🐟 ≈ — m</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct0">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt0">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill0"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(0)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(0)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(0)">■</button>
-        <button class="btn btn-accent btnColar" id="colar0" onclick="colarGatilho(0)" disabled title="Colar gatilho copiado">📋</button>
+        <button class="btn btn-green" onclick="playSim(0)">▶</button><button class="btn btn-yellow" onclick="pauseSim(0)">⏸</button><button class="btn btn-red" onclick="stopSim(0)">■</button>
+        <button class="btn btn-outline" onclick="copiarCurva(0)" title="Copiar curva desta Sim">📄</button>
+        <button class="btn btn-accent btnColar" id="colar0" onclick="colarCurva(0)" disabled title="Colar curva copiada">📋</button>
         <div id="tsDisplay0" class="ts-badge">0:00 / 1:30</div>
       </div>
     </div>
-    <div id="timelineContainer0" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead0" class="tl-playhead"></div></div>
+    <div id="tl0" class="timeline-wrap"><div class="curve-area" id="curva0"></div><div id="playhead0" class="tl-playhead"></div></div>
   </div>
 
-  <div class="sim-bloco" id="simBloco1">
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-b">🎣 Sim B</span>
+      <span class="cal-sub" id="estLinha1" title="Estimativa de linha que o peixe puxa nesta briga">🐟 ≈ — m</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct1">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt1">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill1"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(1)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(1)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(1)">■</button>
-        <button class="btn btn-accent btnColar" id="colar1" onclick="colarGatilho(1)" disabled title="Colar gatilho copiado">📋</button>
+        <button class="btn btn-green" onclick="playSim(1)">▶</button><button class="btn btn-yellow" onclick="pauseSim(1)">⏸</button><button class="btn btn-red" onclick="stopSim(1)">■</button>
+        <button class="btn btn-outline" onclick="copiarCurva(1)" title="Copiar curva desta Sim">📄</button>
+        <button class="btn btn-accent btnColar" id="colar1" onclick="colarCurva(1)" disabled title="Colar curva copiada">📋</button>
         <div id="tsDisplay1" class="ts-badge">0:00 / 1:30</div>
       </div>
     </div>
-    <div id="timelineContainer1" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead1" class="tl-playhead"></div></div>
+    <div id="tl1" class="timeline-wrap"><div class="curve-area" id="curva1"></div><div id="playhead1" class="tl-playhead"></div></div>
   </div>
 
-  <div class="sim-bloco" id="simBloco2">
+  <div class="sim-bloco">
     <div class="sim-header">
       <span class="sim-label sim-label-c">🎣 Sim C</span>
+      <span class="cal-sub" id="estLinha2" title="Estimativa de linha que o peixe puxa nesta briga">🐟 ≈ — m</span>
       <div class="sim-mini-gauge"><span class="sim-gauge-pct" id="simPct2">0%</span><span>·</span><span class="sim-gauge-volt" id="simVolt2">1.00V</span><div class="sim-gauge-bar"><div class="sim-gauge-fill" id="simFill2"></div></div></div>
       <div class="sim-controls">
-        <button class="btn btn-green" onclick="playSim(2)">▶</button>
-        <button class="btn btn-yellow" onclick="pauseSim(2)">⏸</button>
-        <button class="btn btn-red" onclick="stopSim(2)">■</button>
-        <button class="btn btn-accent btnColar" id="colar2" onclick="colarGatilho(2)" disabled title="Colar gatilho copiado">📋</button>
+        <button class="btn btn-green" onclick="playSim(2)">▶</button><button class="btn btn-yellow" onclick="pauseSim(2)">⏸</button><button class="btn btn-red" onclick="stopSim(2)">■</button>
+        <button class="btn btn-outline" onclick="copiarCurva(2)" title="Copiar curva desta Sim">📄</button>
+        <button class="btn btn-accent btnColar" id="colar2" onclick="colarCurva(2)" disabled title="Colar curva copiada">📋</button>
         <div id="tsDisplay2" class="ts-badge">0:00 / 1:30</div>
       </div>
     </div>
-    <div id="timelineContainer2" class="timeline-wrap"><div class="tl-trackbg"></div><div id="playhead2" class="tl-playhead"></div></div>
+    <div id="tl2" class="timeline-wrap"><div class="curve-area" id="curva2"></div><div id="playhead2" class="tl-playhead"></div></div>
   </div>
 
-  <div id="blockEditor">
-    <div class="editor-linha">
-      <div class="ef"><label>Início (s)</label><input type="number" id="edTempo" step="0.1" min="0"></div>
-      <div class="editor-sep"></div>
-      <span class="estagio-badge badge-sub">Pico 1</span>
-      <div class="ef"><label>Força ini (%)</label><input type="number" id="edPotIni" step="1" min="0" max="100"></div>
-      <div class="ef"><label>Subida (ms)</label><input type="number" id="edSub" step="50" min="0"></div>
-      <div class="ef"><label>Força 1 (%)</label><input type="number" id="edForca" step="1" min="0" max="100"></div>
-      <div class="ef"><label>Pico 1 (ms)</label><input type="number" id="edPico" step="100" min="0"></div>
-      <div class="editor-sep"></div>
-      <span class="estagio-badge badge-trans">Pico 2</span>
-      <div class="ef"><label>Transição (ms)</label><input type="number" id="edTrans" step="50" min="0"></div>
-      <div class="ef"><label>Força 2 (%)</label><input type="number" id="edForca2" step="1" min="0" max="100"></div>
-      <div class="ef"><label>Pico 2 (ms)</label><input type="number" id="edPico2" step="100" min="0"></div>
-      <div class="editor-sep"></div>
-      <span class="estagio-badge badge-fim">Final</span>
-      <div class="ef"><label>Descida (ms)</label><input type="number" id="edDesc" step="50" min="0"></div>
-      <div class="ef"><label>Força fim (%)</label><input type="number" id="edPotFim" step="1" min="0" max="100"></div>
-      <div class="editor-sep"></div>
-      <div class="editor-acoes">
-        <button class="btn btn-accent" onclick="copiarGatilho()" title="Copiar este gatilho">📋 Copiar</button>
-        <button class="btn btn-red" onclick="removerBlocoSelecionado()">✕</button>
-        <button class="btn btn-green" onclick="fecharEditor()">✓</button>
-      </div>
-    </div>
+  <div id="pontoEditor">
+    <div class="campo"><label>Tempo (s)</label><input type="number" id="pTempo" step="0.1" min="0"></div>
+    <div class="campo"><label>Potência (%)</label><input type="number" id="pPot" step="1" min="0" max="100"></div>
+    <button class="btn btn-red" onclick="removerPonto()">🗑 Remover</button>
+    <button class="btn btn-green" onclick="fecharEditorPonto()">✓ Fechar</button>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+    <span class="cal-sub">🐟 Gerar briga por espécie na</span>
+    <select id="selEspecieSim"><option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option></select>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="selFisPico" min="0" max="100" value="100" style="width:56px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="selFisDur" min="0.2" max="4" step="0.1" value="1" style="width:56px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">×</label>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="selEspecieTeto" min="0" max="100" value="100" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="selEspecieFadiga" min="0" max="100" value="50" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
+    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="selEspeciePuxada" min="5" max="80" value="45" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">s</label>
+    <button class="btn btn-accent" onclick="gerarEspecie('pirarara')" title="Força bruta, mergulhos longos">🐟 Pirarará</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('tambaqui')" title="Forte e teimoso, arranques circulares">🐟 Tambaqui</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('tucunare')" title="Explosivo, cabeçadas e saltos">🐟 Tucunaré</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('dourado')" title="Corridas fortes + saltos espetaculares">🐟 Dourado</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('trairao')" title="Ataque curto e brutal, investidas secas">🐟 Trairão</button>
+    <button class="btn btn-accent" onclick="gerarEspecie('jau')" title="Peso morto no fundo, força bruta constante">🐟 Jaú</button>
+    <span class="cal-sub">clique de novo = nova variação</span>
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <select id="selSimAcao" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;">
-      <option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option>
-    </select>
-    <button class="btn btn-green" onclick="exportarJSON()" title="Exportar perfil selecionado">⬇ Exportar</button>
-    <label class="btn btn-outline" style="cursor:pointer;" title="Importar perfil JSON">⬆ Importar<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
-    <button class="btn btn-yellow" onclick="restaurarPadrao()" title="Restaurar padrão">↺ Padrão</button>
-    <button class="btn btn-red" onclick="limparSim()" title="Apagar todos os gatilhos">🗑 Limpar</button>
+    <select id="selSimAcao"><option value="0">Sim A</option><option value="1">Sim B</option><option value="2">Sim C</option></select>
+    <button class="btn btn-green" onclick="exportarJSON()">⬇ Exportar</button>
+    <label class="btn btn-outline" style="cursor:pointer;">⬆ Importar<input type="file" accept=".json" onchange="importarJSON(event)" style="display:none"></label>
+    <button class="btn btn-yellow" onclick="restaurarPadrao()">↺ Padrão</button>
+    <button class="btn btn-red" onclick="limparSim()">🗑 Limpar</button>
   </div>
 </div>
 
@@ -195,302 +244,462 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 // ══ BLUETOOTH ═════════════════════════════════════════════════
 const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
 const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
-let bleDevice=null, motorChar=null;
+const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null, linhaChar=null, contagemEncoder=0;
+let contAnt=0, primeiraLeitura=true, metrosGanhos=0, metrosPerdidos=0;
 function btUI(cls,txt){ const b=document.getElementById('btnBT'); b.className=cls; b.textContent=txt; }
 async function conectarBLE(){
   if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
-  try{
-    btUI('','🔵 Procurando...');
-    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
-    await ligar(bleDevice);
-  }catch(e){ btUI('','🔵 Conectar'); }
+  try{ btUI('','🔵 Procurando...'); bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]}); await ligar(bleDevice); }catch(e){ btUI('','🔵 Conectar'); }
 }
 async function ligar(device){
   bleDevice=device;
-  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
-  const server=await device.gatt.connect();
-  const service=await server.getPrimaryService(SERVICE_UUID);
+  device.addEventListener('gattserverdisconnected',()=>{ motorChar=null; linhaChar=null; btUI('','🔵 Reconectar'); log('Bluetooth desconectado','err'); });
+  const server=await device.gatt.connect(); const service=await server.getPrimaryService(SERVICE_UUID);
   motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
+  try{ linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID); await linhaChar.startNotifications(); linhaChar.addEventListener('characteristicvaluechanged',e=>{
+        const nova=e.target.value.getInt32(0,true);
+        if(primeiraLeitura){ contAnt=nova; primeiraLeitura=false; }
+        const dM=contagemParaMetros(nova-contAnt); contAnt=nova;
+        if(dM>0) metrosGanhos+=dM; else metrosPerdidos+=-dM;
+        contagemEncoder=nova; atualizarCalLive(); atualizarContadores(); checarLimiteSegurancaDash();
+      }); }catch(e){ log('Encoder não disponível neste firmware','err'); }
   btUI('conectado','🟢 Conectado'); log('Bluetooth conectado','ok');
 }
-async function reconectar(){
-  if(navigator.bluetooth&&navigator.bluetooth.getDevices){
-    try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){}
-  }
-}
-function escreverMotor(pct){
-  if(!motorChar) return;
-  const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]);
-  try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){}
+async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
+function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
+function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; travaAtiva=false; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Linha do carretel zerada (re-spool)','info'); }
+function atualizarContadores(){ const g=document.getElementById('ctGanhos'); if(!g) return; const net=linhaCarretel(), L=limiteLinha(); g.textContent=metrosGanhos.toFixed(1)+' m'; document.getElementById('ctPerdidos').textContent=metrosPerdidos.toFixed(1)+' m'; const s=document.getElementById('ctSaldo'); s.textContent=net.toFixed(1)+' / '+L.toFixed(0)+' m'; s.style.color=(Math.abs(net)>=Math.abs(L))?'var(--red)':''; }
+function zerarContadores(){ metrosGanhos=0; metrosPerdidos=0; contagemEncoder=0; contAnt=0; primeiraLeitura=true; travaAtiva=false; if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } atualizarCalLive(); atualizarContadores(); log('Contadores + linha do carretel zerados','info'); }
+function inverterLado(){ const novo=!(localStorage.getItem('simpesca_cal_inv')==='1'); localStorage.setItem('simpesca_cal_inv', novo?'1':'0'); const tmp=metrosGanhos; metrosGanhos=metrosPerdidos; metrosPerdidos=tmp; travaAtiva=false; atualizarCalLive(); atualizarContadores(); log('Lado invertido: '+(novo?'INVERTIDO':'normal')+' (ganhos ⇄ perdidos)','info'); }
+// SEGURANÇA (teste): saldo líquido atingiu o limite -> para o motor e a prévia
+let travaAtiva=false;
+function checarLimiteSegurancaDash(){
+  const net=linhaCarretel(), L=limiteLinha();
+  if(Math.abs(net)>=Math.abs(L)){
+    if(!travaAtiva){ travaAtiva=true; SIMS.forEach((s,i)=>{ if(s.estaRodando) stopSim(i); }); aplicarMotor(0); document.getElementById('motorSlider').value=0; log('🛑 Limite de linha ('+L+'m) atingido — motor parado','err'); }
+  } else travaAtiva=false;
 }
 
-// ══ ESTADO ════════════════════════════════════════════════════
-const DURACAO=90; // segundos por simulação
-const LETRAS=['A','B','C'];
+// ══ CALIBRAÇÃO ────────────────────────────────────────────────
+function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.16; }
+function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v!==0)?v:-50; }
+function velMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_velmax')); return (isFinite(v)&&v>0)?v:0.5; }   // m/s a 100%
+function offsetMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_offset')); return (isFinite(v)&&v>=0&&v<100)?v:15; }   // % mínimo pra o motor girar
+function comOffset(pct){ return pct>0 ? Math.min(100, offsetMotor()+(100-offsetMotor())*pct/100) : 0; }   // 0=desligado; >0 começa no offset
+// ∫ pot dt (0..DURACAO) da curva contínua = "esforço" do peixe em %·s
+function integralPot(pts){
+  if(!pts||!pts.length) return 0;
+  const seq=[{t:0,pot:pts[0].pot}].concat(pts).concat([{t:DURACAO,pot:pts[pts.length-1].pot}]);
+  let area=0;
+  for(let i=0;i<seq.length-1;i++){ const a=seq[i],b=seq[i+1],dt=b.t-a.t; if(dt>0) area+=(a.pot+b.pot)/2*dt; }
+  return area;
+}
+function estimarLinha(pts){ return velMotor()*integralPot(pts)/100; }   // metros que o peixe puxa
+function atualizarEstimativas(){ for(let i=0;i<3;i++){ const e=document.getElementById('estLinha'+i); if(e) e.textContent='🐟 ≈ '+estimarLinha(SIMS[i].pontos).toFixed(1)+' m'; } }
+function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
+function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
+function atualizarCalLive(){ const voltas=contagemEncoder/4096, m=Math.max(0,contagemParaMetros(contagemEncoder)); document.getElementById('calCont').textContent=contagemEncoder; document.getElementById('calVoltas').textContent=voltas.toFixed(2); document.getElementById('calMetros').textContent=m.toFixed(1)+' m'; }
+function salvarCal(){ const mpv=parseFloat(document.getElementById('calMpv').value); if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv); const vel=parseFloat(document.getElementById('calVel').value); if(isFinite(vel)&&vel>0) localStorage.setItem('simpesca_cal_velmax',vel); const off=parseFloat(document.getElementById('calOffset').value); if(isFinite(off)&&off>=0&&off<100) localStorage.setItem('simpesca_cal_offset',off); atualizarCalLive(); atualizarEstimativas(); log('Calibração salva: '+mpv+' m/volta · motor '+vel+' m/s · offset '+off+'%','ok'); }
+function salvarLimite(){ const lim=parseFloat(document.getElementById('calLimite').value); if(isFinite(lim)&&lim!==0){ localStorage.setItem('simpesca_cal_limite',lim); travaAtiva=false; atualizarContadores(); log('Limite de linha (trava) salvo: '+lim+' m','ok'); } else log('Limite inválido (não pode ser 0/vazio)','err'); }
+function calcularMpv(){ const real=parseFloat(document.getElementById('calReal').value); const voltas=Math.abs(contagemEncoder)/4096; if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; } if(voltas<0.01){ log('Recolha a linha antes de calcular','err'); return; } const mpv=real/voltas; document.getElementById('calMpv').value=mpv.toFixed(4); localStorage.setItem('simpesca_cal_mpv',mpv); atualizarCalLive(); log('Calibrado: '+mpv.toFixed(4)+' m/volta','ok'); }
+
+// ══ GAUGES / LOG ──────────────────────────────────────────────
+let ultimoLogTrava=0;
+function linhaCarretel(){ return contagemParaMetros(contagemEncoder); }   // posição absoluta do carretel (acumula)
+function travado(){ return Math.abs(linhaCarretel()) >= Math.abs(limiteLinha()); }
+function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
+  if(travado()){ if(pct>0 && Date.now()-ultimoLogTrava>2000){ ultimoLogTrava=Date.now(); log('🛑 Motor travado pelo limite — use "Zerar contadores" para liberar','err'); } pct=0; }
+  pct=comOffset(pct);
+  escreverMotor(pct); atualizarGauge(pct); }
+function atualizarGauge(pct){ pct=Math.max(0,Math.min(100,pct)); document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%'; document.getElementById('gaugeBarFill').style.width=pct+'%'; document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V'; }
+function atualizarSimGauge(idx,pct){ pct=Math.max(0,Math.min(100,pct)); const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx); if(!p)return; p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%'; f.style.background=pct>70?'linear-gradient(90deg,#c1121f,#e63946)':pct>40?'linear-gradient(90deg,#e07b00,#ffd600)':'linear-gradient(90deg,var(--accent2),var(--accent))'; }
+function log(msg,tipo=''){ const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo; const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`; el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild); }
+document.getElementById('motorSlider').addEventListener('input',e=>aplicarMotor(parseInt(e.target.value)));
+
+// ══ MODELO DE PONTOS ──────────────────────────────────────────
+const DURACAO=90, LETRAS=['A','B','C'];
 const PADRAO={
   A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
   B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
   C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
 };
-const SIMS=LETRAS.map((L,i)=>({
-  letra:L, idx:i, storageKey:'simpesca_gatilhos_'+L,
-  gatilhos:[], gatilhoIdx:0, tempoAtual:0, potLocal:0,
-  rampa:{ativa:false}, intervalo:null, estaRodando:false
-}));
-let simAtiva=0;            // sim sendo editada (timeline em foco)
-let indiceSelecionado=-1;  // gatilho selecionado no editor
-let gatilhoCopiado=null;   // clipboard de gatilho
+function gatilhosParaPontos(gatilhos){
+  const p=[];
+  gatilhos.slice().sort((a,b)=>a.t-b.t).forEach(g=>{ let t=g.t; p.push({t,pot:g.potIni||0}); t+=(g.sub||0)/1000; p.push({t,pot:g.pot||0}); t+=(g.pico||0)/1000; p.push({t,pot:g.pot||0}); if((g.trans||0)>0){ t+=g.trans/1000; p.push({t,pot:g.pot2||0}); } if((g.pico2||0)>0){ t+=g.pico2/1000; p.push({t,pot:g.pot2||0}); } t+=(g.desc||0)/1000; p.push({t,pot:g.potFim||0}); });
+  return p.map(x=>({t:Math.round(x.t*100)/100,pot:Math.max(0,Math.min(100,Math.round(x.pot)))})).sort((a,b)=>a.t-b.t);
+}
+function interpolarPontos(pontos,t){ if(!pontos.length) return 0; if(t<=pontos[0].t) return pontos[0].pot; const last=pontos[pontos.length-1]; if(t>=last.t) return last.pot; for(let i=0;i<pontos.length-1;i++){ const a=pontos[i],b=pontos[i+1]; if(t>=a.t&&t<=b.t) return b.t===a.t?b.pot:a.pot+(b.pot-a.pot)*((t-a.t)/(b.t-a.t)); } return last.pot; }
+const round2=v=>Math.round(v*100)/100;
 
-// ══ MOTOR / GAUGE ═════════════════════════════════════════════
-function aplicarMotor(pct){
-  pct=Math.max(0,Math.min(100,pct));
-  escreverMotor(pct);
-  atualizarGauge(pct);
-}
-function atualizarGauge(pct){
-  pct=Math.max(0,Math.min(100,pct));
-  document.getElementById('gaugePct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('gaugeBarFill').style.width=pct+'%';
-  document.getElementById('gaugeVolt').textContent=(1.0+2.5*(pct/100)).toFixed(2)+' V';
-}
-function atualizarSimGauge(idx,pct){
-  pct=Math.max(0,Math.min(100,pct));
-  const p=document.getElementById('simPct'+idx),v=document.getElementById('simVolt'+idx),f=document.getElementById('simFill'+idx);
-  if(!p)return;
-  p.textContent=pct.toFixed(0)+'%'; v.textContent=(1.0+2.5*(pct/100)).toFixed(2)+'V'; f.style.width=pct+'%';
-  if(pct>70)f.style.background='linear-gradient(90deg,#c1121f,#e63946)';
-  else if(pct>40)f.style.background='linear-gradient(90deg,#e07b00,#ffd600)';
-  else f.style.background='linear-gradient(90deg,var(--accent2),var(--accent))';
-}
-function log(msg,tipo=''){
-  const el=document.getElementById('log'); const s=document.createElement('span'); s.className=tipo;
-  const n=new Date(); s.textContent=`[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}] ${msg}`;
-  el.prepend(s); while(el.children.length>40) el.removeChild(el.lastChild);
-}
-const slider=document.getElementById('motorSlider');
-slider.addEventListener('input',e=>{ aplicarMotor(parseInt(e.target.value)); });
+const SIMS=LETRAS.map((L,i)=>({letra:L,idx:i,pontos:[],tempoAtual:0,intervalo:null,estaRodando:false}));
+let simAtiva=0, selPonto=-1, clip=null, multiSel=[], arrastouPonto=false, simHover=null;
 
-// ══ MOTOR DE RAMPA ════════════════════════════════════════════
-function resetarRampa(sim){ sim.rampa={ativa:false}; sim.potLocal=0; sim.gatilhoIdx=0; }
-function dispararGatilho(sim,g){
-  sim.rampa={ativa:true,fase:'sub1',potInicio:sim.potLocal,tsInicio:performance.now(),duracao:g.sub||1,g};
-  log('Sim '+sim.letra+': gatilho '+g.t.toFixed(1)+'s → '+g.pot+'%','info');
+function carregarSim(idx){
+  const L=LETRAS[idx]; let pts=null;
+  try{ const r=localStorage.getItem('simpesca_pontos_'+L); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) pts=d; } }catch(e){}
+  if(!pts){ try{ const g=localStorage.getItem('simpesca_gatilhos_'+L); if(g){ const d=JSON.parse(g); if(Array.isArray(d)&&d.length) pts=gatilhosParaPontos(d); } }catch(e){} }
+  if(!pts) pts=gatilhosParaPontos(PADRAO[L]);
+  SIMS[idx].pontos=pts.slice().sort((a,b)=>a.t-b.t);
 }
-function tickRampa(sim){
-  if(!sim.rampa.ativa) return;
-  const {g}=sim.rampa, now=performance.now();
-  const prog=Math.min(1,(now-sim.rampa.tsInicio)/sim.rampa.duracao);
-  const lerp=(a,b,t)=>a+(b-a)*t;
-  if(sim.rampa.fase==='sub1'){
-    sim.potLocal=lerp(sim.rampa.potInicio,g.pot,prog);
-    if(prog>=1){sim.rampa.fase='pico1';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico||1;}
-  }else if(sim.rampa.fase==='pico1'){
-    sim.potLocal=g.pot;
-    if(prog>=1){ if((g.trans||0)>0){sim.rampa.fase='trans';sim.rampa.tsInicio=now;sim.rampa.duracao=g.trans;} else {sim.rampa.fase='desc';sim.rampa.potInicio=g.pot;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;} }
-  }else if(sim.rampa.fase==='trans'){
-    sim.potLocal=lerp(g.pot,g.pot2||0,prog);
-    if(prog>=1){sim.rampa.fase='pico2';sim.rampa.tsInicio=now;sim.rampa.duracao=g.pico2||1;}
-  }else if(sim.rampa.fase==='pico2'){
-    sim.potLocal=g.pot2||0;
-    if(prog>=1){sim.rampa.fase='desc';sim.rampa.potInicio=g.pot2||0;sim.rampa.tsInicio=now;sim.rampa.duracao=g.desc||1;}
-  }else if(sim.rampa.fase==='desc'){
-    sim.potLocal=lerp(sim.rampa.potInicio,g.potFim||0,prog);
-    if(prog>=1){sim.potLocal=g.potFim||0;sim.rampa.ativa=false;}
-  }
-  sim.potLocal=Math.max(0,Math.min(100,sim.potLocal));
-  aplicarMotor(sim.potLocal);
-  atualizarSimGauge(sim.idx,sim.potLocal);
-}
+function salvarPontos(idx){ try{ localStorage.setItem('simpesca_pontos_'+LETRAS[idx], JSON.stringify(SIMS[idx].pontos)); }catch(e){} }
 
-// ══ PLAY / PAUSE / STOP ───────────────────────────────────────
-function playSim(idx){
-  const sim=SIMS[idx];
-  if(sim.estaRodando) return;
-  sim.estaRodando=true; resetarRampa(sim);
-  sim.intervalo=setInterval(()=>{
-    sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO);
-    while(sim.gatilhoIdx<sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t<=sim.tempoAtual){
-      dispararGatilho(sim,sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++;
-    }
-    tickRampa(sim);
-    atualizarInterfaceTempo();
-    if(sim.tempoAtual>=DURACAO) stopSim(idx);
-  },100);
-}
-function pauseSim(idx){
-  const sim=SIMS[idx];
-  sim.estaRodando=false; clearInterval(sim.intervalo); sim.rampa.ativa=false;
-}
-function stopSim(idx){
-  const sim=SIMS[idx];
-  sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; resetarRampa(sim);
-  atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0);
-}
-function fmt(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
-function atualizarInterfaceTempo(){
-  for(let i=0;i<3;i++){
-    const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`;
-    const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`;
+// ══ RENDER DA CURVA ───────────────────────────────────────────
+function renderTicks(idx){
+  const wrap=document.getElementById('tl'+idx);
+  wrap.querySelectorAll('.time-line,.time-tick').forEach(e=>e.remove());
+  for(let sec=0;sec<=DURACAO;sec+=1){ if(sec%5!==0) continue; const pct=(sec/DURACAO)*100;
+    const line=document.createElement('div'); line.className='time-line'; line.style.left=pct+'%'; line.style.background='rgba(26,39,54,0.6)'; wrap.appendChild(line);
+    const tk=document.createElement('div'); tk.className='time-tick'; tk.style.left=pct+'%'; tk.textContent=sec+'s'; wrap.appendChild(tk);
   }
 }
-
-// ══ TIMELINE ══════════════════════════════════════════════════
-function renderTimeline(idx){
-  const container=document.getElementById('timelineContainer'+idx); if(!container) return;
-  container.querySelectorAll('.timeline-marker,.time-tick,.time-line').forEach(e=>e.remove());
-  for(let sec=0;sec<=DURACAO;sec++){
-    const pct=(sec/DURACAO)*100;
-    const line=document.createElement('div'); line.className='time-line';
-    if(sec%5===0) line.style.background='rgba(26,39,54,0.6)';
-    line.style.left=`${pct}%`; container.appendChild(line);
-    if(sec%5===0){ const tk=document.createElement('div'); tk.className='time-tick'; tk.style.left=`${pct}%`; tk.textContent=`${sec}s`; container.appendChild(tk); }
+function renderCurva(idx){
+  renderTicks(idx);
+  const area=document.getElementById('curva'+idx); const pts=SIMS[idx].pontos;
+  let svg='';
+  if(pts.length){
+    const coords=pts.map(p=>[(p.t/DURACAO)*100, 100-p.pot]);
+    const first=coords[0], last=coords[coords.length-1];
+    const seq=[[0,first[1]]].concat(coords).concat([[100,last[1]]]);
+    const linePts=seq.map(c=>c[0].toFixed(2)+','+c[1].toFixed(2)).join(' ');
+    svg=`<svg class="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="0,100 ${linePts} 100,100" fill="rgba(0,212,255,0.12)"/><polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
   }
-  SIMS[idx].gatilhos.forEach((g,i)=>{
-    const m=document.createElement('div'); m.className='timeline-marker';
-    if(idx===simAtiva && i===indiceSelecionado) m.classList.add('ativo');
-    const totalMs=(g.sub||0)+(g.pico||0)+(g.trans||0)+(g.pico2||0)+(g.desc||0)||1;
-    m.style.left=`${(g.t/DURACAO)*100}%`; m.style.width=`${((totalMs/1000)/DURACAO)*100}%`;
-    const x1=((g.sub)/totalMs)*100, x2=((g.sub+g.pico)/totalMs)*100, x3=((g.sub+g.pico+g.trans)/totalMs)*100, x4=((g.sub+g.pico+g.trans+g.pico2)/totalMs)*100;
-    const yIni=100-(g.potIni||0),y1=100-(g.pot||0),y2=100-(g.pot2||0),yFim=100-(g.potFim||0);
-    const sel=(idx===simAtiva && i===indiceSelecionado);
-    const corLinha=sel?'var(--accent)':'var(--yellow)', corFundo=sel?'rgba(0,212,255,0.25)':'rgba(245,176,65,0.15)';
-    m.innerHTML=`<div class="lbl-pot">${g.potIni}%→${g.pot}%→${g.pot2||0}%→${g.potFim}%</div>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;border-radius:4px;">
-      <polygon points="0,100 0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim} 100,100" fill="${corFundo}"/>
-      <polyline points="0,${yIni} ${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2} 100,${yFim}" fill="none" stroke="${corLinha}" stroke-width="2.5"/></svg>`;
-    m.addEventListener('mousedown',e=>iniciarArrasto(e,i,idx));
-    m.addEventListener('click',e=>{ e.stopPropagation(); simAtiva=idx; abrirEditor(i); });
-    container.appendChild(m);
+  area.innerHTML=svg;
+  pts.forEach((p,i)=>{ const h=document.createElement('div'); let cls='ponto-handle'; if(idx===simAtiva){ if(multiSel.indexOf(p)>-1) cls+=' multi'; else if(i===selPonto) cls+=' sel'; } h.className=cls; h.style.left=(p.t/DURACAO*100)+'%'; h.style.top=(100-p.pot)+'%'; h.addEventListener('mousedown',e=>iniciarDragPonto(e,idx,i)); area.appendChild(h); });
+  const est=document.getElementById('estLinha'+idx); if(est) est.textContent='🐟 ≈ '+estimarLinha(pts).toFixed(1)+' m';
+}
+function renderTodas(){ for(let i=0;i<3;i++) renderCurva(i); }
+
+function setupArea(idx){
+  const area=document.getElementById('curva'+idx);
+  const wrap=document.getElementById('tl'+idx);
+  wrap.addEventListener('mouseenter',()=>{ simHover=idx; });
+  wrap.addEventListener('mouseleave',()=>{ if(simHover===idx) simHover=null; });
+  area.addEventListener('click',e=>{
+    if(e.target.classList.contains('ponto-handle')) return;
+    if(arrastouPonto) return;
+    if(e.ctrlKey||e.metaKey) return;   // Ctrl+clique no fundo não cria ponto
+    const rect=area.getBoundingClientRect();
+    let t=round2(Math.max(0,Math.min(DURACAO,(e.clientX-rect.left)/rect.width*DURACAO)));
+    let pot=Math.max(0,Math.min(100,Math.round(100-((e.clientY-rect.top)/rect.height*100))));
+    const novo={t,pot}; SIMS[idx].pontos.push(novo); SIMS[idx].pontos.sort((a,b)=>a.t-b.t);
+    simAtiva=idx; multiSel=[]; selPonto=SIMS[idx].pontos.indexOf(novo);
+    salvarPontos(idx); renderCurva(idx); abrirEditorPonto();
+    log('Ponto adicionado na Sim '+LETRAS[idx]+' ('+t.toFixed(1)+'s, '+pot+'%)','info');
   });
 }
-function renderTodas(){ for(let i=0;i<3;i++) renderTimeline(i); }
-function setupContainerClick(idx){
-  const el=document.getElementById('timelineContainer'+idx);
-  el.addEventListener('click',e=>{
-    const a=e.target, fundo = a===el||a.classList.contains('tl-trackbg')||a.classList.contains('time-line');
-    if(!fundo) return;
-    simAtiva=idx; indiceSelecionado=-1;
-    const rect=el.getBoundingClientRect(); const pct=(e.clientX-rect.left)/rect.width;
-    const t=parseFloat((pct*DURACAO).toFixed(2));
-    SIMS[idx].gatilhos.push({t,potIni:0,pot:80,sub:300,pico:800,pot2:40,trans:400,pico2:1200,desc:600,potFim:0});
-    indiceSelecionado=SIMS[idx].gatilhos.length-1;
-    salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
-  });
-}
-let blocoArrastado=null, dragOffsetTime=0;
-function iniciarArrasto(e,indice,idx){
-  simAtiva=idx; e.stopPropagation(); blocoArrastado=indice; indiceSelecionado=indice; abrirEditor(indice);
-  const el=document.getElementById('timelineContainer'+idx); const rect=el.getBoundingClientRect();
-  dragOffsetTime=((e.clientX-rect.left)/rect.width)*DURACAO-SIMS[idx].gatilhos[indice].t;
-  document.addEventListener('mousemove',arrastarBloco); document.addEventListener('mouseup',pararArrasto);
-}
-function arrastarBloco(e){
-  if(blocoArrastado===null) return;
-  const el=document.getElementById('timelineContainer'+simAtiva); const rect=el.getBoundingClientRect();
-  let pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-  SIMS[simAtiva].gatilhos[blocoArrastado].t=parseFloat(Math.max(0,Math.min(DURACAO,(pct*DURACAO)-dragOffsetTime)).toFixed(2));
-  document.getElementById('edTempo').value=SIMS[simAtiva].gatilhos[blocoArrastado].t;
-  renderTimeline(simAtiva);
-}
-function pararArrasto(){ blocoArrastado=null; document.removeEventListener('mousemove',arrastarBloco); document.removeEventListener('mouseup',pararArrasto); ordenarGatilhos(simAtiva); salvarLocal(simAtiva); }
-function ordenarGatilhos(idx){
-  const lista=SIMS[idx].gatilhos; const atual=indiceSelecionado>-1?lista[indiceSelecionado]:null;
-  lista.sort((a,b)=>a.t-b.t); if(atual) indiceSelecionado=lista.indexOf(atual); renderTimeline(idx);
+function iniciarDragPonto(e,idx,i){
+  e.stopPropagation(); e.preventDefault();
+  if(e.ctrlKey||e.metaKey){ toggleMulti(idx,i); return; }   // Ctrl+clique = marcar/desmarcar
+  if(idx===simAtiva && multiSel.indexOf(SIMS[idx].pontos[i])>-1){ iniciarDragGrupo(e,idx); return; } // arrastar grupo marcado
+  simAtiva=idx; multiSel=[]; selPonto=i; arrastouPonto=false; abrirEditorPonto(); renderCurva(idx);
+  const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
+  const onMove=ev=>{ arrastouPonto=true; const p=SIMS[idx].pontos[selPonto]; if(!p) return;
+    p.t=round2(Math.max(0,Math.min(DURACAO,(ev.clientX-rect.left)/rect.width*DURACAO)));
+    p.pot=Math.max(0,Math.min(100,Math.round(100-((ev.clientY-rect.top)/rect.height*100))));
+    camposDoPonto(); renderCurva(idx);
+  };
+  const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+    const obj=SIMS[idx].pontos[selPonto]; SIMS[idx].pontos.sort((a,b)=>a.t-b.t); selPonto=SIMS[idx].pontos.indexOf(obj);
+    salvarPontos(idx); renderCurva(idx); camposDoPonto(); setTimeout(()=>{arrastouPonto=false;},10);
+  };
+  document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
 }
 
-// ══ EDITOR ════════════════════════════════════════════════════
-const painelEditor=document.getElementById('blockEditor');
-const inputs=['edTempo','edPotIni','edForca','edSub','edPico','edForca2','edTrans','edPico2','edDesc','edPotFim'];
-const chaves=['t','potIni','pot','sub','pico','pot2','trans','pico2','desc','potFim'];
-function abrirEditor(indice){
-  indiceSelecionado=indice; const g=SIMS[simAtiva].gatilhos[indice]; if(!g) return;
-  inputs.forEach((id,i)=>{ document.getElementById(id).value=g[chaves[i]]!==undefined?g[chaves[i]]:0; });
-  painelEditor.style.display='block'; renderTodas();
+// Arrasta TODOS os pontos marcados juntos (mantém a forma; trava nas bordas)
+function iniciarDragGrupo(e,idx){
+  arrastouPonto=false; selPonto=-1; pEditor.style.display='none';
+  const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
+  const sel=multiSel.filter(p=>SIMS[idx].pontos.indexOf(p)>-1);
+  const orig=sel.map(p=>({p,t:p.t,pot:p.pot}));
+  const minT=Math.min.apply(null,orig.map(o=>o.t)), maxT=Math.max.apply(null,orig.map(o=>o.t));
+  const minPot=Math.min.apply(null,orig.map(o=>o.pot)), maxPot=Math.max.apply(null,orig.map(o=>o.pot));
+  const startT=(e.clientX-rect.left)/rect.width*DURACAO;
+  const startPot=100-((e.clientY-rect.top)/rect.height*100);
+  const onMove=ev=>{
+    arrastouPonto=true;
+    let dt=((ev.clientX-rect.left)/rect.width*DURACAO)-startT;
+    let dpot=(100-((ev.clientY-rect.top)/rect.height*100))-startPot;
+    dt=Math.max(-minT, Math.min(DURACAO-maxT, dt));        // trava o grupo nas bordas (0..90s)
+    dpot=Math.max(-minPot, Math.min(100-maxPot, dpot));    // e em 0..100%
+    orig.forEach(o=>{ o.p.t=round2(o.t+dt); o.p.pot=Math.round(o.pot+dpot); });
+    renderCurva(idx);
+  };
+  const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+    SIMS[idx].pontos.sort((a,b)=>a.t-b.t); salvarPontos(idx); renderCurva(idx); setTimeout(()=>{arrastouPonto=false;},10);
+  };
+  document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
 }
-function fecharEditor(){ painelEditor.style.display='none'; indiceSelecionado=-1; renderTodas(); }
-function removerBlocoSelecionado(){ if(indiceSelecionado>-1){ SIMS[simAtiva].gatilhos.splice(indiceSelecionado,1); fecharEditor(); salvarLocal(simAtiva); } }
-inputs.forEach((id,i)=>{
-  document.getElementById(id).addEventListener('input',e=>{
-    if(indiceSelecionado>-1 && SIMS[simAtiva].gatilhos[indiceSelecionado]){
-      SIMS[simAtiva].gatilhos[indiceSelecionado][chaves[i]]=parseFloat(e.target.value)||0;
-      renderTimeline(simAtiva); salvarLocal(simAtiva);
-    }
-  });
+
+// ══ EDITOR DO PONTO ───────────────────────────────────────────
+const pEditor=document.getElementById('pontoEditor');
+function abrirEditorPonto(){ camposDoPonto(); pEditor.style.display='flex'; }
+function fecharEditorPonto(){ pEditor.style.display='none'; selPonto=-1; renderTodas(); }
+function camposDoPonto(){ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; document.getElementById('pTempo').value=p.t; document.getElementById('pPot').value=p.pot; }
+function removerPonto(){ if(selPonto>-1){ SIMS[simAtiva].pontos.splice(selPonto,1); salvarPontos(simAtiva); fecharEditorPonto(); renderCurva(simAtiva); } }
+document.getElementById('pTempo').addEventListener('input',e=>{ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; p.t=Math.max(0,Math.min(DURACAO,parseFloat(e.target.value)||0)); salvarPontos(simAtiva); renderCurva(simAtiva); });
+document.getElementById('pPot').addEventListener('input',e=>{ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; p.pot=Math.max(0,Math.min(100,parseInt(e.target.value)||0)); salvarPontos(simAtiva); renderCurva(simAtiva); });
+
+// ══ SELEÇÃO MÚLTIPLA + COPIAR / COLAR ─────────────────────────
+function toggleMulti(idx,i){
+  if(idx!==simAtiva){ simAtiva=idx; multiSel=[]; }
+  selPonto=-1; pEditor.style.display='none';
+  const p=SIMS[idx].pontos[i]; const k=multiSel.indexOf(p);
+  if(k>-1) multiSel.splice(k,1); else multiSel.push(p);
+  document.getElementById('copiaAviso').textContent = multiSel.length ? ('— '+multiSel.length+' ponto(s) marcado(s) · Ctrl+C copia') : '';
+  renderCurva(idx);
+}
+// 📄 botão: copia a CURVA INTEIRA (cola substituindo)
+function copiarCurva(idx){ clip={pts:JSON.parse(JSON.stringify(SIMS[idx].pontos)),modo:'replace'}; document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false); document.getElementById('copiaAviso').textContent='— curva da Sim '+LETRAS[idx]+' copiada (substitui ao colar)'; log('Curva da Sim '+LETRAS[idx]+' copiada','ok'); }
+// Ctrl+C: copia os pontos MARCADOS (cola adicionando)
+function copiarSelecionados(){
+  let pts=[];
+  if(multiSel.length) pts=multiSel.filter(p=>SIMS[simAtiva].pontos.indexOf(p)>-1).map(p=>({t:p.t,pot:p.pot}));
+  else if(selPonto>-1 && SIMS[simAtiva].pontos[selPonto]){ const p=SIMS[simAtiva].pontos[selPonto]; pts=[{t:p.t,pot:p.pot}]; }
+  if(!pts.length){ log('Marque pontos com Ctrl+clique antes de copiar','err'); return; }
+  clip={pts:JSON.parse(JSON.stringify(pts)),modo:'add'};
+  document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false);
+  document.getElementById('copiaAviso').textContent='— '+pts.length+' ponto(s) copiado(s) · passe o mouse na Sim e Ctrl+V';
+  log(pts.length+' ponto(s) copiado(s) (Ctrl+C)','ok');
+}
+// Cola o clipboard (substitui se veio de 📄; adiciona se veio de Ctrl+C)
+function colar(idx){
+  if(!clip||!clip.pts.length) return;
+  const novos=JSON.parse(JSON.stringify(clip.pts));
+  if(clip.modo==='replace') SIMS[idx].pontos=novos.sort((a,b)=>a.t-b.t);
+  else SIMS[idx].pontos=SIMS[idx].pontos.concat(novos).sort((a,b)=>a.t-b.t);
+  simAtiva=idx; selPonto=-1; multiSel=[]; salvarPontos(idx); pEditor.style.display='none'; renderCurva(idx);
+  log((clip.modo==='replace'?'Curva colada (substituiu)':novos.length+' ponto(s) colado(s)')+' na Sim '+LETRAS[idx],'ok');
+}
+function colarCurva(idx){ colar(idx); }
+function apagarSelecionados(){
+  if(multiSel.length){ SIMS[simAtiva].pontos=SIMS[simAtiva].pontos.filter(p=>multiSel.indexOf(p)<0); multiSel=[]; salvarPontos(simAtiva); pEditor.style.display='none'; document.getElementById('copiaAviso').textContent=''; renderCurva(simAtiva); log('Pontos marcados removidos','info'); }
+  else if(selPonto>-1) removerPonto();
+}
+// Atalhos: Ctrl+C / Ctrl+V / Delete / Esc (ignorados se estiver digitando num campo)
+document.addEventListener('keydown',e=>{
+  const tag=(document.activeElement&&document.activeElement.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='c'){ copiarSelecionados(); e.preventDefault(); }
+  else if((e.ctrlKey||e.metaKey)&&k==='v'){ const alvo=(simHover!==null?simHover:simAtiva); if(clip) colar(alvo); e.preventDefault(); }
+  else if(k==='delete'||k==='backspace'){ apagarSelecionados(); e.preventDefault(); }
+  else if(k==='escape'){ multiSel=[]; selPonto=-1; pEditor.style.display='none'; document.getElementById('copiaAviso').textContent=''; renderTodas(); }
 });
 
-// ══ COPIAR / COLAR GATILHO ENTRE SIMULAÇÕES ───────────────────
-function copiarGatilho(){
-  if(indiceSelecionado<0) return;
-  const g=SIMS[simAtiva].gatilhos[indiceSelecionado];
-  gatilhoCopiado=JSON.parse(JSON.stringify(g)); // cópia profunda
-  document.querySelectorAll('.btnColar').forEach(b=>b.disabled=false);
-  document.getElementById('copiaAviso').textContent='— gatilho copiado, cole em qualquer Sim com 📋';
-  log('Gatilho '+SIMS[simAtiva].letra+' '+g.t.toFixed(1)+'s copiado ('+g.pot+'%)','ok');
+// ══ PLAY / PAUSE / STOP (preview) ─────────────────────────────
+function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; sim.tempoAtual=0;
+  sim.intervalo=setInterval(()=>{ sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO); const pot=interpolarPontos(sim.pontos,sim.tempoAtual); aplicarMotor(pot); atualizarSimGauge(idx,pot); atualizarInterfaceTempo(); if(sim.tempoAtual>=DURACAO) stopSim(idx); },100);
 }
-function colarGatilho(idx){
-  if(!gatilhoCopiado) return;
-  const novo=JSON.parse(JSON.stringify(gatilhoCopiado));
-  SIMS[idx].gatilhos.push(novo);
-  simAtiva=idx;
-  ordenarGatilhos(idx);
-  indiceSelecionado=SIMS[idx].gatilhos.indexOf(novo);
-  salvarLocal(idx); renderTimeline(idx); abrirEditor(indiceSelecionado);
-  log('Gatilho colado na Sim '+SIMS[idx].letra+' ('+novo.t.toFixed(1)+'s)','ok');
-}
+function pauseSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); }
+function stopSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0); }
+function fmt(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+function atualizarInterfaceTempo(){ for(let i=0;i<3;i++){ const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`; const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`; } }
 
-// ══ PERSISTÊNCIA ──────────────────────────────────────────────
-function salvarLocal(idx){ try{ localStorage.setItem(SIMS[idx].storageKey,JSON.stringify(SIMS[idx].gatilhos)); }catch(e){} }
-function carregarLocal(idx){
-  let dados=null;
-  try{ const r=localStorage.getItem(SIMS[idx].storageKey); if(r){ const d=JSON.parse(r); if(Array.isArray(d)) dados=d; } }catch(e){}
-  if(!dados) dados=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])); // fallback padrão
-  SIMS[idx].gatilhos=dados.sort((a,b)=>a.t-b.t);
-}
-function limparSim(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  if(!confirm('Apagar todos os gatilhos da Sim '+SIMS[idx].letra+'?')) return;
-  SIMS[idx].gatilhos=[]; salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' apagada','err');
-}
-function restaurarPadrao(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  if(!confirm('Restaurar o padrão da Sim '+SIMS[idx].letra+'?')) return;
-  SIMS[idx].gatilhos=JSON.parse(JSON.stringify(PADRAO[SIMS[idx].letra])).sort((a,b)=>a.t-b.t);
-  salvarLocal(idx); fecharEditor(); renderTimeline(idx); log('Sim '+SIMS[idx].letra+' restaurada ao padrão','ok');
-}
-
-// ══ EXPORTAR / IMPORTAR ───────────────────────────────────────
-function exportarJSON(){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  ordenarGatilhos(idx);
-  const payload={versao:1,duracao:DURACAO,criado:new Date().toISOString(),gatilhos:SIMS[idx].gatilhos};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='simulacao_'+SIMS[idx].letra+'.json'; a.click(); URL.revokeObjectURL(a.href);
-  log('Sim '+SIMS[idx].letra+' exportada','ok');
-}
+// ══ AÇÕES (padrão / limpar / export / import) ─────────────────
+function restaurarPadrao(){ const idx=parseInt(document.getElementById('selSimAcao').value); if(!confirm('Restaurar a curva padrão da Sim '+LETRAS[idx]+'?')) return; SIMS[idx].pontos=gatilhosParaPontos(PADRAO[LETRAS[idx]]); salvarPontos(idx); fecharEditorPonto(); renderCurva(idx); log('Sim '+LETRAS[idx]+' restaurada ao padrão','ok'); }
+function limparSim(){ const idx=parseInt(document.getElementById('selSimAcao').value); if(!confirm('Apagar todos os pontos da Sim '+LETRAS[idx]+'?')) return; SIMS[idx].pontos=[]; salvarPontos(idx); fecharEditorPonto(); renderCurva(idx); log('Sim '+LETRAS[idx]+' apagada','err'); }
+function exportarJSON(){ const idx=parseInt(document.getElementById('selSimAcao').value); const payload={versao:2,tipo:'pontos',duracao:DURACAO,criado:new Date().toISOString(),pontos:SIMS[idx].pontos}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='curva_'+LETRAS[idx]+'.json'; a.click(); URL.revokeObjectURL(a.href); log('Sim '+LETRAS[idx]+' exportada','ok'); }
 function importarJSON(ev){
-  const idx=parseInt(document.getElementById('selSimAcao').value);
-  const f=ev.target.files[0]; if(!f) return;
+  const idx=parseInt(document.getElementById('selSimAcao').value); const f=ev.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const d=JSON.parse(e.target.result); const lista=d.gatilhos||d;
-      if(!Array.isArray(lista)) throw 0;
-      SIMS[idx].gatilhos=lista.sort((a,b)=>a.t-b.t);
-      salvarLocal(idx); fecharEditor(); renderTimeline(idx);
-      log('Sim '+SIMS[idx].letra+': '+lista.length+' gatilhos importados','ok');
-    }catch(err){ log('JSON inválido','err'); }
-    ev.target.value='';
-  };
+  r.onload=e=>{ try{
+      const d=JSON.parse(e.target.result); let pts=null;
+      if(d.pontos && Array.isArray(d.pontos)) pts=d.pontos;
+      else if(d.gatilhos && Array.isArray(d.gatilhos)) pts=gatilhosParaPontos(d.gatilhos);
+      else if(Array.isArray(d)){ pts=(d.length && (d[0].sub!==undefined||d[0].pico!==undefined||d[0].potIni!==undefined)) ? gatilhosParaPontos(d) : d; }
+      if(!Array.isArray(pts)) throw 0;
+      SIMS[idx].pontos=pts.slice().sort((a,b)=>a.t-b.t); salvarPontos(idx); fecharEditorPonto(); renderCurva(idx);
+      log('Sim '+LETRAS[idx]+': '+pts.length+' pontos importados','ok');
+    }catch(err){ log('JSON inválido','err'); } ev.target.value=''; };
   r.readAsText(f);
 }
+
+// ══ GERADOR DE BRIGA POR ESPÉCIE ══════════════════════════════
+// Cada peixe vira uma curva de potência {t,pot} com a "assinatura" da espécie.
+// Há aleatoriedade: cada clique gera uma variação. Edite os pontos depois se quiser.
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function finalizarFight(pts){
+  return pts.filter(p=>p.t<=DURACAO).map(p=>({t:Math.round(p.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(p.pot)))})).sort((a,b)=>a.t-b.t);
+}
+// Suaviza (ease senoidal de cosseno) os trechos longos -> curva em vez de reta
+function suavizar(pts){
+  if(pts.length<2) return pts;
+  const out=[pts[0]];
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1], dt=b.t-a.t;
+    if(dt>0.6 && Math.abs(b.pot-a.pot)>3){
+      const steps=Math.min(6, Math.max(2, Math.round(dt/0.35)));
+      for(let s=1;s<steps;s++){ const u=s/steps, e=0.5-0.5*Math.cos(Math.PI*u); out.push({t:a.t+dt*u, pot:a.pot+(b.pot-a.pot)*e}); }
+    }
+    out.push(b);
+  }
+  return out;
+}
+
+// MODELO: orçamento de PUXADA = 20–30s no total (motor ligado) dentro dos ~90s. O resto do tempo
+// vira JANELAS DE 0% (longas, 4–9s), onde o pescador recolhe a linha (só recolhe com motor em 0%).
+const PUXADA_MIN=20, PUXADA_MAX=30;
+// PREPARAÇÃO (só no começo): 3 picos pequenos 0→20→20→0 pra o usuário se preparar antes do saque
+function fisgadaPrep(pts, t){
+  for(let i=0;i<3;i++){
+    t+=rnd(0.22,0.36); pts.push({t, pot:rnd(16,22), fis:true});   // sobe a ~20
+    t+=rnd(0.28,0.45); pts.push({t, pot:rnd(16,22), fis:true});   // segura ~20
+    t+=rnd(0.22,0.36); pts.push({t, pot:0,          fis:true});   // volta a 0
+  }
+  return t;
+}
+// O SAQUE da fisgada (sem a preparação) — caráter por espécie. fisDur=alonga/encurta · fisPico=pico % (independe do teto)
+function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
+  const D=(isFinite(fisDur)&&fisDur>0)?fisDur:1;
+  const P=(isFinite(fisPico)&&fisPico>0)?Math.min(100,fisPico):95;
+  const p=(lo,hi)=>({t, pot:rnd(lo,hi)/100*P, fis:true});   // fração do pico-alvo; marca como fisgada
+  const dt=(lo,hi)=>{ t+=rnd(lo,hi)*D; };                   // tempo escalado pela duração
+  if(estilo==='explosiva'){            // já sai rapidão (tucunaré, dourado, trairão)
+    dt(0.10,0.20); pts.push(p(96,100));   // SNAP — pico quase instantâneo
+    dt(0.8,1.4);   pts.push(p(82,94));    // primeira corrida forte
+    dt(0.6,1.0);   pts.push(p(70,82));
+    return t;
+  }
+  if(estilo==='lenta'){                // peixe pesado: hesita e vai carregando o peso (jaú)
+    dt(0.4,0.7); pts.push(p(7,15));       // toque leve (mal sente)
+    dt(0.9,1.4); pts.push(p(4,10));       // quase parado (ele "pensa")
+    dt(2.0,3.2); pts.push(p(68,82));      // carrega o peso devagar
+    dt(1.0,1.6); pts.push(p(90,100));     // assenta forte
+    return t;
+  }
+  if(estilo==='teimosa'){              // testa, alivia e crava de novo (tambaqui)
+    dt(0.2,0.35); pts.push(p(76,90));
+    dt(0.5,0.8);  pts.push(p(40,55));     // alivia (testa o anzol)
+    dt(0.3,0.5);  pts.push(p(92,100));    // crava forte
+    dt(0.7,1.1);  pts.push(p(68,80));
+    return t;
+  }
+  // 'forte' (padrão): saque firme e rápido (pirarará)
+  dt(0.3,0.5); pts.push(p(90,100));
+  dt(0.9,1.5); pts.push(p(78,90));
+  return t;
+}
+// Monta a briga: FISGADA especial + N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos
+// enfraquecem (fat) e as janelas de 0% ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
+function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico){
+  const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
+  const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
+  const pts=[{t:0,pot:0}];
+  const base=(isFinite(puxada)&&puxada>0)?puxada:45;
+  const pullBudget=Math.min(DURACAO-8, base*rnd(0.9,1.1));  // total de segundos PUXANDO (blocos mais longos)
+  const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
+  const fill=rnd(82,89);
+  const restTotal=Math.max(N*3, fill-pullBudget);     // total de segundos em 0% (recolhimento)
+  // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: MUITO maiores no fim)
+  const w=[]; let wsum=0;
+  for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(6.0*F)*x; w.push(wk); wsum+=wk; }
+  let kFis2=Math.round(rnd(N*0.5, N-1.2)); kFis2=Math.max(1,Math.min(N-1,kFis2));  // 2ª fisgada: uma vez do MEIO→FIM
+  let t=0;
+  for(let k=0;k<N;k++){
+    const x=(N>1)?k/(N-1):0;
+    const fat=1-(0.9*F)*x;                            // trancos enfraquecem MUITO no fim conforme a fadiga
+    if(k===0){ t=fisgadaPrep(pts, t); t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }  // 3 picos de preparação + saque inicial
+    else if(k===kFis2){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }                // 2ª fisgada (meio→fim, sem preparação)
+    else { const pdur=(pullBudget/N)*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }                 // tranco da espécie
+    t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
+    let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
+    wdur=Math.max(2.0, Math.min(16, wdur));
+    t+=wdur; pts.push({t,pot:0});
+    if(t>DURACAO-4) break;
+  }
+  pts.forEach(p=>{ if(!p.fis) p.pot*=tf; });          // teto só nos trancos; a fisgada já está no fisPico
+  return finalizarFight(suavizar(pts));
+}
+// PIRARARÁ — força BRUTA: blocos longos, potência ALTA e ESTÁVEL (mergulho pesado, quase sem alívio)
+function pePirarara(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(0.8,pdur*0.18); pts.push({t,pot:rnd(88,98)*fat});            // crava forte
+  while(t<end-1.0){ t+=rnd(2.4,3.8); pts.push({t,pot:rnd(84,98)*fat}); }   // sustenta alto e estável (ondas largas e suaves)
+  return t;
+}
+function fightPirarara(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico); }
+// TAMBAQUI — TEIMOSO: bombeio circular -> arranque forte (seco), alívio parcial (suave), repetindo
+function peTambaqui(pts,t,pdur,fat){
+  const end=t+pdur;
+  while(t<end-0.4){
+    t+=rnd(0.3,0.5); pts.push({t,pot:rnd(85,97)*fat});                     // arranque (subida seca)
+    t+=rnd(0.7,1.2); pts.push({t,pot:rnd(42,60)*fat});                     // alívio parcial (descida)
+  }
+  return t;
+}
+function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico); }
+// TUCUNARÉ — EXPLOSIVO: cabeçadas violentas e irregulares + mini-saltos (quedas profundas, quase frouxo)
+function peTucunare(pts,t,pdur,fat){
+  const end=t+pdur;
+  while(t<end){
+    t+=rnd(0.16,0.34); pts.push({t,pot:rnd(86,99)*fat});                   // pico violento
+    if(t>=end)break;
+    const baixo=(Math.random()<0.35)?rnd(6,20):rnd(34,54);                 // às vezes mini-salto (quase frouxo)
+    t+=rnd(0.16,0.38); pts.push({t,pot:baixo*fat});
+  }
+  return t;
+}
+function fightTucunare(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+// DOURADO — ACROBÁTICO: corrida forte sustentada + SALTOS espetaculares (alívio quase total -> tranco)
+function peDourado(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(0.5,pdur*0.22); pts.push({t,pot:rnd(84,97)*fat});             // arrancada
+  while(t<end-0.4){
+    t+=rnd(0.6,1.2); pts.push({t,pot:rnd(72,92)*fat});                      // corrida forte
+    if(t<end-0.5 && Math.random()<0.6){ t+=rnd(0.2,0.4); pts.push({t,pot:rnd(4,14)*fat}); t+=rnd(0.18,0.35); pts.push({t,pot:rnd(86,99)*fat}); } // SALTO: frouxo -> tranco
+  }
+  return t;
+}
+function fightDourado(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+// TRAIRÃO — BRUTAL e seco: golpes fortes e abruptos, pressão alta (recua pouco, sem alívio total)
+function peTrairao(pts,t,pdur,fat){
+  const end=t+pdur;
+  while(t<end){
+    t+=rnd(0.18,0.38); pts.push({t,pot:rnd(88,99)*fat});                   // golpe seco e forte
+    if(t>=end)break;
+    t+=rnd(0.4,0.9);  pts.push({t,pot:rnd(50,70)*fat});                    // recua pouco (mantém pressão alta)
+  }
+  return t;
+}
+function fightTrairao(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+// JAÚ — PESO MORTO: blocos longuíssimos, potência altíssima e quase CONSTANTE (mal se mexe)
+function peJau(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(1.0,pdur*0.15); pts.push({t,pot:rnd(90,99)*fat});            // ferra pesado
+  while(t<end-1.2){ t+=rnd(3.0,5.0); pts.push({t,pot:rnd(88,99)*fat}); }   // arrasta no fundo: altíssimo e plano
+  return t;
+}
+function fightJau(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico); }
+function gerarEspecie(nome){
+  const idx=parseInt(document.getElementById('selEspecieSim').value);
+  let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
+  let fadiga=parseInt(document.getElementById('selEspecieFadiga').value); if(!isFinite(fadiga)) fadiga=50; fadiga=Math.max(0,Math.min(100,fadiga));
+  let puxada=parseFloat(document.getElementById('selEspeciePuxada').value); if(!(puxada>0)) puxada=45;
+  let fisPico=parseFloat(document.getElementById('selFisPico').value); if(!(fisPico>0)) fisPico=100; if(fisPico>100) fisPico=100;
+  let fisDur=parseFloat(document.getElementById('selFisDur').value); if(!(fisDur>0)) fisDur=1;
+  const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
+  const pts=(FIGHTS[nome]||fightTucunare)(teto,fadiga,puxada,fisDur,fisPico);
+  SIMS[idx].pontos=pts; salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
+  salvarGenCfg();
+  log('🐟 '+nome+' (teto '+teto+'% · fadiga '+fadiga+'% · puxada '+puxada+'s · fisgada '+fisPico+'%/'+fisDur+'×) gerado na Sim '+LETRAS[idx]+' ('+pts.length+' pontos)','ok');
+}
+// Persiste/recupera os últimos valores dos campos do gerador
+function salvarGenCfg(){ const m={selEspecieTeto:'simpesca_gen_teto',selEspecieFadiga:'simpesca_gen_fadiga',selEspeciePuxada:'simpesca_gen_puxada',selFisPico:'simpesca_gen_fispico',selFisDur:'simpesca_gen_fisdur'}; for(const id in m) localStorage.setItem(m[id],document.getElementById(id).value); }
+function carregarGenCfg(){ const m={selEspecieTeto:'simpesca_gen_teto',selEspecieFadiga:'simpesca_gen_fadiga',selEspeciePuxada:'simpesca_gen_puxada',selFisPico:'simpesca_gen_fispico',selFisDur:'simpesca_gen_fisdur'}; for(const id in m){ const el=document.getElementById(id); const v=localStorage.getItem(m[id]); if(v!==null) el.value=v; el.addEventListener('change',salvarGenCfg); } }
 
 // ══ INIT ══════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  for(let i=0;i<3;i++){ carregarLocal(i); setupContainerClick(i); }
-  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0);
+  document.getElementById('calMpv').value=metrosPorVolta();
+  document.getElementById('calLimite').value=limiteLinha();
+  document.getElementById('calVel').value=velMotor();
+  document.getElementById('calOffset').value=offsetMotor();
+  carregarGenCfg();
+  for(let i=0;i<3;i++){ carregarSim(i); setupArea(i); }
+  atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();
   reconectar();
-  log('Dashboard pronto ('+DURACAO+'s por simulação)','ok');
+  log('Dashboard pronto — editor por pontos ('+DURACAO+'s)','ok');
 });
 </script>
 </body>
