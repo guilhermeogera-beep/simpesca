@@ -21,19 +21,21 @@ header h1{font-size:1rem;letter-spacing:4px;color:var(--accent);text-transform:u
 #btnBT.erro{border-color:var(--red);color:var(--red);}
 .btn-dash{font-size:0.65rem;padding:6px 10px;border:1px solid #3d5d7e;border-radius:6px;background:rgba(20,40,64,0.4);color:#b9d2e6;cursor:pointer;font-family:inherit;text-decoration:none;letter-spacing:1px;}
 .btn-dash:hover{color:#fff;border-color:var(--accent);}
-.sim-bloco{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;}
+.sims-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;align-content:start;}
+.sim-bloco{display:flex;flex-direction:column;gap:8px;}
 .sim-titulo{display:flex;align-items:center;gap:10px;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
 .sim-badge{padding:2px 8px;border-radius:4px;font-size:0.6rem;font-weight:700;letter-spacing:1px;}
 .sim-badge-a{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.25);}
 .sim-badge-b{background:rgba(255,214,0,0.08);color:#ffd600;border:1px solid rgba(255,214,0,0.2);}
 .sim-badge-c{background:rgba(0,230,118,0.08);color:#00e676;border:1px solid rgba(0,230,118,0.25);}
-.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex:1;min-height:150px;cursor:pointer;}
+.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);aspect-ratio:16/9;cursor:pointer;transition:border-color .2s, box-shadow .2s;}
+.video-wrapper:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(0,212,255,0.25);}
 video{width:100%;height:100%;object-fit:cover;display:block;}
 .video-progress{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(0,212,255,0.2);z-index:20;}
 .video-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#00a8cc);transition:width .1s linear;}
 .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(4,8,16,0.7);backdrop-filter:blur(3px);transition:opacity .3s;}
 .overlay.oculto{opacity:0;pointer-events:none;}
-.btn-play{width:60px;height:60px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,212,255,0.5);}
+.btn-play{width:48px;height:48px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(0,212,255,0.5);}
 .btn-play:active{transform:scale(0.95);} .btn-play svg{fill:#040810;margin-left:4px;}
 .sim-nome-overlay{font-size:0.7rem;letter-spacing:2px;color:var(--text);text-transform:uppercase;opacity:0.7;}
 .fs-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.92);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px;}
@@ -100,6 +102,7 @@ input[type=text]:focus{border-color:var(--accent);}
   </div>
 </header>
 
+<div class="sims-grid">
 <div class="sim-bloco">
   <div class="sim-titulo"><span class="sim-badge sim-badge-a">SIM A</span> Simulação A</div>
   <div class="video-wrapper" id="wrapperA">
@@ -123,6 +126,7 @@ input[type=text]:focus{border-color:var(--accent);}
     <div class="video-progress"><div class="video-progress-bar" id="progC"></div></div>
     <div class="overlay" id="overlayC"><button class="btn-play" onclick="pedirNome('C')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação C</span></div>
   </div>
+</div>
 </div>
 
 <div id="hudLinha">🎣 0.0 m</div>
