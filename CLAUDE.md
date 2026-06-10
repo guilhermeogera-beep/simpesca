@@ -34,7 +34,8 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
 ```
 > **NOTA (OneDrive):** o PWA estava na "Área de Trabalho/simulador de pesca", mas o OneDrive
 > desidratou/moveu essa pasta. A cópia confiável passou a ser `site/` aqui no projeto.
-> **Ícones e vídeos** (`icons/`, `video0..2.mp4`) já estão no GitHub — só re-suba os .html/.js.
+> **Vídeos:** agora são **6, um por peixe** (`video_pirarara.mp4` ... `video_jau.mp4`) — precisam
+> ser subidos no GitHub com esses nomes (os antigos `video0..2.mp4` podem ser removidos).
 
 ### BLE — protocolo
 - Service UUID: `a1b2c3d4-0001-4a5b-8c6d-1234567890ab`
@@ -51,6 +52,22 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   cobre queda de BLE/app travado mesmo se o `onDisconnect` não disparar. No app, perder a conexão
   **pausa a simulação** em andamento (`gattserverdisconnected` → `pausarSim`).
 - Gatilhos processados **no app (JS)**; o ESP32 só recebe potência e envia a contagem.
+
+### UMA simulação POR PEIXE (estrutura atual)
+- **6 espécies** (mesma lista/ordem em player, dashboard e ranking): `pirarara, tambaqui, tucunare,
+  dourado, trairao, jau` (const `ESPECIES=[{id,nome}]`).
+- **Vídeos por peixe:** `video_<id>.mp4` (ex.: `video_pirarara.mp4`) — 6 arquivos no GitHub;
+  `index.html` baixa os 6 (`MEDIA_CACHE simpesca-media-v2`).
+- **Curvas por peixe:** `simpesca_pontos_<id>`. **Migração:** as 3 primeiras espécies caem nas
+  antigas `simpesca_pontos_A|B|C` se não houver curva salva; senão o dashboard **gera a briga
+  característica da espécie** como padrão (`gerarCurvaEspecie`); o player cai no `GATILHOS_PADRAO` embutido.
+- **Player:** cards e filtros de ranking são **gerados dinamicamente** (`simsGrid`, ids `video_<id>`,
+  `wrapper_<id>`...). **Dashboard:** blocos gerados por `montarBlocosSims()` (ids indexados `tl0..tl5`,
+  `curva0..5` etc.); `LETRAS`=ids (chaves de storage), `NOMES`=exibição, `NSIMS`=6. Cada linha tem um
+  botão **🎲** (`regerar(idx)`) que gera a briga da espécie usando os ajustes globais (fisgada/dur/
+  teto/fadiga/puxada — `cfgGerador()`/`FIGHTS`). O seletor de espécies e o botão "↺ Padrão" saíram.
+- **Ranking:** registros usam `sim=<id da espécie>` (ex.: 'pirarara'); exibição via `nomePeixe(id)`
+  (registros antigos 'A'/'B'/'C' aparecem como "Sim A" etc. no filtro "Todas").
 
 ### Encoder / Ranking (no app)
 - `metros = (contagem / 4096) × metrosPorVolta` (× -1 se inverter direção).
@@ -103,6 +120,9 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   `[0, durFis]` de **laranja com "🎣 vai-e-vem"** (lê `fisgadaFisicaCfg().dur`) e **a curva só é desenhada
   a partir de `xStart`** (onde `t=durFis`), pra não sobrepor a fisgada; ao acabar, `aplicarMotor`
   remove `.fisgada` e volta a 🐟 puxando / 🎣 recolher.
+- **Tela inicial (seleção):** os 3 vídeos ficam em **cards compactos lado a lado** (`.sims-grid`,
+  grid `auto-fit minmax(230px,1fr)`, vídeo `aspect-ratio:16/9` com hover azul) — como o jogo roda em
+  fullscreen, os cards servem só pra escolher a simulação.
 - **HUD em tela cheia:** ao dar play o vídeo entra em **fullscreen** (pedido no gesto do clique
   "Começar"). Os elementos `countdownOverlay/pauseOverlay/resultadoOverlay/hudLinha/hudEstado` são
   movidos **pra dentro** do `wrapper` (`OVERLAYS_FS`/`moverOverlaysPara`/`devolverOverlays`) pra
@@ -205,9 +225,10 @@ do vídeo (player) ou no preview (dashboard).
   simulação passa a durar 90s sem alterar código.
 
 ### ⚠️ Ao trocar os vídeos (ou qualquer arquivo cacheado)
-O Service Worker serve do cache. Para forçar o app a baixar os novos vídeos, **incremente a
-versão** do cache: troque `simpesca-v2` → `simpesca-v3` em `service-worker.js` (const
-`CACHE_NAME`) e em `index.html` (const `CACHE_NAME`). Senão o app continua servindo o vídeo antigo.
+O Service Worker serve do cache. Para forçar o app a baixar vídeos novos, **incremente a versão do
+MEDIA_CACHE** em `service-worker.js` E em `index.html` (hoje `simpesca-media-v2`). O shell (HTML/JS)
+é rede-primeiro (`simpesca-shell-v5`) — atualiza sozinho online. Os 6 vídeos por peixe
+(`video_<id>.mp4`) precisam estar no GitHub com esses nomes exatos.
 
 ---
 
