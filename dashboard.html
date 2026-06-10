@@ -50,6 +50,10 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .sim-gauge-bar{width:48px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;border:1px solid var(--border);}
 .sim-gauge-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width 0.15s;}
 .sim-controls{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;flex-wrap:wrap;}
+.gen-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 6px;font-size:0.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+.gen-row label{display:flex;align-items:center;gap:4px;}
+.gen-row input{width:52px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:0.78rem;padding:3px 4px;text-align:center;outline:none;}
+.gen-row input:focus{border-color:var(--accent);}
 .timeline-wrap{position:relative;height:130px;background:#03070b;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 .curve-area{position:absolute;top:0;left:0;right:0;bottom:20px;z-index:2;cursor:crosshair;}
 .curve-svg{position:absolute;inset:0;width:100%;height:100%;}
@@ -180,16 +184,6 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <div class="campo"><label>Potência (%)</label><input type="number" id="pPot" step="1" min="0" max="100"></div>
     <button class="btn btn-red" onclick="removerPonto()">🗑 Remover</button>
     <button class="btn btn-green" onclick="fecharEditorPonto()">✓ Fechar</button>
-  </div>
-
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-    <span class="cal-sub">⚙ Ajustes do gerador — o <b>🎲</b> de cada peixe gera a briga:</span>
-    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="selFisPico" min="0" max="100" value="100" style="width:56px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
-    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="selFisDur" min="0.2" max="4" step="0.1" value="1" style="width:56px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">×</label>
-    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="selEspecieTeto" min="0" max="100" value="100" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
-    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="selEspecieFadiga" min="0" max="100" value="50" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">%</label>
-    <label class="cal-sub" style="display:flex;align-items:center;gap:4px;" title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="selEspeciePuxada" min="5" max="80" value="45" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;padding:5px;text-align:center;">s</label>
-    <span class="cal-sub">clique de novo = nova variação</span>
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -324,6 +318,14 @@ function montarBlocosSims(){
           '<button class="btn btn-accent btnColar" id="colar'+i+'" onclick="colarCurva('+i+')" disabled title="Colar curva copiada">📋</button>'+
           '<div id="tsDisplay'+i+'" class="ts-badge">0:00 / 1:30</div>'+
         '</div>'+
+      '</div>'+
+      '<div class="gen-row">'+
+        '<label title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="fisPico'+i+'" min="0" max="100" value="100">%</label>'+
+        '<label title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="fisDur'+i+'" min="0.2" max="4" step="0.1" value="1">×</label>'+
+        '<label title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="teto'+i+'" min="0" max="100" value="100">%</label>'+
+        '<label title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="fadiga'+i+'" min="0" max="100" value="50">%</label>'+
+        '<label title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="puxada'+i+'" min="5" max="80" value="45">s</label>'+
+        '<span>🎲 = nova briga com estes ajustes</span>'+
       '</div>'+
       '<div id="tl'+i+'" class="timeline-wrap"><div class="curve-area" id="curva'+i+'"></div><div id="playhead'+i+'" class="tl-playhead"></div></div>';
     cont.appendChild(d);
@@ -678,24 +680,37 @@ function peJau(pts,t,pdur,fat){
 }
 function fightJau(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico); }
 const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
-function cfgGerador(){
-  let teto=parseInt(document.getElementById('selEspecieTeto').value); if(!(teto>0)) teto=100; if(teto>100) teto=100;
-  let fadiga=parseInt(document.getElementById('selEspecieFadiga').value); if(!isFinite(fadiga)) fadiga=50; fadiga=Math.max(0,Math.min(100,fadiga));
-  let puxada=parseFloat(document.getElementById('selEspeciePuxada').value); if(!(puxada>0)) puxada=45;
-  let fisPico=parseFloat(document.getElementById('selFisPico').value); if(!(fisPico>0)) fisPico=100; if(fisPico>100) fisPico=100;
-  let fisDur=parseFloat(document.getElementById('selFisDur').value); if(!(fisDur>0)) fisDur=1;
+// Ajustes do gerador POR PEIXE (inputs na linha de cada simulação)
+function cfgGerador(idx){
+  const g=(id,d)=>{ const el=document.getElementById(id+idx); const v=el?parseFloat(el.value):NaN; return isFinite(v)?v:d; };
+  let teto=g('teto',100);   teto=Math.max(1,Math.min(100,teto));
+  let fadiga=g('fadiga',50); fadiga=Math.max(0,Math.min(100,fadiga));
+  let puxada=g('puxada',45); if(!(puxada>0)) puxada=45;
+  let fisPico=g('fisPico',100); if(!(fisPico>0)) fisPico=100; fisPico=Math.min(100,fisPico);
+  let fisDur=g('fisDur',1); if(!(fisDur>0)) fisDur=1;
   return {teto,fadiga,puxada,fisPico,fisDur};
 }
-function gerarCurvaEspecie(idx){ const c=cfgGerador(); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico); }
+function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico); }
 function regerar(idx){
-  const c=cfgGerador();
+  const c=cfgGerador(idx);
   SIMS[idx].pontos=gerarCurvaEspecie(idx); salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
-  salvarGenCfg();
+  salvarGenCfg(idx);
   log('🎲 '+NOMES[idx]+' (teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'×) — nova briga gerada','ok');
 }
-// Persiste/recupera os últimos valores dos campos do gerador
-function salvarGenCfg(){ const m={selEspecieTeto:'simpesca_gen_teto',selEspecieFadiga:'simpesca_gen_fadiga',selEspeciePuxada:'simpesca_gen_puxada',selFisPico:'simpesca_gen_fispico',selFisDur:'simpesca_gen_fisdur'}; for(const id in m) localStorage.setItem(m[id],document.getElementById(id).value); }
-function carregarGenCfg(){ const m={selEspecieTeto:'simpesca_gen_teto',selEspecieFadiga:'simpesca_gen_fadiga',selEspeciePuxada:'simpesca_gen_puxada',selFisPico:'simpesca_gen_fispico',selFisDur:'simpesca_gen_fisdur'}; for(const id in m){ const el=document.getElementById(id); const v=localStorage.getItem(m[id]); if(v!==null) el.value=v; el.addEventListener('change',salvarGenCfg); } }
+// Persiste/recupera os ajustes do gerador POR PEIXE (simpesca_gen_<id>_<campo>)
+const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur']];
+function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); }
+function carregarGenCfg(){
+  for(let i=0;i<NSIMS;i++){ const id=LETRAS[i];
+    GEN_CAMPOS.forEach(([inp,key])=>{
+      const el=document.getElementById(inp+i); if(!el) return;
+      let v=localStorage.getItem('simpesca_gen_'+id+'_'+key);
+      if(v===null) v=localStorage.getItem('simpesca_gen_'+key);   // migra dos ajustes globais antigos
+      if(v!==null) el.value=v;
+      el.addEventListener('change',()=>salvarGenCfg(i));
+    });
+  }
+}
 
 // ══ INIT ══════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
@@ -704,10 +719,10 @@ window.addEventListener('load',()=>{
   document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calOffset').value=offsetMotor();
-  carregarGenCfg();
   carregarFisFis();
   document.getElementById('fisDurSeg').addEventListener('input',()=>renderTodas());   // atualiza a faixa ao vivo
-  montarBlocosSims();
+  montarBlocosSims();          // cria os blocos (inputs por peixe)
+  carregarGenCfg();            // carrega os ajustes salvos de cada peixe
   for(let i=0;i<NSIMS;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();
   reconectar();
