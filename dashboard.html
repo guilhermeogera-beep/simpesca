@@ -59,6 +59,8 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .ponto-handle.sel{background:var(--yellow);box-shadow:0 0 6px var(--yellow);width:10px;height:10px;}
 .ponto-handle.multi{background:var(--green);box-shadow:0 0 6px var(--green);border-color:#fff;width:10px;height:10px;}
 .tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:9;}
+.fisgada-band{position:absolute;top:0;bottom:20px;left:0;z-index:5;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,170,0,0.10),rgba(255,170,0,0.10) 6px,rgba(255,170,0,0.20) 6px,rgba(255,170,0,0.20) 12px);border-right:2px dashed rgba(255,170,0,0.7);}
+.fisgada-band .lbl{position:absolute;top:3px;left:5px;font-size:0.58rem;color:#ffc061;font-weight:700;letter-spacing:0.5px;white-space:nowrap;text-shadow:0 1px 2px #000;}
 #pontoEditor{display:none;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
 #pontoEditor .campo{display:flex;flex-direction:column;gap:3px;}
 #pontoEditor label{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
@@ -284,6 +286,7 @@ async function ligar(device){
 }
 // ── FISGADA FÍSICA (config + teste) ───────────────────────────
 function lerFisFis(){ return { pot:Math.max(0,Math.min(100,parseFloat(document.getElementById('fisPot').value)||0)), voltas:Math.max(1,parseInt(document.getElementById('fisVoltas').value)||1), dur:Math.max(0,parseFloat(document.getElementById('fisDurSeg').value)||0) }; }
+function fisFisDurSeg(){ const el=document.getElementById('fisDurSeg'); if(el){ const v=parseFloat(el.value); if(isFinite(v)) return Math.max(0,v); } const s=parseFloat(localStorage.getItem('simpesca_fisfis_dur')); return isFinite(s)?Math.max(0,s):5; }
 function salvarFisFis(){ const c=lerFisFis(); localStorage.setItem('simpesca_fisfis_pot',c.pot); localStorage.setItem('simpesca_fisfis_voltas',c.voltas); localStorage.setItem('simpesca_fisfis_dur',c.dur); log('Fisgada física salva: '+c.pot+'% · '+c.voltas+' volta(s) · '+c.dur+'s','ok'); }
 function carregarFisFis(){ const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; }; document.getElementById('fisPot').value=g('simpesca_fisfis_pot',15); document.getElementById('fisVoltas').value=g('simpesca_fisfis_voltas',1); document.getElementById('fisDurSeg').value=g('simpesca_fisfis_dur',5); }
 function enviarFisgadaFisica(c){ if(!fisgadaChar){ log('Conecte o Bluetooth (firmware sem fisgada física)','err'); return; } const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot),Math.round(c.voltas),ms&0xFF,(ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
@@ -390,6 +393,12 @@ function renderCurva(idx){
   area.innerHTML=svg;
   pts.forEach((p,i)=>{ const h=document.createElement('div'); let cls='ponto-handle'; if(idx===simAtiva){ if(multiSel.indexOf(p)>-1) cls+=' multi'; else if(i===selPonto) cls+=' sel'; } h.className=cls; h.style.left=(p.t/DURACAO*100)+'%'; h.style.top=(100-p.pot)+'%'; h.addEventListener('mousedown',e=>iniciarDragPonto(e,idx,i)); area.appendChild(h); });
   const est=document.getElementById('estLinha'+idx); if(est) est.textContent='🐟 ≈ '+estimarLinha(pts).toFixed(1)+' m';
+  // faixa da FISGADA FÍSICA (0..dur) na linha de simulação
+  const wrap=document.getElementById('tl'+idx); let band=wrap.querySelector('.fisgada-band'); const durFis=fisFisDurSeg();
+  if(durFis>0){
+    if(!band){ band=document.createElement('div'); band.className='fisgada-band'; band.innerHTML='<span class="lbl">🎣 fisgada física</span>'; wrap.appendChild(band); }
+    band.style.width=Math.min(100,(durFis/DURACAO)*100)+'%'; band.style.display='block';
+  } else if(band){ band.style.display='none'; }
 }
 function renderTodas(){ for(let i=0;i<3;i++) renderCurva(i); }
 
@@ -720,6 +729,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calOffset').value=offsetMotor();
   carregarGenCfg();
   carregarFisFis();
+  document.getElementById('fisDurSeg').addEventListener('input',()=>renderTodas());   // atualiza a faixa ao vivo
   for(let i=0;i<3;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();
   reconectar();
