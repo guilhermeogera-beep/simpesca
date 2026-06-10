@@ -19,7 +19,8 @@ header h1{font-size:1rem;letter-spacing:4px;color:var(--accent);text-transform:u
 #btnBT{font-size:0.7rem;padding:6px 14px;border:1px solid var(--accent);border-radius:20px;background:rgba(0,212,255,0.08);color:var(--accent);cursor:pointer;font-family:inherit;letter-spacing:1px;}
 #btnBT.conectado{border-color:var(--green);color:var(--green);background:rgba(0,230,118,0.1);}
 #btnBT.erro{border-color:var(--red);color:var(--red);}
-.btn-dash{font-size:0.65rem;padding:6px 10px;border:1px solid var(--dim);border-radius:6px;background:transparent;color:var(--dim);cursor:pointer;font-family:inherit;text-decoration:none;letter-spacing:1px;}
+.btn-dash{font-size:0.65rem;padding:6px 10px;border:1px solid #3d5d7e;border-radius:6px;background:rgba(20,40,64,0.4);color:#b9d2e6;cursor:pointer;font-family:inherit;text-decoration:none;letter-spacing:1px;}
+.btn-dash:hover{color:#fff;border-color:var(--accent);}
 .sim-bloco{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;}
 .sim-titulo{display:flex;align-items:center;gap:10px;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
 .sim-badge{padding:2px 8px;border-radius:4px;font-size:0.6rem;font-weight:700;letter-spacing:1px;}
@@ -168,7 +169,8 @@ input[type=text]:focus{border-color:var(--accent);}
 const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
 const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
 const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
-let bleDevice=null, motorChar=null, linhaChar=null, contagemEncoder=0;
+const CHAR_FISGADA_UUID="a1b2c3d4-0004-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null, linhaChar=null, fisgadaChar=null, contagemEncoder=0;
 let contAnt=0, primeiraLeitura=true, metrosGanhos=0, metrosPerdidos=0, contando=false;
 function btUI(c,t){ const b=document.getElementById('btnBT'); b.className=c; b.textContent=t; }
 async function conectarBLE(){
@@ -197,8 +199,16 @@ async function ligar(device){
       contAnt=nova; contagemEncoder=nova; atualizarLinha();
     });
   }catch(e){}
+  try{ fisgadaChar=await service.getCharacteristic(CHAR_FISGADA_UUID); }catch(e){ fisgadaChar=null; }
   btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
 }
+// ── Fisgada física (vai-e-vem do relé) ────────────────────────
+function fisgadaFisicaCfg(){
+  const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; };
+  return { pot:Math.max(0,Math.min(100,g('simpesca_fisfis_pot',15))), voltas:Math.max(1,g('simpesca_fisfis_voltas',1)), dur:Math.max(0,g('simpesca_fisfis_dur',5)) };
+}
+function enviarFisgadaFisica(c){ if(!fisgadaChar) return; const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot), Math.round(c.voltas), ms&0xFF, (ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
+function pararFisgadaFisica(){ if(!fisgadaChar) return; try{ const b=new Uint8Array([0,0,0,0]); fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
 async function tentarReconectar(){
   if(!navigator.bluetooth||!navigator.bluetooth.getDevices) return;
   try{ const d=await navigator.bluetooth.getDevices(); if(d.length){ btUI('','🔵 Reconectando...'); await ligar(d[0]).catch(()=>btUI('','🔵 Conectar')); } }catch(e){}
@@ -384,16 +394,24 @@ function iniciarSim(id){
   sim.estaRodando=true;
   sim.overlay.classList.add('oculto');
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
-  contando=true;                          // começa a contar a linha recolhida
   emJogo=true; simTocando=id; atualizarVisibilidadeHUD();
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
-  sim.intervalo=loopSim(sim);
+  const fis=fisgadaFisicaCfg();
+  if(fisgadaChar && fis.dur>0 && fis.pot>0){
+    contando=false;                        // não conta as puxadinhas da fisgada física
+    enviarFisgadaFisica(fis);              // ESP faz o vai-e-vem com o relé
+    const est=document.getElementById('hudEstado'); est.classList.add('puxando'); est.classList.remove('recolher'); est.textContent='🎣 FISGOU! segure...';
+    sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
+  } else {
+    contando=true;                         // sem fisgada física: curva já começa
+    sim.intervalo=loopSim(sim);
+  }
 }
-function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica(); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
 function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; simTocando=simEmPausa; atualizarVisibilidadeHUD(); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
 function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
 function encerrarSim(id, sairFS, salvar){
-  const sim=SIMS[id]; clearInterval(sim.intervalo);
+  const sim=SIMS[id]; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica();
   sim.estaRodando=false; contando=false; emJogo=false; simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
