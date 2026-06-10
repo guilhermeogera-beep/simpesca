@@ -16,6 +16,7 @@
 - ESP32-C3 Mini
 - MCP4725 (I2C 0x60) — motor, saída 1.0–3.5V
 - **AS5600** (I2C 0x36) — encoder magnético de ângulo absoluto (mede a linha recolhida)
+- **Relé inversor de rotação do motor** no **GPIO 10** (LOW=normal, HIGH=invertido) — usado na fisgada física
 - Tudo no MESMO barramento I2C: SDA=8, SCL=9. AS5600 também: VCC=3.3V, GND, ímã diametral no eixo.
 
 ### Arquivos da versão BLE
@@ -40,6 +41,10 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
 - **Motor** `a1b2c3d4-0002-...` (WRITE + WRITE_NR): app escreve **1 byte (0–100)** = potência %.
 - **Linha** `a1b2c3d4-0003-...` (READ + NOTIFY + WRITE): ESP32 **notifica** a contagem do encoder
   como **int32 little-endian** (4096 contagens/volta); app **escreve** qualquer valor para **zerar**.
+- **Fisgada física** `a1b2c3d4-0004-...` (WRITE + WRITE_NR): app escreve **4 bytes** `[pot%, voltas, durLo, durHi]`
+  (duração em ms LE) pra disparar; `[0,...]` cancela. O ESP liga o motor em `pot%` e **inverte o relé**
+  a cada `voltas` do encoder (vai-e-vem), por `dur` ms — depois para sozinho (motor 0, relé normal).
+  Durante a fisgada o ESP **ignora comandos do motor** e **alimenta o watchdog** sozinho.
 - Ao desconectar, o ESP32 **zera o motor** (segurança) e volta a anunciar.
 - **Trava de segurança (watchdog):** o app envia a potência ~10x/s durante a sim; se o ESP32 ficar
   `MOTOR_TIMEOUT_MS` (1200ms) **sem comando** com o motor ligado, ele **zera o DAC sozinho** —
@@ -57,6 +62,8 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   (`linhaCarretel()` = `contagemParaMetros(contagemEncoder)`, posição absoluta) **acumula entre jogadores**
   e só zera no **re-spool manual** (`zerarEncoder`: botão **⟲ LINHA** no player / **⟲ Zerar contagem** no dashboard).
 - **Dashboard (teste):** card mostra Ganhos / Perdidos (deltas do teste) e **📍 Linha no carretel** (= `linhaCarretel`, o que dispara a trava).
+  Botão **⇄ Inverter lado** (`inverterLado`) troca o sentido do encoder (`simpesca_cal_inv`) e os acumulados ganhos ⇄ perdidos.
+  (A antiga checkbox "Inverter direção" da calibração foi removida — a inversão agora é só por esse botão.)
 - Calibração em `localStorage`: `simpesca_cal_mpv` (metros por volta), `simpesca_cal_inv` ('0'/'1'),
   `simpesca_cal_limite` (**limite de linha em m**, padrão 50 — total que o carretel/vara comporta).
   Ajustável no dashboard (inclui assistente: zerar → recolher X m → calcular m/volta).
@@ -69,6 +76,7 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   então play/manual **não rodam o motor** acima do limite. A linha mora **no app/encoder** (não precisa
   reiniciar o ESP): libera no **re-spool** (`zerarEncoder` — ⟲ LINHA no player / ⟲ Zerar contagem no
   dashboard, que também manda zerar a contagem no ESP) ou quando a linha cai abaixo do limite.
+  O botão **⟲ Zerar contadores** no dashboard também **zera a linha do carretel** (encoder + ESP), além dos contadores de teste.
   **Não zera entre jogadas** (de propósito: a linha é compartilhada e pode acabar ao longo das jogadas).
 - Ranking em `localStorage` `simpesca_ranking`: `[{nome, metros, sim, data}]`. Nome digitado
   antes de cada jogada; salvo ao terminar o vídeo. Visualização em `ranking.html` **e** num
@@ -84,10 +92,17 @@ site/  ← FONTE CANÔNICA do PWA (publicar em /simpesca/ no GitHub)
   (`toggleConfig`) com 4 caixas (`cfgLinha/cfgEstado/cfgBarra/cfgCarretel`) que ligam/desligam cada HUD,
   persistido em `simpesca_hud_linha|estado|barra|carretel` (carretel **off** por padrão). O
   **`hudCarretel`** (canto sup. direito) mostra **📍 Carretel: linhaCarretel / limite m** (atualizado em
-  `atualizarLinha`), ficando **vermelho** (`.travado`) quando `|linhaCarretel| ≥ |limite|`. **NÃO** entra no fullscreen (fica fora da
+  `atualizarLinha`), ficando **vermelho** (`.travado`) quando `|linhaCarretel| ≥ |limite|`.
+- **Botão ⟲ LINHA (`btnLinha`, cabeçalho):** além de zerar a linha (`resetarLinha`), mostra ao vivo
+  **⟲ linhaCarretel / limite m** (atualizado em `atualizarLinha`), ficando vermelho quando travado. **NÃO** entra no fullscreen (fica fora da
   `OVERLAYS_FS`) — configura-se na tela inicial; fecha ao iniciar o jogo. `hudCfg{}` + flag `emJogo`
   + `simTocando` controlam a visibilidade via **`atualizarVisibilidadeHUD()`**. Os HUDs em si
   (`hudLinha/hudEstado/hudTimeline`) entram na `OVERLAYS_FS` (movidos pro `wrapper` no fullscreen).
+- **Marcação da fisgada física no player:** durante a fisgada (0..`dur`s) o `hudEstado` mostra **🎣 FISGADA!
+  vai-e-vem** (classe `.fisgada`, laranja) e a barra de antecipação (`desenharTimeline`) pinta a zona
+  `[0, durFis]` de **laranja com "🎣 vai-e-vem"** (lê `fisgadaFisicaCfg().dur`) e **a curva só é desenhada
+  a partir de `xStart`** (onde `t=durFis`), pra não sobrepor a fisgada; ao acabar, `aplicarMotor`
+  remove `.fisgada` e volta a 🐟 puxando / 🎣 recolher.
 - **HUD em tela cheia:** ao dar play o vídeo entra em **fullscreen** (pedido no gesto do clique
   "Começar"). Os elementos `countdownOverlay/pauseOverlay/resultadoOverlay/hudLinha/hudEstado` são
   movidos **pra dentro** do `wrapper` (`OVERLAYS_FS`/`moverOverlaysPara`/`devolverOverlays`) pra
@@ -116,6 +131,9 @@ do vídeo (player) ou no preview (dashboard).
   `gatilhosParaPontos()` (amostra as fases sub/pico/trans/pico2/desc como pontos).
 - O formato antigo de **gatilhos** (sub1→pico1→trans→pico2→desc) virou só fonte de migração;
   o editor visual passou a ser por pontos (clicar/arrastar). Import aceita os dois formatos.
+- **Offset do motor (deadband):** o motor só gira a partir de ~X% (`simpesca_cal_offset`, padrão **15**,
+  ajustável no card de calibração). `comOffset(pct)` remapeia: `0` → 0 (desligado); `>0` → `offset + (100−offset)·pct/100`.
+  Aplicado em `aplicarMotor` no **player E no dashboard** (mesma calibração via localStorage), depois da trava.
 
 ### Editor de pontos — seleção e atalhos (dashboard)
 - **Clique** = novo ponto · **arraste** = mover · **clique no ponto** = editar (t/pot) ou remover.
@@ -125,6 +143,21 @@ do vídeo (player) ou no preview (dashboard).
   marcados, **Esc** limpa.
 - Clipboard único `clip={pts,modo}`: 📄 copia a curva inteira (`modo:'replace'`), Ctrl+C copia os
   pontos marcados (`modo:'add'`); 📋/Ctrl+V colam respeitando o modo. `simHover` define o destino do Ctrl+V.
+
+### Fisgada física (motor + relé) — vai-e-vem no início
+- **Conceito:** nos primeiros segundos, o ESP liga o motor em ~15% e **inverte o relé** (GPIO 10) a cada
+  1–2 voltas do encoder, fazendo a vara dar **puxadinhas** (como o peixe mordiscando). Depois entra a curva.
+- **Firmware:** característica `CHAR_FISGADA_UUID` + máquina de estado em `loop()` (`fisgadaAtiva`,
+  `fisgadaFlip`=voltas·4096, inverte `releEstado` quando `|contagem−fisgadaRef| ≥ fisgadaFlip`).
+- **Player:** em `iniciarSim`, se conectado e `dur>0`, chama `enviarFisgadaFisica()`, deixa `contando=false`
+  (não conta as puxadinhas) e agenda `sim.fisgadaTimer` pra iniciar a curva (`loopSim`) após `dur` s.
+  `pausarSim`/`encerrarSim` cancelam (`clearTimeout` + `pararFisgadaFisica`).
+- **Config (dashboard):** card "Fisgada física" com **potência/voltas/duração** (`simpesca_fisfis_pot|voltas|dur`),
+  botões **💾 Salvar · ▶ Testar · ■ Parar**. O player lê esses valores via `fisgadaFisicaCfg()`.
+  O **▶ play da prévia (`playSim`)** também dispara a fisgada física (`enviarFisgadaFisica`); `pauseSim`/`stopSim` cancelam.
+- **Faixa na timeline:** `renderCurva` desenha uma **`.fisgada-band`** (listra laranja, 0→`dur`s) em cada
+  linha de simulação pra visualizar o trecho da fisgada física; atualiza ao vivo ao mudar `fisDurSeg`
+  (`fisFisDurSeg()` lê o campo/`simpesca_fisfis_dur`).
 
 ### Gerador de briga por espécie (dashboard)
 - Botões 🐟 **Pirarará / Tambaqui / Tucunaré** geram uma curva de pontos `{t,pot}` com a "assinatura"
@@ -137,11 +170,13 @@ do vídeo (player) ou no preview (dashboard).
   distribuído em N trancos com a "cara" da espécie (`pePirarara/peTambaqui/peTucunare`); o resto dos ~90s
   vira **JANELAS DE 0%** onde o pescador recolhe. Puxada maior = **blocos de motor mais longos** = peixe
   puxa mais linha (equilibra contra o recolhimento do pescador; confira na estimativa `🐟 ≈ X m`).
-- **Fisgada (saque inicial, `fazerFisgada`):** o 1º tranco (`k===0`) usa uma abertura especial por
-  espécie (`fisEstilo`): **explosiva** (snap instantâneo + corrida — tucunaré/dourado/trairão),
-  **lenta** (toque leve → hesita → carrega o peso devagar — jaú), **teimosa** (testa→alivia→crava —
-  tambaqui), **forte** (saque firme — pirarará). Toda fisgada começa com uma **mini rampa de ~2s fixos**
-  (sobe devagar a ~6→20%) pra o usuário **se preparar** antes do saque. **Ajustável** por `selFisPico` (% — pico do saque,
+- **Fisgada (`fisgadaStrike`):** a briga gerada **começa em `t0 = fisFisDurSeg()`** (fica em 0% durante a
+  fisgada física, que cobre o começo) — `buildFight` insere `{0,0}` e `{t0,0}` e roda de `t0` em diante.
+  No 1º tranco (`k===0`) toca o **saque** (`fisgadaStrike`); os 3 picos de preparação (0→20→20→0) foram
+  **removidos** (a fisgada física substitui). O saque tem caráter por espécie (`fisEstilo`): **explosiva** (snap instantâneo + corrida —
+  tucunaré/dourado/trairão), **lenta** (toque leve → hesita → carrega o peso devagar — jaú), **teimosa**
+  (testa→alivia→crava — tambaqui), **forte** (saque firme — pirarará). O **ciclo do saque se repete uma 2ª
+  vez** num tranco do **meio→fim** (`kFis2`, sem a preparação). **Ajustável** por `selFisPico` (% — pico do saque,
   marcado com `fis:true` e **isento do teto**, então pode ser mais forte que o corpo da briga) e
   `selFisDur` (× — alonga/encurta a duração). Persistem em `simpesca_gen_fispico|fisdur`.
 - **Assinaturas distintas:** Pirarará = blocos longos, alta e **estável** (N 4–6, mergulho pesado);
