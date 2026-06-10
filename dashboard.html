@@ -521,10 +521,11 @@ document.addEventListener('keydown',e=>{
 
 // ══ PLAY / PAUSE / STOP (preview) ─────────────────────────────
 function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; sim.tempoAtual=0;
+  if(fisgadaChar) enviarFisgadaFisica(lerFisFis());   // dispara a fisgada física no começo (o ESP ignora a curva durante ela)
   sim.intervalo=setInterval(()=>{ sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO); const pot=interpolarPontos(sim.pontos,sim.tempoAtual); aplicarMotor(pot); atualizarSimGauge(idx,pot); atualizarInterfaceTempo(); if(sim.tempoAtual>=DURACAO) stopSim(idx); },100);
 }
-function pauseSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); }
-function stopSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); sim.tempoAtual=0; atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0); }
+function pauseSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); pararFisgadaFisica(); }
+function stopSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); pararFisgadaFisica(); sim.tempoAtual=0; atualizarInterfaceTempo(); atualizarSimGauge(idx,0); aplicarMotor(0); }
 function fmt(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
 function atualizarInterfaceTempo(){ for(let i=0;i<3;i++){ const el=document.getElementById('tsDisplay'+i); if(el) el.textContent=`${fmt(SIMS[i].tempoAtual)} / ${fmt(DURACAO)}`; const ph=document.getElementById('playhead'+i); if(ph) ph.style.left=`${(SIMS[i].tempoAtual/DURACAO)*100}%`; } }
 
