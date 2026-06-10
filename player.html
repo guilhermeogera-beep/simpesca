@@ -102,32 +102,7 @@ input[type=text]:focus{border-color:var(--accent);}
   </div>
 </header>
 
-<div class="sims-grid">
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-a">SIM A</span> Simulação A</div>
-  <div class="video-wrapper" id="wrapperA">
-    <video id="videoA" preload="metadata" playsinline><source src="video0.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progA"></div></div>
-    <div class="overlay" id="overlayA"><button class="btn-play" onclick="pedirNome('A')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação A</span></div>
-  </div>
-</div>
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-b">SIM B</span> Simulação B</div>
-  <div class="video-wrapper" id="wrapperB">
-    <video id="videoB" preload="metadata" playsinline><source src="video1.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progB"></div></div>
-    <div class="overlay" id="overlayB"><button class="btn-play" onclick="pedirNome('B')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação B</span></div>
-  </div>
-</div>
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-c">SIM C</span> Simulação C</div>
-  <div class="video-wrapper" id="wrapperC">
-    <video id="videoC" preload="metadata" playsinline><source src="video2.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progC"></div></div>
-    <div class="overlay" id="overlayC"><button class="btn-play" onclick="pedirNome('C')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">Simulação C</span></div>
-  </div>
-</div>
-</div>
+<div class="sims-grid" id="simsGrid"></div>
 
 <div id="hudLinha">🎣 0.0 m</div>
 <div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
@@ -160,9 +135,6 @@ input[type=text]:focus{border-color:var(--accent);}
   <div class="titulo-grande">🏆 Ranking</div>
   <div class="rk-filtros" id="rkFiltros">
     <button class="rk-filtro ativo" data-sim="todos" onclick="filtrarRanking('todos',this)">Todas</button>
-    <button class="rk-filtro" data-sim="A" onclick="filtrarRanking('A',this)">Sim A</button>
-    <button class="rk-filtro" data-sim="B" onclick="filtrarRanking('B',this)">Sim B</button>
-    <button class="rk-filtro" data-sim="C" onclick="filtrarRanking('C',this)">Sim C</button>
   </div>
   <div class="rk-lista" id="rkLista"></div>
   <div class="fs-btns"><button class="btn-fs btn-sec" onclick="fecharRanking()">Fechar</button></div>
@@ -266,10 +238,13 @@ function gatilhosParaPontos(gatilhos){
   });
   return p.map(x=>({t:Math.round(x.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(x.pot)))})).sort((a,b)=>a.t-b.t);
 }
-function carregarPontos(letra){
-  try{ const r=localStorage.getItem('simpesca_pontos_'+letra); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
-  try{ const g=localStorage.getItem('simpesca_gatilhos_'+letra); if(g){ const d=JSON.parse(g); if(Array.isArray(d)&&d.length) return gatilhosParaPontos(d); } }catch(e){}
-  return gatilhosParaPontos(GATILHOS_PADRAO[letra]);
+function carregarPontos(id){
+  // 1º: curva salva da espécie (editada/gerada no dashboard)
+  try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
+  // fallback: curvas antigas A/B/C (cíclico) ou padrão embutido
+  const idx=Math.max(0,ESPECIES.findIndex(e=>e.id===id)), L=['A','B','C'][idx%3];
+  try{ const r=localStorage.getItem('simpesca_pontos_'+L); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
+  return gatilhosParaPontos(GATILHOS_PADRAO[L]);
 }
 function interpolarPontos(pontos, t){
   if(!pontos.length) return 0;
@@ -281,23 +256,47 @@ function interpolarPontos(pontos, t){
 }
 
 // ══ ESTADO ════════════════════════════════════════════════════
-const SIMS={
-  A:{letra:'A',video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false},
-  B:{letra:'B',video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false},
-  C:{letra:'C',video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false}
-};
+// UMA simulação POR PEIXE: cada espécie tem seu vídeo (video_<id>.mp4) e sua curva (simpesca_pontos_<id>)
+const ESPECIES=[
+  {id:'pirarara', nome:'Pirarará'},
+  {id:'tambaqui', nome:'Tambaqui'},
+  {id:'tucunare', nome:'Tucunaré'},
+  {id:'dourado',  nome:'Dourado'},
+  {id:'trairao',  nome:'Trairão'},
+  {id:'jau',      nome:'Jaú'}
+];
+function nomePeixe(id){ const e=ESPECIES.find(x=>x.id===id); return e?e.nome:id; }
+const SIMS={};
+ESPECIES.forEach(e=>{ SIMS[e.id]={letra:e.id,nome:e.nome,video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false}; });
 let simEmContagem=null, simEmPausa=null, nomeJogador='';
 
 window.addEventListener('load',()=>{
-  ['A','B','C'].forEach(id=>{
-    const s=SIMS[id];
-    s.video=document.getElementById('video'+id); s.wrapper=document.getElementById('wrapper'+id);
-    s.overlay=document.getElementById('overlay'+id); s.prog=document.getElementById('prog'+id);
+  // monta os cards (1 por peixe)
+  const grid=document.getElementById('simsGrid');
+  ESPECIES.forEach((e,i)=>{
+    const cls=['a','b','c'][i%3];
+    const bloco=document.createElement('div'); bloco.className='sim-bloco';
+    bloco.innerHTML=
+      '<div class="sim-titulo"><span class="sim-badge sim-badge-'+cls+'">🐟 '+e.nome.toUpperCase()+'</span></div>'+
+      '<div class="video-wrapper" id="wrapper_'+e.id+'">'+
+        '<video id="video_'+e.id+'" preload="metadata" playsinline><source src="video_'+e.id+'.mp4" type="video/mp4"></video>'+
+        '<div class="video-progress"><div class="video-progress-bar" id="prog_'+e.id+'"></div></div>'+
+        '<div class="overlay" id="overlay_'+e.id+'"><button class="btn-play" onclick="pedirNome(\''+e.id+'\')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">'+e.nome+'</span></div>'+
+      '</div>';
+    grid.appendChild(bloco);
+  });
+  ESPECIES.forEach(e=>{
+    const id=e.id, s=SIMS[id];
+    s.video=document.getElementById('video_'+id); s.wrapper=document.getElementById('wrapper_'+id);
+    s.overlay=document.getElementById('overlay_'+id); s.prog=document.getElementById('prog_'+id);
     s.pontos=carregarPontos(id);
     s.video.addEventListener('click',()=>{ if(s.estaRodando) pausarSim(id); });
     s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
     s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
   });
+  // filtros do ranking (1 por peixe)
+  const rkF=document.getElementById('rkFiltros');
+  ESPECIES.forEach(e=>{ const b=document.createElement('button'); b.className='rk-filtro'; b.dataset.sim=e.id; b.textContent=e.nome; b.onclick=()=>filtrarRanking(e.id,b); rkF.appendChild(b); });
   document.getElementById('inputNome').value=localStorage.getItem('simpesca_ultimo_nome')||'';
   carregarHudCfg();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
@@ -449,7 +448,7 @@ function mostrarResultado(nome, metros, sim){
   const pos=naSim.filter(r=>r.metros>m).length + 1;
   const medalha = pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
   document.getElementById('resultadoMetros').textContent=metros.toFixed(1)+' m';
-  document.getElementById('resultadoPos').textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' na Sim '+sim;
+  document.getElementById('resultadoPos').textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' no '+nomePeixe(sim);
   document.getElementById('resultadoNome').textContent=nome;
   const rec=document.getElementById('resultadoRecorde');
   if(total===1){ rec.textContent='🎣 Primeira jogada desta simulação!'; rec.style.display='block'; }
@@ -475,7 +474,7 @@ function renderRanking(){
     const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
     const medalha=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º';
     const d=new Date(r.data); const data=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="rk-linha ${cls}"><div class="rk-pos">${medalha}</div><div class="rk-info"><div class="rk-nome">${escHtml(r.nome)}</div><div class="rk-meta">Sim ${r.sim} · ${data}</div></div><div class="rk-metros">${r.metros.toFixed(1)} m</div></div>`;
+    return `<div class="rk-linha ${cls}"><div class="rk-pos">${medalha}</div><div class="rk-info"><div class="rk-nome">${escHtml(r.nome)}</div><div class="rk-meta">🐟 ${nomePeixe(r.sim)} · ${data}</div></div><div class="rk-metros">${r.metros.toFixed(1)} m</div></div>`;
   }).join('');
 }
 

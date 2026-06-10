@@ -1,6 +1,6 @@
 // Dois caches: SHELL (app, atualiza fácil) e MEDIA (vídeos, persistente)
-const SHELL_CACHE = 'simpesca-shell-v4';
-const MEDIA_CACHE = 'simpesca-media-v1';
+const SHELL_CACHE = 'simpesca-shell-v5';
+const MEDIA_CACHE = 'simpesca-media-v2';   // v2: vídeos por peixe (video_<especie>.mp4)
 
 const APP_SHELL = [
   '/simpesca/',
