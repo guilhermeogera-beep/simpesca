@@ -179,7 +179,7 @@ async function ligar(device){
   try{ fisgadaChar=await service.getCharacteristic(CHAR_FISGADA_UUID); }catch(e){ fisgadaChar=null; }
   btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
 }
-// ── Fisgada física (vai-e-vem do relé) ────────────────────────
+// ── Fisgada física (puxadas do motor no início) ───────────────
 function fisgadaFisicaCfg(){
   const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; };
   return { pot:Math.max(0,Math.min(100,g('simpesca_fisfis_pot',15))), voltas:Math.max(1,g('simpesca_fisfis_voltas',1)), dur:Math.max(0,g('simpesca_fisfis_dur',5)) };
@@ -343,13 +343,13 @@ function desenharTimeline(sim){
     if(!started){ px=x; py=y; started=true; continue; }
     const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
   ctx.restore();
-  // zona da FISGADA FÍSICA (0..durFis) — só a faixa laranja "vai-e-vem"
+  // zona da FISGADA FÍSICA (0..durFis) — só a faixa laranja
   if(durFis>0){
     const xa=Math.max(0,((0-t0)/span)*W), xb=Math.min(W,xFis);
     if(xb>xa){
       ctx.fillStyle='rgba(255,170,0,0.28)'; ctx.fillRect(xa,0,xb-xa,H);
       ctx.fillStyle='rgba(255,170,0,0.85)'; ctx.fillRect(xb-1.5,0,3,H);
-      if(xb-xa>46){ ctx.fillStyle='#ffd089'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎣 vai-e-vem',(xa+xb)/2,H/2); }
+      if(xb-xa>46){ ctx.fillStyle='#ffd089'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎣 fisgada',(xa+xb)/2,H/2); }
     }
   }
   // marcador losango "AGORA"
@@ -418,8 +418,8 @@ function iniciarSim(id){
   const fis=fisgadaFisicaCfg();
   if(fisgadaChar && fis.dur>0 && fis.pot>0){
     contando=false;                        // não conta as puxadinhas da fisgada física
-    enviarFisgadaFisica(fis);              // ESP faz o vai-e-vem com o relé
-    const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! vai-e-vem...';
+    enviarFisgadaFisica(fis);              // ESP dá as puxadas (rampa-voltas-rampa-pausa)
+    const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! segure...';
     sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
   } else {
     contando=true;                         // sem fisgada física: curva já começa

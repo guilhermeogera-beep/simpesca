@@ -158,18 +158,18 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   </div>
 </div>
 
-<!-- FISGADA FÍSICA (motor + relé) -->
+<!-- FISGADA FÍSICA (puxadas do motor) -->
 <div class="card">
-  <div class="secao-titulo"><span>🎣</span> Fisgada física (motor + relé) — vai-e-vem no início</div>
+  <div class="secao-titulo"><span>🎣</span> Fisgada física — puxadas do motor no início</div>
   <div class="cal-grid">
     <div class="cal-campo"><label>Potência (%)</label><input type="number" id="fisPot" step="1" min="0" max="100" value="15"></div>
-    <div class="cal-campo"><label>Voltas p/ inverter</label><input type="number" id="fisVoltas" step="1" min="1" max="20" value="1"></div>
+    <div class="cal-campo"><label>Voltas por puxada</label><input type="number" id="fisVoltas" step="1" min="1" max="20" value="1"></div>
     <div class="cal-campo"><label>Duração (s)</label><input type="number" id="fisDurSeg" step="0.5" min="0" max="30" value="5"></div>
     <button class="btn btn-green" onclick="salvarFisFis()">💾 Salvar</button>
     <button class="btn btn-accent" onclick="testarFisgada()">▶ Testar</button>
     <button class="btn btn-red" onclick="pararFisgadaFisica()">■ Parar</button>
   </div>
-  <div class="cal-help">O ESP liga o motor nessa <b>potência</b> e <b>inverte o relé</b> (GPIO 10) a cada N <b>voltas</b> do encoder — a vara dá puxadinhas por <b>X s</b>. Depois entra a curva normal. O player usa estes valores no início de cada jogada.</div>
+  <div class="cal-help">O ESP dá <b>puxadas</b>: rampa sobe até a <b>potência</b>, roda as <b>voltas</b>, rampa desce a 0 e pausa — repetindo pela <b>duração</b>. Depois entra a curva normal. O player usa estes valores no início de cada jogada.</div>
 </div>
 
 <!-- EDITOR DE CURVA POR PONTOS -->
@@ -234,7 +234,7 @@ function salvarFisFis(){ const c=lerFisFis(); localStorage.setItem('simpesca_fis
 function carregarFisFis(){ const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; }; document.getElementById('fisPot').value=g('simpesca_fisfis_pot',15); document.getElementById('fisVoltas').value=g('simpesca_fisfis_voltas',1); document.getElementById('fisDurSeg').value=g('simpesca_fisfis_dur',5); }
 function enviarFisgadaFisica(c){ if(!fisgadaChar){ log('Conecte o Bluetooth (firmware sem fisgada física)','err'); return; } const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot),Math.round(c.voltas),ms&0xFF,(ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
 function pararFisgadaFisica(){ if(!fisgadaChar) return; try{ const b=new Uint8Array([0,0,0,0]); fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} log('Fisgada física parada','info'); }
-function testarFisgada(){ const c=lerFisFis(); salvarFisFis(); enviarFisgadaFisica(c); log('▶ Testando fisgada física ('+c.dur+'s · '+c.voltas+' volta/flip)','info'); }
+function testarFisgada(){ const c=lerFisFis(); salvarFisFis(); enviarFisgadaFisica(c); log('▶ Testando fisgada física ('+c.dur+'s · '+c.voltas+' volta(s)/puxada)','info'); }
 async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
 function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
 function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; travaAtiva=false; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Linha do carretel zerada (re-spool)','info'); }
