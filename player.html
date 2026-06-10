@@ -324,21 +324,25 @@ function desenharTimeline(sim){
   const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, P=sim.pontos;
   const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;
   const yOf=t=>H-(interpolarPontos(P,t)/100)*(H-4)-2;
+  const durFis=fisgadaFisicaCfg().dur;
+  const xFis=durFis>0 ? ((durFis-t0)/span)*W : 0;        // borda direita da fisgada
+  const xStart=Math.min(W, Math.max(0, xFis));           // a CURVA só começa aqui (depois da fisgada)
   ctx.clearRect(0,0,W,H);
-  // área preenchida (degradê)
-  ctx.beginPath(); ctx.moveTo(0,H);
-  for(let i=0;i<=N;i++) ctx.lineTo((i/N)*W, yOf(t0+(i/N)*span));
+  // área preenchida (degradê) — só a partir do fim da fisgada
+  ctx.beginPath(); ctx.moveTo(xStart,H);
+  for(let i=0;i<=N;i++){ const x=(i/N)*W; if(x<xStart) continue; ctx.lineTo(x, yOf(t0+(x/W)*span)); }
   ctx.lineTo(W,H); ctx.closePath();
   const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(0,212,255,0.40)'); g.addColorStop(1,'rgba(0,212,255,0.02)'); ctx.fillStyle=g; ctx.fill();
-  // linha brilhante, cor pelo estado (verde=recolher · vermelho=puxando)
+  // linha brilhante, cor pelo estado — só a partir do fim da fisgada
   ctx.lineWidth=3; ctx.lineJoin='round'; ctx.save(); ctx.shadowBlur=8;
-  let px=0, py=yOf(t0);
-  for(let i=1;i<=N;i++){ const x=(i/N)*W, t=t0+(i/N)*span, pot=interpolarPontos(P,t), y=yOf(t); const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
+  let started=false, px=0, py=0;
+  for(let i=0;i<=N;i++){ const x=(i/N)*W; if(x<xStart) continue; const t=t0+(x/W)*span, pot=interpolarPontos(P,t), y=yOf(t);
+    if(!started){ px=x; py=y; started=true; continue; }
+    const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
   ctx.restore();
-  // zona da FISGADA FÍSICA (0..durFis) — laranja "vai-e-vem"
-  const durFis=fisgadaFisicaCfg().dur;
+  // zona da FISGADA FÍSICA (0..durFis) — só a faixa laranja "vai-e-vem"
   if(durFis>0){
-    const xa=Math.max(0,((0-t0)/span)*W), xb=Math.min(W,((durFis-t0)/span)*W);
+    const xa=Math.max(0,((0-t0)/span)*W), xb=Math.min(W,xFis);
     if(xb>xa){
       ctx.fillStyle='rgba(255,170,0,0.28)'; ctx.fillRect(xa,0,xb-xa,H);
       ctx.fillStyle='rgba(255,170,0,0.85)'; ctx.fillRect(xb-1.5,0,3,H);
