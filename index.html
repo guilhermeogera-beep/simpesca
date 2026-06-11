@@ -73,16 +73,20 @@
             const wrap=document.getElementById('progressoWrap'), fill=document.getElementById('progressoFill'),
                   txt=document.getElementById('progressoTxt'), btn=document.getElementById('btnBaixar');
             wrap.style.display='block'; btn.disabled=true;
-            try{
-                const cache=await caches.open(MEDIA_CACHE);
-                for(let i=0;i<VIDEOS.length;i++){
-                    txt.textContent=`Baixando vídeo ${i+1} de ${VIDEOS.length}...`;
-                    await cache.add(VIDEOS[i]);
-                    fill.style.width=Math.round(((i+1)/VIDEOS.length)*100)+'%';
-                }
+            const falhas=[];
+            const cache=await caches.open(MEDIA_CACHE);
+            for(let i=0;i<VIDEOS.length;i++){
+                txt.textContent=`Baixando vídeo ${i+1} de ${VIDEOS.length}... (${VIDEOS[i]})`;
+                try{ await cache.add(VIDEOS[i]); }catch(e){ falhas.push(VIDEOS[i]); }
+                fill.style.width=Math.round(((i+1)/VIDEOS.length)*100)+'%';
+            }
+            if(!falhas.length){
                 txt.textContent='✅ Vídeos salvos! Pronto para uso offline.';
                 btn.textContent='✅ Vídeos baixados';
-            }catch(e){ txt.textContent='⚠️ Erro ao baixar. Verifique a internet.'; btn.disabled=false; }
+            } else {
+                txt.innerHTML='⚠️ '+(VIDEOS.length-falhas.length)+' de '+VIDEOS.length+' baixados. Faltou no servidor:<br>'+falhas.join('<br>');
+                btn.disabled=false;
+            }
         }
         async function verificarVideos(){
             if(!('caches' in window)) return;
