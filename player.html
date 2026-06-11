@@ -9,344 +9,510 @@
 <style>
 :root{--bg:#040810;--card:#080f18;--border:#0e1e30;--accent:#00d4ff;--green:#00e676;--red:#ff1744;--text:#c8d8e8;--dim:#2a4060;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100dvh;display:flex;flex-direction:column;padding:16px;gap:16px;overflow-x:hidden;}
-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100dvh;display:flex;flex-direction:column;padding:16px;gap:14px;overflow-x:hidden;}
+header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;}
 header h1{font-size:1rem;letter-spacing:4px;color:var(--accent);text-transform:uppercase;}
-.header-right{display:flex;align-items:center;gap:10px;}
-#motorBadge{font-size:0.7rem;padding:4px 10px;border-radius:20px;border:1px solid var(--dim);color:var(--dim);transition:all .15s;}
-#motorBadge.ativo{color:var(--accent);border-color:var(--accent);}
-#motorBadge.alto{color:var(--red);border-color:var(--red);}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.badge{font-size:0.7rem;padding:4px 10px;border-radius:20px;border:1px solid var(--dim);color:var(--dim);}
+#motorBadge.ativo{color:var(--accent);border-color:var(--accent);} #motorBadge.alto{color:var(--red);border-color:var(--red);}
+#linhaBadge{color:var(--green);border-color:var(--green);}
 #btnBT{font-size:0.7rem;padding:6px 14px;border:1px solid var(--accent);border-radius:20px;background:rgba(0,212,255,0.08);color:var(--accent);cursor:pointer;font-family:inherit;letter-spacing:1px;}
 #btnBT.conectado{border-color:var(--green);color:var(--green);background:rgba(0,230,118,0.1);}
 #btnBT.erro{border-color:var(--red);color:var(--red);}
-.btn-dash{font-size:0.65rem;padding:6px 10px;border:1px solid var(--dim);border-radius:6px;background:transparent;color:var(--dim);cursor:pointer;font-family:inherit;text-decoration:none;letter-spacing:1px;}
-.sim-bloco{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;}
+.btn-dash{font-size:0.65rem;padding:6px 10px;border:1px solid #3d5d7e;border-radius:6px;background:rgba(20,40,64,0.4);color:#b9d2e6;cursor:pointer;font-family:inherit;text-decoration:none;letter-spacing:1px;}
+.btn-dash:hover{color:#fff;border-color:var(--accent);}
+.sims-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;align-content:start;}
+.sim-bloco{display:flex;flex-direction:column;gap:8px;}
 .sim-titulo{display:flex;align-items:center;gap:10px;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--dim);}
 .sim-badge{padding:2px 8px;border-radius:4px;font-size:0.6rem;font-weight:700;letter-spacing:1px;}
 .sim-badge-a{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.25);}
 .sim-badge-b{background:rgba(255,214,0,0.08);color:#ffd600;border:1px solid rgba(255,214,0,0.2);}
 .sim-badge-c{background:rgba(0,230,118,0.08);color:#00e676;border:1px solid rgba(0,230,118,0.25);}
-.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex:1;min-height:160px;cursor:pointer;}
+.video-wrapper{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);aspect-ratio:16/9;cursor:pointer;transition:border-color .2s, box-shadow .2s;}
+.video-wrapper:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(0,212,255,0.25);}
 video{width:100%;height:100%;object-fit:cover;display:block;}
 .video-progress{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(0,212,255,0.2);z-index:20;}
 .video-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#00a8cc);transition:width .1s linear;}
 .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(4,8,16,0.7);backdrop-filter:blur(3px);transition:opacity .3s;}
 .overlay.oculto{opacity:0;pointer-events:none;}
-.btn-play{width:64px;height:64px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,212,255,0.5);transition:transform .15s;flex-shrink:0;}
-.btn-play:hover{transform:scale(1.08);}
-.btn-play:active{transform:scale(0.95);}
-.btn-play svg{fill:#040810;margin-left:4px;}
-.btn-play:disabled{background:var(--dim);box-shadow:none;cursor:not-allowed;}
+.btn-play{width:48px;height:48px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(0,212,255,0.5);}
+.btn-play:active{transform:scale(0.95);} .btn-play svg{fill:#040810;margin-left:4px;}
 .sim-nome-overlay{font-size:0.7rem;letter-spacing:2px;color:var(--text);text-transform:uppercase;opacity:0.7;}
-.countdown-overlay{display:none;position:fixed;inset:0;background:#040810;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
-.countdown-overlay.visivel{display:flex;}
+.fs-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.92);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px;}
+.fs-overlay.visivel{display:flex;}
 .countdown-num{font-size:8rem;font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;}
 @keyframes pulse{0%{transform:scale(1.3);opacity:0;}50%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
-.countdown-label{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
-.pause-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.85);backdrop-filter:blur(8px);z-index:50;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
-.pause-overlay.visivel{display:flex;}
-.pause-titulo{font-size:1rem;letter-spacing:4px;color:var(--text);text-transform:uppercase;}
-.pause-btns{display:flex;gap:14px;}
-.btn-pausa{padding:12px 28px;border-radius:30px;border:1px solid;font-family:inherit;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:transparent;transition:all .2s;}
-.btn-continuar{border-color:var(--green);color:var(--green);}
-.btn-reiniciar{border-color:var(--red);color:var(--red);}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;letter-spacing:1px;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
+.lbl{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
+.titulo-grande{font-size:1.1rem;letter-spacing:3px;color:var(--text);text-transform:uppercase;}
+.metros-grande{font-size:3.4rem;font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,230,118,0.4);}
+.posicao-grande{font-size:1.7rem;font-weight:800;color:var(--accent);letter-spacing:1px;}
+.recorde{font-size:0.95rem;font-weight:800;color:#ffd700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 20px rgba(255,215,0,0.4);display:none;}
+input[type=text]{background:#0d1722;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 16px;font-family:inherit;font-size:1rem;text-align:center;width:min(320px,80vw);outline:none;}
+input[type=text]:focus{border-color:var(--accent);}
+.fs-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+.btn-fs{padding:12px 26px;border-radius:30px;border:1px solid;font-family:inherit;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:transparent;}
+.btn-ok{border-color:var(--green);color:var(--green);} .btn-sec{border-color:#5b7a99;color:#9fb6cc;} .btn-red{border-color:var(--red);color:var(--red);}
+.btn-fs:disabled{opacity:0.35;cursor:default;}
+#hudLinha{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.55);border:1px solid var(--green);border-radius:20px;padding:6px 16px;color:var(--green);font-size:1rem;font-weight:700;letter-spacing:1px;display:none;pointer-events:none;}
+#hudLinha.visivel{display:block;}
+#hudEstado{position:fixed;top:12px;left:14px;z-index:62;border:2px solid;border-radius:14px;padding:8px 16px;font-size:1rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);pointer-events:none;}
+#hudEstado.visivel{display:block;}
+#hudEstado.puxando{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
+#hudEstado.recolher{color:var(--green);border-color:var(--green);background:rgba(0,230,118,0.22);}
+#hudEstado.fisgada{color:#ffc061;border-color:#ffb84d;background:rgba(255,170,0,0.22);}
+#hudCarretel{position:fixed;top:12px;right:14px;z-index:62;border:2px solid var(--accent);border-radius:14px;padding:8px 14px;font-size:0.95rem;font-weight:800;letter-spacing:1px;display:none;background:rgba(0,0,0,0.45);color:var(--accent);pointer-events:none;}
+#hudCarretel.visivel{display:block;}
+#hudCarretel.travado{color:var(--red);border-color:var(--red);background:rgba(255,23,68,0.22);}
+#hudTimeline{position:fixed;top:58px;left:14px;z-index:61;width:280px;max-width:58vw;height:38px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:9px;padding:3px;display:none;pointer-events:none;}
+#hudTimeline.visivel{display:block;}
+#tlCanvas{width:100%;height:100%;display:block;border-radius:6px;}
+#hudConfig{position:fixed;top:56px;right:14px;z-index:120;background:#0a1420;border:1px solid var(--accent);border-radius:10px;padding:10px 12px;display:none;font-size:0.78rem;color:var(--text);min-width:184px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+#hudConfig.visivel{display:block;}
+#hudConfig .hc-tit{font-size:0.6rem;letter-spacing:1.5px;color:#7e96ad;text-transform:uppercase;margin-bottom:6px;}
+#hudConfig label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;}
+#hudConfig input{accent-color:var(--accent);cursor:pointer;width:15px;height:15px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
+.rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.rk-filtro{padding:7px 15px;border:1px solid #3d5d7e;border-radius:20px;background:rgba(20,40,64,0.4);color:#b9d2e6;cursor:pointer;font-family:inherit;font-size:0.78rem;letter-spacing:1px;}
+.rk-filtro.ativo{border-color:var(--accent);color:#fff;background:rgba(0,212,255,0.18);font-weight:700;}
+.rk-lista{width:min(480px,92vw);max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:7px;}
+.rk-linha{display:flex;align-items:center;gap:12px;background:#0c1722;border:1px solid #1c344e;border-radius:10px;padding:11px 15px;}
+.rk-pos{font-size:1.2rem;font-weight:800;min-width:40px;text-align:center;color:#9fb6cc;}
+.rk-linha.top1{border-color:#ffd700;} .rk-linha.top1 .rk-pos{color:#ffd700;}
+.rk-linha.top2{border-color:#c0c8d0;} .rk-linha.top2 .rk-pos{color:#dde4ea;}
+.rk-linha.top3{border-color:#cd7f32;} .rk-linha.top3 .rk-pos{color:#e89c50;}
+.rk-info{flex:1;min-width:0;text-align:left;}
+.rk-nome{font-size:1.05rem;font-weight:700;color:#eef6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rk-meta{font-size:0.74rem;color:#8fb0cc;margin-top:1px;}
+.rk-metros{font-size:1.25rem;font-weight:800;color:var(--green);white-space:nowrap;text-shadow:0 0 10px rgba(0,230,118,0.3);}
+.rk-vazio{color:#9fb6cc;font-size:0.9rem;padding:30px;text-align:center;}
 </style>
 </head>
 <body>
 <header>
   <h1>🎣 SimPesca</h1>
   <div class="header-right">
-    <div id="motorBadge">MOTOR 0%</div>
+    <div id="linhaBadge" class="badge">LINHA 0.0 m</div>
+    <div id="motorBadge" class="badge">MOTOR 0%</div>
     <button id="btnBT" onclick="conectarBLE()">🔵 Conectar</button>
+    <button class="btn-dash" onclick="abrirRanking()">🏆 RANKING</button>
+    <button class="btn-dash" id="btnLinha" onclick="resetarLinha()" title="Linha no carretel / limite — clique pra zerar (após re-enrolar)">⟲ LINHA</button>
+    <button class="btn-dash" onclick="toggleConfig()" title="Escolher o que aparece na tela do jogo">👁 EXIBIR</button>
     <a href="dashboard.html" class="btn-dash">⚙ CONFIG</a>
   </div>
 </header>
 
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-a">SIM A</span> Simulação A</div>
-  <div class="video-wrapper" id="wrapperA">
-    <video id="videoA" preload="metadata" playsinline><source src="video0.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progA"></div></div>
-    <div class="overlay" id="overlayA">
-      <button class="btn-play" onclick="iniciarContagem('A')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação A</span>
-    </div>
-  </div>
+<div class="sims-grid" id="simsGrid"></div>
+
+<div id="hudLinha">🎣 0.0 m</div>
+<div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
+<div id="hudCarretel">📍 0.0 m</div>
+<div id="hudTimeline"><canvas id="tlCanvas" width="600" height="80"></canvas></div>
+<div id="hudConfig">
+  <div class="hc-tit">👁 Exibir na tela</div>
+  <label><input type="checkbox" id="cfgLinha" checked> Linha enrolada</label>
+  <label><input type="checkbox" id="cfgEstado" checked> Estado (puxa/recolhe)</label>
+  <label><input type="checkbox" id="cfgBarra" checked> Barra de antecipação</label>
+  <label><input type="checkbox" id="cfgCarretel"> Linha no carretel / trava</label>
 </div>
 
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-b">SIM B</span> Simulação B</div>
-  <div class="video-wrapper" id="wrapperB">
-    <video id="videoB" preload="metadata" playsinline><source src="video1.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progB"></div></div>
-    <div class="overlay" id="overlayB">
-      <button class="btn-play" onclick="iniciarContagem('B')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação B</span>
-    </div>
-  </div>
+<div class="fs-overlay" id="nomeOverlay">
+  <div class="lbl">Quem vai pescar?</div>
+  <input type="text" id="inputNome" maxlength="20" placeholder="Nome do jogador" autocomplete="off">
+  <div class="fs-btns"><button class="btn-fs btn-ok" onclick="confirmarNome()">▶ Começar</button><button class="btn-fs btn-sec" onclick="fecharNome()">Cancelar</button></div>
 </div>
-
-<div class="sim-bloco">
-  <div class="sim-titulo"><span class="sim-badge sim-badge-c">SIM C</span> Simulação C</div>
-  <div class="video-wrapper" id="wrapperC">
-    <video id="videoC" preload="metadata" playsinline><source src="video2.mp4" type="video/mp4"></video>
-    <div class="video-progress"><div class="video-progress-bar" id="progC"></div></div>
-    <div class="overlay" id="overlayC">
-      <button class="btn-play" onclick="iniciarContagem('C')"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <span class="sim-nome-overlay">Simulação C</span>
-    </div>
-  </div>
+<div class="fs-overlay" id="linhaOverlay">
+  <div class="titulo-grande">🧵 Pouca linha no carretel</div>
+  <div class="lbl" id="linhaOvlInfo">—</div>
+  <div class="metros-grande" id="linhaOvlCarretel" style="color:#ffc061;text-shadow:0 0 40px rgba(255,170,0,0.4);">0.0 m</div>
+  <div class="lbl">enrole a linha de volta no carretel até zerar</div>
+  <div class="fs-btns"><button class="btn-fs btn-ok" id="linhaOvlOk" onclick="linhaOvlContinuar()" disabled>enrole mais...</button><button class="btn-fs btn-sec" onclick="fecharLinhaOverlay()">Cancelar</button></div>
 </div>
-
-<div class="countdown-overlay" id="countdownOverlay">
-  <div class="countdown-num" id="countdownNum">5</div>
-  <div class="countdown-label">Preparando simulação</div>
+<div class="fs-overlay" id="countdownOverlay"><div class="countdown-num" id="countdownNum">5</div><div class="lbl">Preparando simulação</div></div>
+<div class="fs-overlay" id="pauseOverlay"><div class="titulo-grande">⏸ Pausado</div><div class="fs-btns"><button class="btn-fs btn-ok" onclick="continuarSim()">▶ Continuar</button><button class="btn-fs btn-red" onclick="reiniciarSim()">↺ Reiniciar</button></div></div>
+<div class="fs-overlay" id="resultadoOverlay">
+  <div class="recorde" id="resultadoRecorde">🏆 Novo recorde!</div>
+  <div class="lbl">Linha recolhida</div>
+  <div class="metros-grande" id="resultadoMetros">0.0 m</div>
+  <div class="posicao-grande" id="resultadoPos">—</div>
+  <div class="lbl" id="resultadoNome">—</div>
+  <div class="fs-btns"><button class="btn-fs btn-ok" onclick="fecharResultado();abrirRanking()">🏆 Ver ranking</button><button class="btn-fs btn-sec" onclick="fecharResultado()">Fechar</button></div>
 </div>
-<div class="pause-overlay" id="pauseOverlay">
-  <div class="pause-titulo">⏸ Pausado</div>
-  <div class="pause-btns">
-    <button class="btn-pausa btn-continuar" onclick="continuarSim()">▶ Continuar</button>
-    <button class="btn-pausa btn-reiniciar" onclick="reiniciarSim()">↺ Reiniciar</button>
+<div class="fs-overlay" id="rankingOverlay">
+  <div class="titulo-grande">🏆 Ranking</div>
+  <div class="rk-filtros" id="rkFiltros">
+    <button class="rk-filtro ativo" data-sim="todos" onclick="filtrarRanking('todos',this)">Todas</button>
   </div>
+  <div class="rk-lista" id="rkLista"></div>
+  <div class="fs-btns"><button class="btn-fs btn-sec" onclick="fecharRanking()">Fechar</button></div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ══ BLUETOOTH (Web Bluetooth) ═════════════════════════════════
-// UUIDs IGUAIS aos do firmware esp32_bluetooth.ino
-const SERVICE_UUID = "a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
-const CHAR_MOTOR_UUID = "a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
-let bleDevice = null, motorChar = null;
-
-function btUI(estado, texto){
-  const b = document.getElementById('btnBT');
-  b.className = estado;            // '', 'conectado', 'erro'
-  b.textContent = texto;
-}
-
+// ══ BLUETOOTH ═════════════════════════════════════════════════
+const SERVICE_UUID="a1b2c3d4-0001-4a5b-8c6d-1234567890ab";
+const CHAR_MOTOR_UUID="a1b2c3d4-0002-4a5b-8c6d-1234567890ab";
+const CHAR_LINHA_UUID="a1b2c3d4-0003-4a5b-8c6d-1234567890ab";
+const CHAR_FISGADA_UUID="a1b2c3d4-0004-4a5b-8c6d-1234567890ab";
+let bleDevice=null, motorChar=null, linhaChar=null, fisgadaChar=null, contagemEncoder=0;
+let contAnt=0, primeiraLeitura=true, metrosGanhos=0, metrosPerdidos=0, contando=false;
+function btUI(c,t){ const b=document.getElementById('btnBT'); b.className=c; b.textContent=t; }
 async function conectarBLE(){
-  if(!navigator.bluetooth){ alert('Este navegador não tem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
+  if(!navigator.bluetooth){ alert('Sem Web Bluetooth. Use Chrome/Edge no PC ou Android.'); return; }
+  try{ btUI('','🔵 Procurando...'); bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]}); await ligar(bleDevice); }
+  catch(e){ btUI('erro','🔴 Falhou'); }
+}
+async function ligar(device){
+  bleDevice=device;
+  device.addEventListener('gattserverdisconnected',()=>{
+    motorChar=null; linhaChar=null; btUI('erro','🔵 Reconectar'); mostrarToast('⚠ Bluetooth caiu — motor travado');
+    // SEGURANÇA: pausa qualquer simulação em andamento ao perder a conexão
+    Object.keys(SIMS).forEach(id=>{ if(SIMS[id].estaRodando) pausarSim(id); });
+  });
+  btUI('','🔵 Conectando...');
+  const server=await device.gatt.connect();
+  const service=await server.getPrimaryService(SERVICE_UUID);
+  motorChar=await service.getCharacteristic(CHAR_MOTOR_UUID);
   try{
-    btUI('', '🔵 Procurando...');
-    bleDevice = await navigator.bluetooth.requestDevice({ filters:[{ services:[SERVICE_UUID] }] });
-    await ligarNoDispositivo(bleDevice);
-  }catch(e){
-    btUI('erro', '🔴 Falhou');
-    console.log('Erro BLE:', e.message);
+    linhaChar=await service.getCharacteristic(CHAR_LINHA_UUID);
+    await linhaChar.startNotifications();
+    linhaChar.addEventListener('characteristicvaluechanged', e=>{
+      const nova=e.target.value.getInt32(0,true);
+      if(primeiraLeitura){ contAnt=nova; primeiraLeitura=false; }
+      if(contando){ const dM=contagemParaMetros(nova-contAnt); if(dM>0) metrosGanhos+=dM; else metrosPerdidos+=-dM; checarLimiteSeguranca(); }
+      contAnt=nova; contagemEncoder=nova; atualizarLinha();
+    });
+  }catch(e){}
+  try{ fisgadaChar=await service.getCharacteristic(CHAR_FISGADA_UUID); }catch(e){ fisgadaChar=null; }
+  btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
+}
+// ── Fisgada física (puxadas do motor no início) ───────────────
+function fisgadaFisicaCfg(){
+  const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; };
+  return { pot:Math.max(0,Math.min(100,g('simpesca_fisfis_pot',15))), voltas:Math.max(1,g('simpesca_fisfis_voltas',1)), dur:Math.max(0,g('simpesca_fisfis_dur',5)) };
+}
+function enviarFisgadaFisica(c){ if(!fisgadaChar) return; const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot), Math.round(c.voltas), ms&0xFF, (ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
+function pararFisgadaFisica(){ if(!fisgadaChar) return; try{ const b=new Uint8Array([0,0,0,0]); fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
+async function tentarReconectar(){
+  if(!navigator.bluetooth||!navigator.bluetooth.getDevices) return;
+  try{ const d=await navigator.bluetooth.getDevices(); if(d.length){ btUI('','🔵 Reconectando...'); await ligar(d[0]).catch(()=>btUI('','🔵 Conectar')); } }catch(e){}
+}
+function escreverMotorBLE(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b); }catch(e){} }
+// Zera a LINHA do carretel (re-spool): operador usa após re-enrolar a linha na carretilha/molinete
+function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; atualizarLinha(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } }
+// Novo jogador: zera só a contagem DESTE jogo (HUD/ranking); a linha do carretel continua acumulada
+function novoJogoContadores(){ metrosGanhos=0; metrosPerdidos=0; contAnt=contagemEncoder; atualizarLinha(); }
+function resetarLinha(){ if(confirm('Zerar a linha acumulada do carretel?\nFaça isso só DEPOIS de re-enrolar a linha na carretilha/molinete.')){ zerarEncoder(); mostrarToast('Linha do carretel zerada'); } }
+
+// ══ CALIBRAÇÃO / LINHA ────────────────────────────────────────
+function metrosPorVolta(){ const v=parseFloat(localStorage.getItem('simpesca_cal_mpv')); return (isFinite(v)&&v>0)?v:0.0854; }
+function limiteLinha(){ const v=parseFloat(localStorage.getItem('simpesca_cal_limite')); return (isFinite(v)&&v!==0)?v:-50; }
+function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
+function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
+function metrosAtuais(){ return Math.max(0, metrosGanhos); }   // só os metros recolhidos (ganhos)
+function atualizarLinha(){ const m=metrosAtuais(); document.getElementById('linhaBadge').textContent='LINHA '+m.toFixed(1)+' m'; document.getElementById('hudLinha').textContent='🧵 Enrolada: '+m.toFixed(1)+' m';
+  const car=linhaCarretel(), L=limiteLinha(), travadoLin=Math.abs(car)>=Math.abs(L);
+  const hc=document.getElementById('hudCarretel');
+  hc.textContent='📍 Carretel: '+car.toFixed(1)+' / '+L.toFixed(0)+' m'; hc.classList.toggle('travado', travadoLin);
+  const bl=document.getElementById('btnLinha'); bl.textContent='⟲ '+car.toFixed(1)+' / '+L.toFixed(0)+' m'; bl.style.color=travadoLin?'#ff5a7d':''; bl.style.borderColor=travadoLin?'#ff5a7d':'';
+  atualizarLinhaOverlay(); }
+// Linha ABSOLUTA do carretel (posição líquida do encoder) — ACUMULA entre jogadores, NÃO zera por jogo
+function linhaCarretel(){ return contagemParaMetros(contagemEncoder); }
+// Estimativa de quanto o peixe PUXA na simulação (mesma conta do dashboard: velMotor·∫pot dt/100)
+function velMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_velmax')); return (isFinite(v)&&v>0)?v:2.5; }
+function integralPot(pts){ if(!pts||!pts.length) return 0; const seq=[{t:0,pot:pts[0].pot}].concat(pts).concat([{t:90,pot:pts[pts.length-1].pot}]); let a=0; for(let i=0;i<seq.length-1;i++){ const p=seq[i],q=seq[i+1],dt=q.t-p.t; if(dt>0) a+=(p.pot+q.pot)/2*dt; } return a; }
+function estimarLinhaPts(pts){ return velMotor()*integralPot(pts)/100; }
+function linhaDisponivel(){ return Math.abs(limiteLinha()) - Math.abs(linhaCarretel()); }   // o que ainda cabe puxar
+// SEGURANÇA: a linha do carretel atingiu o limite físico -> para o motor
+function checarLimiteSeguranca(){
+  if(!contando) return;
+  if(Math.abs(linhaCarretel()) >= Math.abs(limiteLinha())){
+    Object.keys(SIMS).forEach(id=>{ if(SIMS[id].estaRodando) pausarSim(id); });
+    mostrarToast('🛑 Limite de linha atingido — motor parado');
   }
 }
 
-async function ligarNoDispositivo(device){
-  bleDevice = device;
-  device.addEventListener('gattserverdisconnected', onDesconectado);
-  btUI('', '🔵 Conectando...');
-  const server = await device.gatt.connect();
-  const service = await server.getPrimaryService(SERVICE_UUID);
-  motorChar = await service.getCharacteristic(CHAR_MOTOR_UUID);
-  btUI('conectado', '🟢 Conectado');
-  mostrarToast('Bluetooth conectado');
-}
-
-function onDesconectado(){
-  motorChar = null;
-  btUI('erro', '🔵 Reconectar');
-  mostrarToast('Bluetooth desconectado');
-}
-
-// Reconexão automática (depois do 1º pareamento) — não precisa de internet
-async function tentarReconectar(){
-  if(!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
-  try{
-    const devices = await navigator.bluetooth.getDevices();
-    if(devices.length){
-      btUI('', '🔵 Reconectando...');
-      // tenta conectar no primeiro dispositivo já autorizado
-      await ligarNoDispositivo(devices[0]).catch(()=>btUI('','🔵 Conectar'));
-    }
-  }catch(e){}
-}
-
-// Envia a potência (0-100) para o motor via BLE — 1 byte
-function escreverMotorBLE(pct){
-  if(!motorChar) return;
-  const b = new Uint8Array([ Math.max(0, Math.min(100, Math.round(pct))) ]);
-  try{
-    if(motorChar.writeValueWithoutResponse) motorChar.writeValueWithoutResponse(b);
-    else motorChar.writeValue(b);
-  }catch(e){}
-}
-
-// ══ GATILHOS PADRÃO (embutidos) ═══════════════════════════════
-// Editáveis no dashboard; se houver no localStorage, têm prioridade.
-const GATILHOS_PADRAO = {
-  A: [{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
-  B: [{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
-  C: [{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
+// ══ PERFIS — MODELO DE PONTOS {t, pot} ════════════════════════
+// Perfis antigos (gatilhos) embutidos só para gerar a curva inicial.
+const GATILHOS_PADRAO={
+  A:[{"t":0.23,"potIni":0,"pot":51,"sub":2600,"pico":800,"pot2":93,"trans":400,"pico2":1200,"desc":600,"potFim":67},{"t":5.83,"potIni":67,"pot":67,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":14.02,"potIni":0,"pot":22,"sub":300,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":17.25,"potIni":0,"pot":80,"sub":1150,"pico":800,"pot2":40,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":25.46,"potIni":0,"pot":26,"sub":300,"pico":800,"pot2":50,"trans":400,"pico2":1900,"desc":600,"potFim":50},{"t":29.43,"potIni":50,"pot":42,"sub":300,"pico":800,"pot2":24,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":38.51,"potIni":0,"pot":29,"sub":300,"pico":800,"pot2":47,"trans":400,"pico2":1200,"desc":600,"potFim":66},{"t":41.81,"potIni":66,"pot":80,"sub":800,"pico":2100,"pot2":36,"trans":2200,"pico2":4200,"desc":1750,"potFim":0},{"t":58.63,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}],
+  B:[{"t":1.38,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":5.14,"potIni":14,"pot":60,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":6.9,"potIni":61,"pot":20,"sub":650,"pico":3100,"pot2":90,"trans":300,"pico2":1700,"desc":4950,"potFim":0}],
+  C:[{"t":0.3,"potIni":0,"pot":14,"sub":550,"pico":2200,"pot2":56,"trans":400,"pico2":100,"desc":600,"potFim":14},{"t":4.14,"potIni":14,"pot":50,"sub":550,"pico":100,"pot2":21,"trans":400,"pico2":100,"desc":600,"potFim":61},{"t":5.89,"potIni":61,"pot":20,"sub":650,"pico":3300,"pot2":60,"trans":300,"pico2":1200,"desc":2200,"potFim":16},{"t":13.48,"potIni":16,"pot":49,"sub":650,"pico":100,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":21.34,"potIni":0,"pot":32,"sub":1800,"pico":0,"pot2":9,"trans":450,"pico2":300,"desc":700,"potFim":41},{"t":24.58,"potIni":41,"pot":17,"sub":300,"pico":800,"pot2":1,"trans":450,"pico2":1200,"desc":600,"potFim":0},{"t":34.67,"potIni":0,"pot":52,"sub":1150,"pico":300,"pot2":25,"trans":400,"pico2":100,"desc":750,"potFim":61},{"t":37.44,"potIni":61,"pot":25,"sub":300,"pico":800,"pot2":18,"trans":400,"pico2":1200,"desc":600,"potFim":0},{"t":46.57,"potIni":0,"pot":12,"sub":1000,"pico":2400,"pot2":65,"trans":350,"pico2":300,"desc":500,"potFim":19},{"t":51.16,"potIni":19,"pot":63,"sub":300,"pico":400,"pot2":28,"trans":400,"pico2":500,"desc":700,"potFim":63},{"t":53.45,"potIni":63,"pot":66,"sub":300,"pico":0,"pot2":36,"trans":550,"pico2":1000,"desc":600,"potFim":0},{"t":59.2,"potIni":0,"pot":10,"sub":0,"pico":800,"pot2":10,"trans":450,"pico2":0,"desc":0,"potFim":0}]
 };
-
-function carregarGatilhos(letra){
-  try{
-    const raw = localStorage.getItem('simpesca_gatilhos_' + letra);
-    if(raw){ const d = JSON.parse(raw); if(Array.isArray(d) && d.length) return d.sort((a,b)=>a.t-b.t); }
-  }catch(e){}
-  return GATILHOS_PADRAO[letra].slice().sort((a,b)=>a.t-b.t);
-}
-
-// ══ ESTADO DAS SIMULAÇÕES ═════════════════════════════════════
-const SIMS = {
-  A:{ letra:'A', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false },
-  B:{ letra:'B', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false },
-  C:{ letra:'C', video:null, wrapper:null, overlay:null, prog:null, gatilhos:[], gatilhoIdx:0, potLocal:0, rampa:{ativa:false}, intervalo:null, estaRodando:false }
-};
-let simEmContagem = null, simEmPausa = null;
-
-window.addEventListener('load', () => {
-  ['A','B','C'].forEach(id => {
-    const s = SIMS[id];
-    s.video   = document.getElementById('video'+id);
-    s.wrapper = document.getElementById('wrapper'+id);
-    s.overlay = document.getElementById('overlay'+id);
-    s.prog    = document.getElementById('prog'+id);
-    s.gatilhos = carregarGatilhos(id);
-    s.video.addEventListener('click', () => { if(s.estaRodando) pausarSim(id); });
-    s.video.addEventListener('timeupdate', () => { s.prog.style.width = ((s.video.currentTime/s.video.duration)*100||0)+'%'; });
-    s.video.addEventListener('ended', () => encerrarSim(id));
+function gatilhosParaPontos(gatilhos){
+  const p=[];
+  gatilhos.slice().sort((a,b)=>a.t-b.t).forEach(g=>{
+    let t=g.t; p.push({t, pot:g.potIni||0});
+    t+=(g.sub||0)/1000;  p.push({t, pot:g.pot||0});
+    t+=(g.pico||0)/1000; p.push({t, pot:g.pot||0});
+    if((g.trans||0)>0){ t+=g.trans/1000; p.push({t, pot:g.pot2||0}); }
+    if((g.pico2||0)>0){ t+=g.pico2/1000; p.push({t, pot:g.pot2||0}); }
+    t+=(g.desc||0)/1000; p.push({t, pot:g.potFim||0});
   });
+  return p.map(x=>({t:Math.round(x.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(x.pot)))})).sort((a,b)=>a.t-b.t);
+}
+function carregarPontos(id){
+  // 1º: curva salva da espécie (editada/gerada no dashboard)
+  try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
+  // fallback: curvas antigas A/B/C (cíclico) ou padrão embutido
+  const idx=Math.max(0,ESPECIES.findIndex(e=>e.id===id)), L=['A','B','C'][idx%3];
+  try{ const r=localStorage.getItem('simpesca_pontos_'+L); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
+  return gatilhosParaPontos(GATILHOS_PADRAO[L]);
+}
+function interpolarPontos(pontos, t){
+  if(!pontos.length) return 0;
+  if(t<=pontos[0].t) return pontos[0].pot;
+  const last=pontos[pontos.length-1]; if(t>=last.t) return last.pot;
+  for(let i=0;i<pontos.length-1;i++){ const a=pontos[i], b=pontos[i+1];
+    if(t>=a.t && t<=b.t){ return b.t===a.t ? b.pot : a.pot+(b.pot-a.pot)*((t-a.t)/(b.t-a.t)); } }
+  return last.pot;
+}
+
+// ══ ESTADO ════════════════════════════════════════════════════
+// UMA simulação POR PEIXE: cada espécie tem seu vídeo (video_<id>.mp4) e sua curva (simpesca_pontos_<id>)
+const ESPECIES=[
+  {id:'pirarara', nome:'Pirarará'},
+  {id:'tambaqui', nome:'Tambaqui'},
+  {id:'tucunare', nome:'Tucunaré'},
+  {id:'dourado',  nome:'Dourado'},
+  {id:'trairao',  nome:'Trairão'},
+  {id:'jau',      nome:'Jaú'}
+];
+function nomePeixe(id){ const e=ESPECIES.find(x=>x.id===id); return e?e.nome:id; }
+const SIMS={};
+ESPECIES.forEach(e=>{ SIMS[e.id]={letra:e.id,nome:e.nome,video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false}; });
+let simEmContagem=null, simEmPausa=null, nomeJogador='';
+
+window.addEventListener('load',()=>{
+  // monta os cards (1 por peixe)
+  const grid=document.getElementById('simsGrid');
+  ESPECIES.forEach((e,i)=>{
+    const cls=['a','b','c'][i%3];
+    const bloco=document.createElement('div'); bloco.className='sim-bloco';
+    bloco.innerHTML=
+      '<div class="sim-titulo"><span class="sim-badge sim-badge-'+cls+'">🐟 '+e.nome.toUpperCase()+'</span></div>'+
+      '<div class="video-wrapper" id="wrapper_'+e.id+'">'+
+        '<video id="video_'+e.id+'" preload="metadata" playsinline><source src="video_'+e.id+'.mp4" type="video/mp4"></video>'+
+        '<div class="video-progress"><div class="video-progress-bar" id="prog_'+e.id+'"></div></div>'+
+        '<div class="overlay" id="overlay_'+e.id+'"><button class="btn-play" onclick="pedirNome(\''+e.id+'\')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">'+e.nome+'</span></div>'+
+      '</div>';
+    grid.appendChild(bloco);
+  });
+  ESPECIES.forEach(e=>{
+    const id=e.id, s=SIMS[id];
+    s.video=document.getElementById('video_'+id); s.wrapper=document.getElementById('wrapper_'+id);
+    s.overlay=document.getElementById('overlay_'+id); s.prog=document.getElementById('prog_'+id);
+    s.pontos=carregarPontos(id);
+    s.video.addEventListener('click',()=>{ if(s.estaRodando) pausarSim(id); });
+    s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
+    s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
+  });
+  // filtros do ranking (1 por peixe)
+  const rkF=document.getElementById('rkFiltros');
+  ESPECIES.forEach(e=>{ const b=document.createElement('button'); b.className='rk-filtro'; b.dataset.sim=e.id; b.textContent=e.nome; b.onclick=()=>filtrarRanking(e.id,b); rkF.appendChild(b); });
+  document.getElementById('inputNome').value=localStorage.getItem('simpesca_ultimo_nome')||'';
+  carregarHudCfg();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  tentarReconectar();   // tenta reconectar no simulador já pareado (offline ok)
+  tentarReconectar();
 });
 
 // ══ MOTOR ═════════════════════════════════════════════════════
-let potenciaAtual = 0;
-function aplicarMotor(pct){
-  pct = Math.max(0, Math.min(100, pct));
-  potenciaAtual = pct;
-  escreverMotorBLE(pct);
-  const badge = document.getElementById('motorBadge');
-  badge.textContent = `MOTOR ${pct.toFixed(0)}%`;
-  badge.className = pct > 70 ? 'alto' : pct > 0 ? 'ativo' : '';
-}
+let ultimoToastTrava=0;
+function travado(){ return Math.abs(linhaCarretel()) >= Math.abs(limiteLinha()); }
+function offsetMotor(){ const v=parseFloat(localStorage.getItem('simpesca_cal_offset')); return (isFinite(v)&&v>=0&&v<100)?v:15; }
+function comOffset(pct){ return pct>0 ? Math.min(100, offsetMotor()+(100-offsetMotor())*pct/100) : 0; }  // 0=desligado; >0 começa no offset (mín. pra girar)
+function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
+  if(travado()){ if(pct>0 && Date.now()-ultimoToastTrava>2500){ ultimoToastTrava=Date.now(); mostrarToast('🛑 Motor travado pelo limite de linha'); } pct=0; }
+  pct=comOffset(pct);
+  escreverMotorBLE(pct); const b=document.getElementById('motorBadge'); b.textContent='MOTOR '+pct.toFixed(0)+'%'; b.className='badge '+(pct>70?'alto':pct>0?'ativo':'');
+  const est=document.getElementById('hudEstado'); const puxando=pct>=1;
+  est.classList.remove('fisgada');
+  est.classList.toggle('puxando',puxando); est.classList.toggle('recolher',!puxando);
+  est.textContent=puxando?'🐟 PEIXE PUXANDO — segure!':'🎣 RECOLHA A LINHA!'; }
 
-// ══ MOTOR DE RAMPA (mesmo algoritmo do firmware antigo) ═══════
-function dispararGatilho(sim, g){
-  sim.rampa = { ativa:true, fase:'sub1', potInicio:sim.potLocal, potAlvo:g.pot, tsInicio:performance.now(), duracao:g.sub||1, g };
-  mostrarToast(`⚡ ${g.pot}%`);
-}
-function tickRampa(sim){
-  if(!sim.rampa.ativa) return;
-  const { g } = sim.rampa, now = performance.now();
-  const prog = Math.min(1,(now - sim.rampa.tsInicio)/sim.rampa.duracao);
-  const lerp = (a,b,t)=>a+(b-a)*t;
-  if(sim.rampa.fase==='sub1'){
-    sim.potLocal = lerp(sim.rampa.potInicio, g.pot, prog);
-    if(prog>=1){ sim.rampa.fase='pico1'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.pico||1; }
-  }else if(sim.rampa.fase==='pico1'){
-    sim.potLocal = g.pot;
-    if(prog>=1){
-      if((g.trans||0)>0){ sim.rampa.fase='trans'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.trans; }
-      else{ sim.rampa.fase='desc'; sim.rampa.potInicio=g.pot; sim.rampa.tsInicio=now; sim.rampa.duracao=g.desc||1; }
+// ── BARRA DE ANTECIPAÇÃO (estilo waveform) + visibilidade configurável dos HUDs ──
+let simTocando=null, tlRAF=null, emJogo=false;
+const TL_PASSADO=1.4, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
+const hudCfg={linha:true, estado:true, barra:true, carretel:false};
+function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocando!=null) desenharTimeline(SIMS[simTocando]); }
+function desenharTimeline(sim){
+  const cv=document.getElementById('tlCanvas'); if(!cv) return;
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, P=sim.pontos;
+  const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;
+  const yOf=t=>H-(interpolarPontos(P,t)/100)*(H-4)-2;
+  const durFis=fisgadaFisicaCfg().dur;
+  const xFis=durFis>0 ? ((durFis-t0)/span)*W : 0;        // borda direita da fisgada
+  const xStart=Math.min(W, Math.max(0, xFis));           // a CURVA só começa aqui (depois da fisgada)
+  ctx.clearRect(0,0,W,H);
+  // área preenchida (degradê) — só a partir do fim da fisgada
+  ctx.beginPath(); ctx.moveTo(xStart,H);
+  for(let i=0;i<=N;i++){ const x=(i/N)*W; if(x<xStart) continue; ctx.lineTo(x, yOf(t0+(x/W)*span)); }
+  ctx.lineTo(W,H); ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(0,212,255,0.40)'); g.addColorStop(1,'rgba(0,212,255,0.02)'); ctx.fillStyle=g; ctx.fill();
+  // linha brilhante, cor pelo estado — só a partir do fim da fisgada
+  ctx.lineWidth=3; ctx.lineJoin='round'; ctx.save(); ctx.shadowBlur=8;
+  let started=false, px=0, py=0;
+  for(let i=0;i<=N;i++){ const x=(i/N)*W; if(x<xStart) continue; const t=t0+(x/W)*span, pot=interpolarPontos(P,t), y=yOf(t);
+    if(!started){ px=x; py=y; started=true; continue; }
+    const c=pot>=1?'#ff6184':'#1bffa0'; ctx.strokeStyle=c; ctx.shadowColor=c; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y); ctx.stroke(); px=x; py=y; }
+  ctx.restore();
+  // zona da FISGADA FÍSICA (0..durFis) — só a faixa laranja
+  if(durFis>0){
+    const xa=Math.max(0,((0-t0)/span)*W), xb=Math.min(W,xFis);
+    if(xb>xa){
+      ctx.fillStyle='rgba(255,170,0,0.28)'; ctx.fillRect(xa,0,xb-xa,H);
+      ctx.fillStyle='rgba(255,170,0,0.85)'; ctx.fillRect(xb-1.5,0,3,H);
+      if(xb-xa>46){ ctx.fillStyle='#ffd089'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎣 fisgada',(xa+xb)/2,H/2); }
     }
-  }else if(sim.rampa.fase==='trans'){
-    sim.potLocal = lerp(g.pot, g.pot2||0, prog);
-    if(prog>=1){ sim.rampa.fase='pico2'; sim.rampa.tsInicio=now; sim.rampa.duracao=g.pico2||1; }
-  }else if(sim.rampa.fase==='pico2'){
-    sim.potLocal = g.pot2||0;
-    if(prog>=1){ sim.rampa.fase='desc'; sim.rampa.potInicio=g.pot2||0; sim.rampa.tsInicio=now; sim.rampa.duracao=g.desc||1; }
-  }else if(sim.rampa.fase==='desc'){
-    sim.potLocal = lerp(sim.rampa.potInicio, g.potFim||0, prog);
-    if(prog>=1){ sim.potLocal=g.potFim||0; sim.rampa.ativa=false; }
   }
-  sim.potLocal = Math.max(0, Math.min(100, sim.potLocal));
-  aplicarMotor(sim.potLocal);
+  // marcador losango "AGORA"
+  const xn=(TL_PASSADO/span)*W; ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.fillRect(xn-0.5,0,1,H);
+  ctx.save(); ctx.translate(xn,H/2); ctx.rotate(Math.PI/4); ctx.shadowBlur=10; ctx.shadowColor='#fff'; ctx.fillStyle='#fff'; ctx.fillRect(-6,-6,12,12); ctx.restore();
+}
+// Mostra/oculta cada HUD conforme as caixas + se está em jogo; controla o loop da barra
+function atualizarVisibilidadeHUD(){
+  document.getElementById('hudLinha').classList.toggle('visivel', emJogo && hudCfg.linha);
+  document.getElementById('hudEstado').classList.toggle('visivel', emJogo && hudCfg.estado);
+  document.getElementById('hudTimeline').classList.toggle('visivel', emJogo && hudCfg.barra);
+  document.getElementById('hudCarretel').classList.toggle('visivel', emJogo && hudCfg.carretel);
+  const rodar = simTocando!=null && hudCfg.barra;
+  if(rodar){ if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
+  else if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; }
+}
+function toggleConfig(){ document.getElementById('hudConfig').classList.toggle('visivel'); }
+function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); localStorage.setItem('simpesca_hud_carretel',hudCfg.carretel?'1':'0'); }
+function carregarHudCfg(){
+  const g=(k,d)=>{ const v=localStorage.getItem(k); return v===null?d:v==='1'; };
+  hudCfg.linha=g('simpesca_hud_linha',true); hudCfg.estado=g('simpesca_hud_estado',true); hudCfg.barra=g('simpesca_hud_barra',true); hudCfg.carretel=g('simpesca_hud_carretel',false);
+  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra'), cc=document.getElementById('cfgCarretel');
+  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra; cc.checked=hudCfg.carretel;
+  cl.addEventListener('change',()=>{ hudCfg.linha=cl.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  ce.addEventListener('change',()=>{ hudCfg.estado=ce.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cb.addEventListener('change',()=>{ hudCfg.barra=cb.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cc.addEventListener('change',()=>{ hudCfg.carretel=cc.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
 }
 
-// ══ CONTAGEM → FULLSCREEN → PLAY ═════════════════════════════
-function iniciarContagem(id){
-  simEmContagem = id;
-  const ov = document.getElementById('countdownOverlay'), num = document.getElementById('countdownNum');
-  ov.classList.add('visivel'); let n = 5; num.textContent = n;
-  const tick = () => { num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; };
-  tick();
-  const t = setInterval(() => {
-    n--;
-    if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); entrarFullscreenEPlay(simEmContagem); }
-    else tick();
-  }, 1000);
+// ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
+function pedirNome(id){
+  // valida se o carretel tem linha suficiente pra ESTA simulação (estimativa de quanto o peixe puxa)
+  const precisa=estimarLinhaPts(carregarPontos(id));
+  if(linhaDisponivel() < precisa){ abrirLinhaOverlay(id, precisa); return; }
+  simEmContagem=id; document.getElementById('nomeOverlay').classList.add('visivel'); setTimeout(()=>document.getElementById('inputNome').focus(),100);
 }
-function entrarFullscreenEPlay(id){
-  const sim = SIMS[id], w = sim.wrapper;
-  const req = w.requestFullscreen || w.webkitRequestFullscreen;
+// ── Overlay "pouca linha": pede pra enrolar até liberar; contador ao vivo ──
+let linhaOvlSim=null, linhaOvlPrecisa=0;
+function abrirLinhaOverlay(id, precisa){ linhaOvlSim=id; linhaOvlPrecisa=precisa; atualizarLinhaOverlay(); document.getElementById('linhaOverlay').classList.add('visivel'); }
+function fecharLinhaOverlay(){ linhaOvlSim=null; document.getElementById('linhaOverlay').classList.remove('visivel'); }
+function linhaOvlContinuar(){ const id=linhaOvlSim; fecharLinhaOverlay(); if(id){ simEmContagem=id; document.getElementById('nomeOverlay').classList.add('visivel'); setTimeout(()=>document.getElementById('inputNome').focus(),100); } }
+function atualizarLinhaOverlay(){
+  if(linhaOvlSim===null) return;
+  const disp=Math.max(0,linhaDisponivel());
+  document.getElementById('linhaOvlInfo').textContent='Esta simulação puxa ≈ '+linhaOvlPrecisa.toFixed(0)+' m de linha · disponível agora: '+disp.toFixed(1)+' m';
+  document.getElementById('linhaOvlCarretel').textContent='📍 '+linhaCarretel().toFixed(1)+' m';
+  const ok=document.getElementById('linhaOvlOk'), pronto=disp>=linhaOvlPrecisa;
+  ok.disabled=!pronto; ok.textContent=pronto?'▶ Continuar':'enrole mais...';
+}
+function fecharNome(){ document.getElementById('nomeOverlay').classList.remove('visivel'); simEmContagem=null; }
+function confirmarNome(){ const v=document.getElementById('inputNome').value.trim(); nomeJogador=v||'Jogador'; localStorage.setItem('simpesca_ultimo_nome',nomeJogador); document.getElementById('nomeOverlay').classList.remove('visivel'); iniciarContagem(simEmContagem); }
+document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
+
+// Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudCarretel','hudTimeline'];
+function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
+function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
+// Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
+function iniciarContagem(id){
+  const sim=SIMS[id], w=sim.wrapper;
+  document.getElementById('hudConfig').classList.remove('visivel');   // fecha o painel de exibição
+  moverOverlaysPara(w);
+  const req=w.requestFullscreen||w.webkitRequestFullscreen;      // tela cheia JÁ no gesto do usuário
   if(req) req.call(w).catch(()=>{});
-  const onFS = () => {
-    if(!document.fullscreenElement && !document.webkitFullscreenElement){
-      document.removeEventListener('fullscreenchange', onFS);
-      document.removeEventListener('webkitfullscreenchange', onFS);
-      if(sim.estaRodando) pausarSim(id);
-    }
-  };
-  document.addEventListener('fullscreenchange', onFS);
-  document.addEventListener('webkitfullscreenchange', onFS);
-  iniciarSim(id);
+  const onFS=()=>{ if(!document.fullscreenElement&&!document.webkitFullscreenElement){ document.removeEventListener('fullscreenchange',onFS); document.removeEventListener('webkitfullscreenchange',onFS); if(sim.estaRodando) pausarSim(id); } };
+  document.addEventListener('fullscreenchange',onFS); document.addEventListener('webkitfullscreenchange',onFS);
+  const ov=document.getElementById('countdownOverlay'), num=document.getElementById('countdownNum');
+  ov.classList.add('visivel'); let n=5; num.textContent=n;
+  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; }; tick();
+  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); iniciarSim(id); } else tick(); },1000);
 }
 function loopSim(sim){
-  return setInterval(() => {
-    const t = sim.video.currentTime;
-    while(sim.gatilhoIdx < sim.gatilhos.length && sim.gatilhos[sim.gatilhoIdx].t <= t){
-      dispararGatilho(sim, sim.gatilhos[sim.gatilhoIdx]); sim.gatilhoIdx++;
-    }
-    tickRampa(sim);
-  }, 100);
+  // A potência segue a CURVA DE PONTOS, no tempo do vídeo
+  return setInterval(()=>{ aplicarMotor(interpolarPontos(sim.pontos, sim.video.currentTime)); },100);
 }
 function iniciarSim(id){
-  const sim = SIMS[id];
-  sim.estaRodando = true; sim.gatilhoIdx = 0; sim.potLocal = 0; sim.rampa = {ativa:false};
+  const sim=SIMS[id];
+  sim.pontos=carregarPontos(id);          // pega edições recentes do dashboard
+  sim.estaRodando=true;
   sim.overlay.classList.add('oculto');
-  sim.video.currentTime = 0;
-  sim.video.play().catch(()=>{});
-  sim.intervalo = loopSim(sim);
+  novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
+  emJogo=true; simTocando=id; atualizarVisibilidadeHUD();
+  sim.video.currentTime=0; sim.video.play().catch(()=>{});
+  const fis=fisgadaFisicaCfg();
+  if(fisgadaChar && fis.dur>0 && fis.pot>0){
+    contando=false;                        // não conta as puxadinhas da fisgada física
+    enviarFisgadaFisica(fis);              // ESP dá as puxadas (rampa-voltas-rampa-pausa)
+    const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! segure...';
+    sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
+  } else {
+    contando=true;                         // sem fisgada física: curva já começa
+    sim.intervalo=loopSim(sim);
+  }
 }
-function pausarSim(id){
-  const sim = SIMS[id];
-  sim.estaRodando = false; sim.rampa.ativa = false;
-  clearInterval(sim.intervalo); sim.video.pause();
-  aplicarMotor(0);
-  simEmPausa = id;
-  document.getElementById('pauseOverlay').classList.add('visivel');
-}
-function continuarSim(){
-  document.getElementById('pauseOverlay').classList.remove('visivel');
-  if(!simEmPausa) return;
-  const sim = SIMS[simEmPausa];
-  sim.estaRodando = true; sim.video.play().catch(()=>{});
-  sim.intervalo = loopSim(sim);
-  simEmPausa = null;
-}
-function reiniciarSim(){
-  document.getElementById('pauseOverlay').classList.remove('visivel');
-  if(!simEmPausa) return;
-  encerrarSim(simEmPausa, true);
-  simEmPausa = null;
-}
-function encerrarSim(id, sairFS){
-  const sim = SIMS[id];
-  clearInterval(sim.intervalo);
-  sim.estaRodando = false; sim.potLocal = 0; sim.rampa = {ativa:false};
-  sim.video.pause(); sim.video.currentTime = 0;
-  aplicarMotor(0);
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica(); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; simTocando=simEmPausa; atualizarVisibilidadeHUD(); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
+function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
+function encerrarSim(id, sairFS, salvar){
+  const sim=SIMS[id]; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica();
+  sim.estaRodando=false; contando=false; emJogo=false; simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s
+  const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
-  sim.overlay.classList.remove('oculto');
+  devolverOverlays();
+  sim.overlay.classList.remove('oculto'); sim.video.currentTime=0;
+  if(salvar){ salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id); }
+}
+
+// ══ RANKING ───────────────────────────────────────────────────
+function salvarRanking(nome, metros, sim){ let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){} lista.push({nome, metros:Math.round(metros*10)/10, sim, data:new Date().toISOString()}); localStorage.setItem('simpesca_ranking', JSON.stringify(lista)); }
+function mostrarResultado(nome, metros, sim){
+  const m=Math.round(metros*10)/10;
+  let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  const naSim=lista.filter(r=>r.sim===sim); const total=naSim.length;
+  const pos=naSim.filter(r=>r.metros>m).length + 1;
+  const medalha = pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
+  document.getElementById('resultadoMetros').textContent=metros.toFixed(1)+' m';
+  document.getElementById('resultadoPos').textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' no '+nomePeixe(sim);
+  document.getElementById('resultadoNome').textContent=nome;
+  const rec=document.getElementById('resultadoRecorde');
+  if(total===1){ rec.textContent='🎣 Primeira jogada desta simulação!'; rec.style.display='block'; }
+  else if(pos===1){ rec.textContent='🏆 Novo recorde!'; rec.style.display='block'; }
+  else rec.style.display='none';
+  document.getElementById('resultadoOverlay').classList.add('visivel');
+}
+function fecharResultado(){ document.getElementById('resultadoOverlay').classList.remove('visivel'); }
+
+// ══ RANKING — painel sobreposto (NÃO navega, mantém Bluetooth) ─
+let rkFiltro='todos';
+function abrirRanking(){ renderRanking(); document.getElementById('rankingOverlay').classList.add('visivel'); }
+function fecharRanking(){ document.getElementById('rankingOverlay').classList.remove('visivel'); }
+function filtrarRanking(sim,btn){ rkFiltro=sim; document.querySelectorAll('.rk-filtro').forEach(b=>b.classList.remove('ativo')); btn.classList.add('ativo'); renderRanking(); }
+function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderRanking(){
+  let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  if(rkFiltro!=='todos') lista=lista.filter(r=>r.sim===rkFiltro);
+  lista.sort((a,b)=>b.metros-a.metros);
+  const el=document.getElementById('rkLista');
+  if(!lista.length){ el.innerHTML='<div class="rk-vazio">Nenhuma jogada registrada ainda. 🎣</div>'; return; }
+  el.innerHTML=lista.map((r,i)=>{
+    const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
+    const medalha=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º';
+    const d=new Date(r.data); const data=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="rk-linha ${cls}"><div class="rk-pos">${medalha}</div><div class="rk-info"><div class="rk-nome">${escHtml(r.nome)}</div><div class="rk-meta">🐟 ${nomePeixe(r.sim)} · ${data}</div></div><div class="rk-metros">${r.metros.toFixed(1)} m</div></div>`;
+  }).join('');
 }
 
 // ══ TOAST ═════════════════════════════════════════════════════
-let toastTimeout = null;
-function mostrarToast(msg){
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('visivel');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(()=>el.classList.remove('visivel'), 1500);
-}
+let toastTimeout=null;
+function mostrarToast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('visivel'); clearTimeout(toastTimeout); toastTimeout=setTimeout(()=>el.classList.remove('visivel'),1500); }
 </script>
 </body>
 </html>
