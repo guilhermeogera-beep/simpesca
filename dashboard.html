@@ -535,7 +535,12 @@ function importarJSON(ev){
 // Há aleatoriedade: cada clique gera uma variação. Edite os pontos depois se quiser.
 function rnd(a,b){ return a + Math.random()*(b-a); }
 function finalizarFight(pts){
-  return pts.filter(p=>p.t<=DURACAO).map(p=>({t:Math.round(p.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(p.pot)))})).sort((a,b)=>a.t-b.t);
+  const piso=Math.max(15, offsetMotor());   // puxada mínima = deadband do motor (abaixo disso ele não gira)
+  return pts.filter(p=>p.t<=DURACAO).map(p=>{
+    let pot=Math.max(0,Math.min(100,Math.round(p.pot)));
+    if(pot>0 && pot<piso) pot=piso;          // toda PUXADA sobe pro piso; 0 (motor parado) continua 0
+    return {t:Math.round(p.t*100)/100, pot};
+  }).sort((a,b)=>a.t-b.t);
 }
 // Suaviza (ease senoidal de cosseno) os trechos longos -> curva em vez de reta
 function suavizar(pts){
