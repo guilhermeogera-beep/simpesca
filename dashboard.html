@@ -659,13 +659,11 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
   // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: MUITO maiores no fim)
   const w=[]; let wsum=0;
   for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(6.0*F)*x; w.push(wk); wsum+=wk; }
-  let kFis2=(N>=6)?Math.max(2,Math.min(N-2,Math.round(rnd(N*0.45,N*0.65)))):-1;  // 2ª fisgada no MEIO (só se N≥6)
   let t=t0;
   for(let k=0;k<N;k++){
     const fat=arcoEnv(t/DURACAO,F);                   // ENVELOPE da briga (arco de fases, no TEMPO) escala a amplitude
     if(k===0){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }  // saque inicial (a fisgada física já cobriu o começo)
     else if(k===1){ t=corridaInicial(pts, t, pdurRun, fat); }          // CORRIDA INICIAL (longa, sustentada)
-    else if(k===kFis2){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }                // 2ª fisgada (meio)
     else { const pdur=pdurOutros*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }                     // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
     let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
