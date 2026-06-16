@@ -618,12 +618,19 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
 function arcoEnv(p, F){
   return Math.max(0.12, (p<0.5) ? 1.0 : 1.0-(0.9*F)*((p-0.5)/0.5));   // platô forte, decai na 2ª metade
 }
-// CORRIDA INICIAL: a maior puxada da briga — o peixe dispara ao ser fisgado e SUSTENTA alto por vários
-// segundos (não é a textura da espécie, é a corrida). Usada no 1º tranco depois do saque.
+// CORRIDA INICIAL: a maior puxada da briga — o peixe dispara ao ser fisgado. Vem em DOIS arranques com um
+// RESPIRO no meio (janela de 0% pra recolher): arranque → o peixe estanca → re-arranca (corrida longa real).
 function corridaInicial(pts,t,pdur,fat){
   const end=t+pdur;
   t+=Math.min(0.6,pdur*0.10); pts.push({t,pot:rnd(94,100)*fat});          // dispara forte
-  while(t<end-0.8){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(85,97)*fat}); }   // sustenta alto (corrida longa)
+  if(pdur>=6){                                              // corrida longa: arranque → RESPIRO → re-arranca
+    const tResp=t+(end-t)*rnd(0.42,0.55);
+    while(t<tResp-0.8){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(85,97)*fat}); } // 1º arranque (sustenta alto)
+    t+=rnd(0.4,0.6); pts.push({t,pot:0});                  // alivia pra 0 = RESPIRO (o peixe estanca, você recolhe)
+    t+=rnd(1.5,3.0); pts.push({t,pot:0});                  // ~1.5–3s recolhendo
+    t+=rnd(0.3,0.5); pts.push({t,pot:rnd(92,100)*fat});    // RE-ARRANCA forte
+  }
+  while(t<end-0.8){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(85,97)*fat}); }   // arranque (sustenta alto)
   return t;
 }
 // ÚLTIMA INVESTIDA: surto seco e forte no ÚLTIMO tranco — o peixe se joga ao "ver o barco", mesmo cansado.
