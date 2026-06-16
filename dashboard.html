@@ -230,6 +230,24 @@ async function ligar(device){
 // ── FISGADA FÍSICA (config + teste) ───────────────────────────
 function lerFisFis(){ return { pot:Math.max(0,Math.min(100,parseFloat(document.getElementById('fisPot').value)||0)), voltas:Math.max(1,parseInt(document.getElementById('fisVoltas').value)||1), dur:Math.max(0,parseFloat(document.getElementById('fisDurSeg').value)||0) }; }
 function fisFisDurSeg(){ const el=document.getElementById('fisDurSeg'); if(el){ const v=parseFloat(el.value); if(isFinite(v)) return Math.max(0,v); } const s=parseFloat(localStorage.getItem('simpesca_fisfis_dur')); return isFinite(s)?Math.max(0,s):5; }
+// Pontos ESTIMADOS do formato da fisgada física (SUBIDA→RODA→DESCIDA→PAUSA, repetindo por dur) — só pra
+// DESENHAR no gráfico; quem executa é o ESP (a curva do app fica em 0 aqui). RODA é estimado pela velocidade
+// do motor (o tempo exato depende do encoder no ESP, que o app não conhece).
+const FIS_SUB=0.3, FIS_PAUSA=0.2;   // = FIS_RAMPA_MS / FIS_PAUSA_MS do firmware (em s)
+function pontosFisgadaFisica(){
+  const c=lerFisFis();
+  if(!(c.dur>0) || !(c.pot>0)) return [];
+  const vel=velMotor()*(c.pot/100);                                  // m/s estimado nessa potência
+  let roda=(vel>0)?(c.voltas*metrosPorVolta())/vel:0.5; roda=Math.max(0.15,Math.min(2.5,roda));  // tempo girando as voltas
+  const pts=[{t:0,pot:0}]; let t=0;
+  while(t<c.dur-0.05){
+    t+=FIS_SUB;   pts.push({t:Math.min(t,c.dur),pot:c.pot});         // rampa sobe 0→pot
+    t+=roda;      pts.push({t:Math.min(t,c.dur),pot:c.pot});         // roda as voltas (segura no pot)
+    t+=FIS_SUB;   pts.push({t:Math.min(t,c.dur),pot:0});            // rampa desce pot→0
+    t+=FIS_PAUSA; pts.push({t:Math.min(t,c.dur),pot:0});            // pausa
+  }
+  return pts;
+}
 function salvarFisFis(){ const c=lerFisFis(); localStorage.setItem('simpesca_fisfis_pot',c.pot); localStorage.setItem('simpesca_fisfis_voltas',c.voltas); localStorage.setItem('simpesca_fisfis_dur',c.dur); log('Fisgada física salva: '+c.pot+'% · '+c.voltas+' volta(s) · '+c.dur+'s','ok'); }
 function carregarFisFis(){ const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; }; document.getElementById('fisPot').value=g('simpesca_fisfis_pot',15); document.getElementById('fisVoltas').value=g('simpesca_fisfis_voltas',1); document.getElementById('fisDurSeg').value=g('simpesca_fisfis_dur',5); }
 function enviarFisgadaFisica(c){ if(!fisgadaChar){ log('Conecte o Bluetooth (firmware sem fisgada física)','err'); return; } const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot),Math.round(c.voltas),ms&0xFF,(ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
@@ -366,20 +384,27 @@ function renderTicks(idx){
 }
 function renderCurva(idx){
   renderTicks(idx);
-  const area=document.getElementById('curva'+idx); const pts=SIMS[idx].pontos;
-  let svg='';
+  const area=document.getElementById('curva'+idx); const pts=SIMS[idx].pontos; const durFis=fisFisDurSeg();
+  let inner='';
   if(pts.length){
     const coords=pts.map(p=>[(p.t/DURACAO)*100, 100-p.pot]);
     const first=coords[0], last=coords[coords.length-1];
     const seq=[[0,first[1]]].concat(coords).concat([[100,last[1]]]);
     const linePts=seq.map(c=>c[0].toFixed(2)+','+c[1].toFixed(2)).join(' ');
-    svg=`<svg class="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="0,100 ${linePts} 100,100" fill="rgba(0,212,255,0.12)"/><polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+    inner+=`<polygon points="0,100 ${linePts} 100,100" fill="rgba(0,212,255,0.12)"/><polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
   }
-  area.innerHTML=svg;
+  if(durFis>0){   // FORMATO (estimado) das puxadas da fisgada física, mesmo sistema de coords da curva
+    const fp=pontosFisgadaFisica();
+    if(fp.length>1){
+      const lp=fp.map(p=>Math.min(100,(p.t/DURACAO)*100).toFixed(2)+','+(100-p.pot).toFixed(2)).join(' ');
+      inner+=`<polyline points="${lp}" fill="none" stroke="#ffaa00" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+    }
+  }
+  area.innerHTML=inner?`<svg class="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none">${inner}</svg>`:'';
   pts.forEach((p,i)=>{ const h=document.createElement('div'); let cls='ponto-handle'; if(idx===simAtiva){ if(multiSel.indexOf(p)>-1) cls+=' multi'; else if(i===selPonto) cls+=' sel'; } h.className=cls; h.style.left=(p.t/DURACAO*100)+'%'; h.style.top=(100-p.pot)+'%'; h.addEventListener('mousedown',e=>iniciarDragPonto(e,idx,i)); area.appendChild(h); });
   const est=document.getElementById('estLinha'+idx); if(est) est.textContent='🐟 ≈ '+estimarLinha(pts).toFixed(1)+' m';
-  // faixa da FISGADA FÍSICA (0..dur) na linha de simulação
-  const wrap=document.getElementById('tl'+idx); let band=wrap.querySelector('.fisgada-band'); const durFis=fisFisDurSeg();
+  // faixa (fundo listrado) da FISGADA FÍSICA (0..dur)
+  const wrap=document.getElementById('tl'+idx); let band=wrap.querySelector('.fisgada-band');
   if(durFis>0){
     if(!band){ band=document.createElement('div'); band.className='fisgada-band'; band.innerHTML='<span class="lbl">🎣 fisgada física</span>'; wrap.appendChild(band); }
     band.style.width=Math.min(100,(durFis/DURACAO)*100)+'%'; band.style.display='block';
@@ -795,7 +820,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calOffset').value=offsetMotor();
   carregarFisFis();
-  document.getElementById('fisDurSeg').addEventListener('input',()=>renderTodas());   // atualiza a faixa ao vivo
+  ['fisDurSeg','fisPot','fisVoltas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>renderTodas()); });   // atualiza a faixa + formato das puxadas ao vivo
   montarBlocosSims();          // cria os blocos (inputs por peixe)
   carregarGenCfg();            // carrega os ajustes salvos de cada peixe
   for(let i=0;i<NSIMS;i++){ carregarSim(i); setupArea(i); }
