@@ -531,6 +531,7 @@ document.addEventListener('keydown',e=>{
 
 // ══ PLAY / PAUSE / STOP (preview) ─────────────────────────────
 function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; sim.tempoAtual=0;
+  metrosGanhos=0; metrosPerdidos=0; atualizarContadores();   // novo teste: zera Ganhos/Perdidos (a LINHA DO CARRETEL acumula, não zera)
   if(fisgadaChar) enviarFisgadaFisica(lerFisFis());   // dispara a fisgada física no começo (o ESP ignora a curva durante ela)
   sim.intervalo=setInterval(()=>{ sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO); const pot=interpolarPontos(sim.pontos,sim.tempoAtual); aplicarMotor(pot); atualizarSimGauge(idx,pot); atualizarInterfaceTempo(); if(sim.tempoAtual>=DURACAO) stopSim(idx); },100);
 }
