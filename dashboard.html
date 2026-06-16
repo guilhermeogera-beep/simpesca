@@ -320,6 +320,7 @@ function montarBlocosSims(){
         '</div>'+
       '</div>'+
       '<div class="gen-row">'+
+        '<label title="Intensidade da ASSINATURA do peixe: 50% = padrão · abaixo de 50 = briga mais plana/genérica · acima de 50 = caráter exagerado (vales mais fundos)">assinatura <input type="number" id="intens'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="Pico da FISGADA (saque inicial), independente do teto">fisgada <input type="number" id="fisPico'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="Alonga (>1) ou encurta (<1) a duração da fisgada">dur <input type="number" id="fisDur'+i+'" min="0.2" max="4" step="0.1" value="2">×</label>'+
         '<label title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="teto'+i+'" min="0" max="100" value="50">%</label>'+
@@ -599,7 +600,7 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
 }
 // Monta a briga: FISGADA especial + N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos
 // enfraquecem (fat) e as janelas de 0% ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
-function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico){
+function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
   const t0=fisFisDurSeg();                            // a briga começa DEPOIS da fisgada física (motor 0 até lá)
@@ -627,6 +628,13 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
     t+=wdur; pts.push({t,pot:0});
     if(t>DURACAO-4) break;
   }
+  // INTENSIDADE DA ASSINATURA: contrasta os trancos em torno do PICO da briga (espaço bruto, antes do teto).
+  // ig=1 (intens 50%) = padrão · <50 achata (vales sobem, mais genérico) · >50 aprofunda os vales (caráter exagerado).
+  const ig=(isFinite(intens)?Math.max(0,Math.min(100,intens)):50)/50;
+  if(ig!==1){
+    let topo=0; pts.forEach(p=>{ if(!p.fis && p.pot>topo) topo=p.pot; });
+    if(topo>0) pts.forEach(p=>{ if(!p.fis && p.pot>0) p.pot=Math.max(0.5, Math.min(100, topo-(topo-p.pot)*ig)); });
+  }
   pts.forEach(p=>{ if(!p.fis) p.pot*=tf; });          // teto só nos trancos; a fisgada já está no fisPico
   return finalizarFight(suavizar(pts));
 }
@@ -641,7 +649,7 @@ function pePirarara(pts,t,pdur,fat){
   }
   return t;
 }
-function fightPirarara(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico); }
+function fightPirarara(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico, intens); }
 // TAMBAQUI — BOMBEIO RÍTMICO: serra metronômica (puxa-alivia em TEMPO CONSTANTE), o clássico "bombeio circular"
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
@@ -653,7 +661,7 @@ function peTambaqui(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico); }
+function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico, intens); }
 // TUCUNARÉ — EXPLOSIVO ERRÁTICO: estalos de ALTURA VARIÁVEL em tempos irregulares + mergulhos aleatórios (caos total)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
@@ -666,7 +674,7 @@ function peTucunare(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+function fightTucunare(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens); }
 // DOURADO — ACROBÁTICO: corridas MÉDIAS pontuadas por SALTOS (afrouxa TOTAL=0% -> estala no talo ao cair)
 function peDourado(pts,t,pdur,fat){
   const end=t+pdur;
@@ -677,7 +685,7 @@ function peDourado(pts,t,pdur,fat){
   }
   return t;
 }
-function fightDourado(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+function fightDourado(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens); }
 // TRAIRÃO — BRUTAL e SECO: golpes curtos no talo com QUEDAS ABRUPTAS entre eles (staccato violento, on/off)
 function peTrairao(pts,t,pdur,fat){
   const end=t+pdur;
@@ -688,7 +696,7 @@ function peTrairao(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTrairao(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico); }
+function fightTrairao(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico, intens); }
 // JAÚ — PESO MORTO: PAREDE de potência altíssima e quase CONSTANTE, blocos longuíssimos (mal se mexe)
 function peJau(pts,t,pdur,fat){
   const end=t+pdur;
@@ -696,7 +704,7 @@ function peJau(pts,t,pdur,fat){
   while(t<end-1.2){ t+=rnd(3.6,5.6); pts.push({t,pot:rnd(91,100)*fat}); }  // arrasta no fundo: plano e no talo
   return t;
 }
-function fightJau(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico); }
+function fightJau(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico, intens); }
 const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
 // Ajustes do gerador POR PEIXE (inputs na linha de cada simulação)
 function cfgGerador(idx){
@@ -706,17 +714,18 @@ function cfgGerador(idx){
   let puxada=g('puxada',55); if(!(puxada>0)) puxada=55;
   let fisPico=g('fisPico',50); if(!(fisPico>0)) fisPico=50; fisPico=Math.min(100,fisPico);
   let fisDur=g('fisDur',2); if(!(fisDur>0)) fisDur=2;
-  return {teto,fadiga,puxada,fisPico,fisDur};
+  let intens=g('intens',50); intens=Math.max(0,Math.min(100,intens));
+  return {teto,fadiga,puxada,fisPico,fisDur,intens};
 }
-function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico); }
+function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico,c.intens); }
 function regerar(idx){
   const c=cfgGerador(idx);
   SIMS[idx].pontos=gerarCurvaEspecie(idx); salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
   salvarGenCfg(idx);
-  log('🎲 '+NOMES[idx]+' (teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'×) — nova briga gerada','ok');
+  log('🎲 '+NOMES[idx]+' (assinatura '+c.intens+'% · teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'×) — nova briga gerada','ok');
 }
 // Persiste/recupera os ajustes do gerador POR PEIXE (simpesca_gen_<id>_<campo>)
-const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur']];
+const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens']];
 function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); }
 function carregarGenCfg(){
   for(let i=0;i<NSIMS;i++){ const id=LETRAS[i];
