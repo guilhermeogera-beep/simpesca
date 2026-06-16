@@ -177,11 +177,6 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
   <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> marca vários pontos (verdes) · <b>arraste um deles para mover todos juntos</b> · <b>Ctrl+C</b> copia → passe o mouse na outra Sim e <b>Ctrl+V</b> cola (ou 📋). Delete remove os marcados · Esc limpa.</div>
 
-  <div class="gen-row" style="margin-bottom:12px;border:1px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--surface);">
-    <label title="Espaça os pontos no tempo ao gerar (🎲) TODAS as simulações. 0 = densos (atual) · 100 = bem espaçados. Maior = o motor físico tem tempo de alcançar cada nível e dá pra ver a diferença.">↔ Distância entre pontos <input type="number" id="espacoPontos" min="0" max="100" value="40" onchange="salvarEspaco()">/100</label>
-    <span>vale pra TODAS as simulações — refaz com o 🎲 de cada peixe</span>
-  </div>
-
   <div id="simsContainer"></div>
 
   <div id="pontoEditor">
@@ -331,6 +326,7 @@ function montarBlocosSims(){
         '<label title="Pico máximo da puxada — use menor p/ peixe menor">teto <input type="number" id="teto'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="fadiga'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="puxada'+i+'" min="5" max="80" value="55">s</label>'+
+        '<label title="Distância entre pontos no tempo: 0 = densos (atual) · 100 = bem espaçados. Maior = o motor físico tem tempo de alcançar cada nível (não vira borrão)">espaço <input type="number" id="espaco'+i+'" min="0" max="100" value="40">/100</label>'+
         '<span>🎲 = nova briga com estes ajustes</span>'+
       '</div>'+
       '<div id="tl'+i+'" class="timeline-wrap"><div class="curve-area" id="curva'+i+'"></div><div id="playhead'+i+'" class="tl-playhead"></div></div>';
@@ -540,11 +536,9 @@ function importarJSON(ev){
 // Cada peixe vira uma curva de potência {t,pot} com a "assinatura" da espécie.
 // Há aleatoriedade: cada clique gera uma variação. Edite os pontos depois se quiser.
 function rnd(a,b){ return a + Math.random()*(b-a); }
-// DISTÂNCIA ENTRE PONTOS (global, 0–100): espaça os pontos no tempo ao gerar. Maior = pontos mais
+// DISTÂNCIA ENTRE PONTOS (POR PEIXE, 0–100): espaça os pontos no tempo ao gerar. Maior = pontos mais
 // longe = o motor físico tem tempo de alcançar cada nível (sem virar borrão). 0 = denso (atual).
-function espacoPontosVal(){ const el=document.getElementById('espacoPontos'); if(el){ const v=parseFloat(el.value); if(isFinite(v)) return Math.max(0,Math.min(100,v)); } const s=parseFloat(localStorage.getItem('simpesca_gen_espaco')); return isFinite(s)?Math.max(0,Math.min(100,s)):40; }
-function espacoSeg(){ return (espacoPontosVal()/100)*1.0; }   // gap mínimo entre pontos: 0..1.0s
-function salvarEspaco(){ const el=document.getElementById('espacoPontos'); if(el){ let v=Math.max(0,Math.min(100,parseFloat(el.value))); if(!isFinite(v))v=40; el.value=v; localStorage.setItem('simpesca_gen_espaco',v); log('Distância entre pontos: '+v+'/100 — refaça as brigas com 🎲','ok'); } }
+function espacoSeg(espaco){ const v=Math.max(0,Math.min(100,isFinite(espaco)?espaco:40)); return (v/100)*1.0; }   // gap mínimo: 0..1.0s
 // Remove pontos próximos demais (gap < dmin), preservando DESCANSOS (motor 0) e a FISGADA (saque)
 function espacar(pts, dmin){
   if(!(dmin>0) || pts.length<3) return pts;
@@ -620,7 +614,7 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
 }
 // Monta a briga: FISGADA especial + N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos
 // enfraquecem (fat) e as janelas de 0% ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
-function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens){
+function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens, espaco){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
   const t0=fisFisDurSeg();                            // a briga começa DEPOIS da fisgada física (motor 0 até lá)
@@ -656,7 +650,7 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
     if(topo>0) pts.forEach(p=>{ if(!p.fis && p.pot>0) p.pot=Math.max(0.5, Math.min(100, topo-(topo-p.pot)*ig)); });
   }
   pts.forEach(p=>{ if(!p.fis) p.pot*=tf; });          // teto só nos trancos; a fisgada já está no fisPico
-  return finalizarFight(espacar(suavizar(pts), espacoSeg()));   // suaviza → espaça (por último) → piso/arredonda
+  return finalizarFight(espacar(suavizar(pts), espacoSeg(espaco)));   // suaviza → espaça (por último) → piso/arredonda
 }
 // PIRARARÁ — FORÇA BRUTA: swells lentos e PESADOS (sobe-desce devagar entre alto e médio-alto), sem estalos
 function pePirarara(pts,t,pdur,fat){
@@ -669,7 +663,7 @@ function pePirarara(pts,t,pdur,fat){
   }
   return t;
 }
-function fightPirarara(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico, intens); }
+function fightPirarara(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico, intens, espaco); }
 // TAMBAQUI — BOMBEIO RÍTMICO: serra metronômica (puxa-alivia em TEMPO CONSTANTE), o clássico "bombeio circular"
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
@@ -681,7 +675,7 @@ function peTambaqui(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico, intens); }
+function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico, intens, espaco); }
 // TUCUNARÉ — EXPLOSIVO ERRÁTICO: estalos de ALTURA VARIÁVEL em tempos irregulares + mergulhos aleatórios (caos total)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
@@ -694,7 +688,7 @@ function peTucunare(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens); }
+function fightTucunare(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco); }
 // DOURADO — ACROBÁTICO: corridas MÉDIAS pontuadas por SALTOS (afrouxa TOTAL=0% -> estala no talo ao cair)
 function peDourado(pts,t,pdur,fat){
   const end=t+pdur;
@@ -705,7 +699,7 @@ function peDourado(pts,t,pdur,fat){
   }
   return t;
 }
-function fightDourado(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens); }
+function fightDourado(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco); }
 // TRAIRÃO — BRUTAL e SECO: golpes curtos no talo com QUEDAS ABRUPTAS entre eles (staccato violento, on/off)
 function peTrairao(pts,t,pdur,fat){
   const end=t+pdur;
@@ -716,7 +710,7 @@ function peTrairao(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTrairao(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico, intens); }
+function fightTrairao(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico, intens, espaco); }
 // JAÚ — PESO MORTO: PAREDE de potência altíssima e quase CONSTANTE, blocos longuíssimos (mal se mexe)
 function peJau(pts,t,pdur,fat){
   const end=t+pdur;
@@ -724,7 +718,7 @@ function peJau(pts,t,pdur,fat){
   while(t<end-1.2){ t+=rnd(3.6,5.6); pts.push({t,pot:rnd(91,100)*fat}); }  // arrasta no fundo: plano e no talo
   return t;
 }
-function fightJau(teto,fadiga,puxada,fisDur,fisPico,intens){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico, intens); }
+function fightJau(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico, intens, espaco); }
 const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
 // Ajustes do gerador POR PEIXE (inputs na linha de cada simulação)
 function cfgGerador(idx){
@@ -735,17 +729,18 @@ function cfgGerador(idx){
   let fisPico=g('fisPico',50); if(!(fisPico>0)) fisPico=50; fisPico=Math.min(100,fisPico);
   let fisDur=g('fisDur',2); if(!(fisDur>0)) fisDur=2;
   let intens=g('intens',50); intens=Math.max(0,Math.min(100,intens));
-  return {teto,fadiga,puxada,fisPico,fisDur,intens};
+  let espaco=g('espaco',40); espaco=Math.max(0,Math.min(100,espaco));
+  return {teto,fadiga,puxada,fisPico,fisDur,intens,espaco};
 }
-function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico,c.intens); }
+function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico,c.intens,c.espaco); }
 function regerar(idx){
   const c=cfgGerador(idx);
   SIMS[idx].pontos=gerarCurvaEspecie(idx); salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
   salvarGenCfg(idx);
-  log('🎲 '+NOMES[idx]+' (assinatura '+c.intens+'% · teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'×) — nova briga gerada','ok');
+  log('🎲 '+NOMES[idx]+' (assinatura '+c.intens+'% · teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'× · espaço '+c.espaco+') — nova briga gerada','ok');
 }
 // Persiste/recupera os ajustes do gerador POR PEIXE (simpesca_gen_<id>_<campo>)
-const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens']];
+const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens'],['espaco','espaco']];
 function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); }
 function carregarGenCfg(){
   for(let i=0;i<NSIMS;i++){ const id=LETRAS[i];
@@ -767,7 +762,6 @@ window.addEventListener('load',()=>{
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calOffset').value=offsetMotor();
   carregarFisFis();
-  { const ep=parseFloat(localStorage.getItem('simpesca_gen_espaco')); if(isFinite(ep)) document.getElementById('espacoPontos').value=Math.max(0,Math.min(100,ep)); }
   document.getElementById('fisDurSeg').addEventListener('input',()=>renderTodas());   // atualiza a faixa ao vivo
   montarBlocosSims();          // cria os blocos (inputs por peixe)
   carregarGenCfg();            // carrega os ajustes salvos de cada peixe
