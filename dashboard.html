@@ -177,6 +177,11 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
   <div class="dica-editor">👉 <b>Clique</b> na timeline = novo ponto · <b>arraste</b> = mover · <b>clique num ponto</b> = editar/remover.<br>📌 <b>Ctrl+clique</b> marca vários pontos (verdes) · <b>arraste um deles para mover todos juntos</b> · <b>Ctrl+C</b> copia → passe o mouse na outra Sim e <b>Ctrl+V</b> cola (ou 📋). Delete remove os marcados · Esc limpa.</div>
 
+  <div class="gen-row" style="margin-bottom:12px;border:1px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--surface);">
+    <label title="Espaça os pontos no tempo ao gerar (🎲) TODAS as simulações. 0 = densos (atual) · 100 = bem espaçados. Maior = o motor físico tem tempo de alcançar cada nível e dá pra ver a diferença.">↔ Distância entre pontos <input type="number" id="espacoPontos" min="0" max="100" value="40" onchange="salvarEspaco()">/100</label>
+    <span>vale pra TODAS as simulações — refaz com o 🎲 de cada peixe</span>
+  </div>
+
   <div id="simsContainer"></div>
 
   <div id="pontoEditor">
@@ -535,6 +540,21 @@ function importarJSON(ev){
 // Cada peixe vira uma curva de potência {t,pot} com a "assinatura" da espécie.
 // Há aleatoriedade: cada clique gera uma variação. Edite os pontos depois se quiser.
 function rnd(a,b){ return a + Math.random()*(b-a); }
+// DISTÂNCIA ENTRE PONTOS (global, 0–100): espaça os pontos no tempo ao gerar. Maior = pontos mais
+// longe = o motor físico tem tempo de alcançar cada nível (sem virar borrão). 0 = denso (atual).
+function espacoPontosVal(){ const el=document.getElementById('espacoPontos'); if(el){ const v=parseFloat(el.value); if(isFinite(v)) return Math.max(0,Math.min(100,v)); } const s=parseFloat(localStorage.getItem('simpesca_gen_espaco')); return isFinite(s)?Math.max(0,Math.min(100,s)):40; }
+function espacoSeg(){ return (espacoPontosVal()/100)*1.0; }   // gap mínimo entre pontos: 0..1.0s
+function salvarEspaco(){ const el=document.getElementById('espacoPontos'); if(el){ let v=Math.max(0,Math.min(100,parseFloat(el.value))); if(!isFinite(v))v=40; el.value=v; localStorage.setItem('simpesca_gen_espaco',v); log('Distância entre pontos: '+v+'/100 — refaça as brigas com 🎲','ok'); } }
+// Remove pontos próximos demais (gap < dmin), preservando DESCANSOS (motor 0) e a FISGADA (saque)
+function espacar(pts, dmin){
+  if(!(dmin>0) || pts.length<3) return pts;
+  const out=[pts[0]]; let lastT=pts[0].t;
+  for(let i=1;i<pts.length-1;i++){ const p=pts[i];
+    if(p.pot===0 || p.fis){ out.push(p); lastT=p.t; continue; }   // descanso e fisgada sempre ficam
+    if(p.t-lastT>=dmin){ out.push(p); lastT=p.t; }                // longe o bastante: mantém · senão descarta
+  }
+  out.push(pts[pts.length-1]); return out;
+}
 function finalizarFight(pts){
   const piso=Math.max(15, offsetMotor());   // puxada mínima = deadband do motor (abaixo disso ele não gira)
   return pts.filter(p=>p.t<=DURACAO).map(p=>{
@@ -636,7 +656,7 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
     if(topo>0) pts.forEach(p=>{ if(!p.fis && p.pot>0) p.pot=Math.max(0.5, Math.min(100, topo-(topo-p.pot)*ig)); });
   }
   pts.forEach(p=>{ if(!p.fis) p.pot*=tf; });          // teto só nos trancos; a fisgada já está no fisPico
-  return finalizarFight(suavizar(pts));
+  return finalizarFight(espacar(suavizar(pts), espacoSeg()));   // suaviza → espaça (por último) → piso/arredonda
 }
 // PIRARARÁ — FORÇA BRUTA: swells lentos e PESADOS (sobe-desce devagar entre alto e médio-alto), sem estalos
 function pePirarara(pts,t,pdur,fat){
@@ -747,6 +767,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calOffset').value=offsetMotor();
   carregarFisFis();
+  { const ep=parseFloat(localStorage.getItem('simpesca_gen_espaco')); if(isFinite(ep)) document.getElementById('espacoPontos').value=Math.max(0,Math.min(100,ep)); }
   document.getElementById('fisDurSeg').addEventListener('input',()=>renderTodas());   // atualiza a faixa ao vivo
   montarBlocosSims();          // cria os blocos (inputs por peixe)
   carregarGenCfg();            // carrega os ajustes salvos de cada peixe
