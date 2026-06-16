@@ -612,8 +612,30 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
   dt(0.9,1.5); pts.push(p(78,90));
   return t;
 }
-// Monta a briga: FISGADA especial + N trancos com a "cara" da espécie (pe). O peixe CANSA: os trancos
-// enfraquecem (fat) e as janelas de 0% ficam MAIORES no fim. Curva suavizada e escalada pelo teto.
+// ARCO DA BRIGA: envelope de amplitude da FADIGA. p=posição no TEMPO (t/DURACAO), F=fadiga. Platô forte
+// na 1ª metade, decai na 2ª (o peixe cansa). F=0 → plano (briga constante). A CORRIDA INICIAL e a ÚLTIMA
+// INVESTIDA são trancos DEDICADOS (não dependem desse envelope), então o arco aparece sempre.
+function arcoEnv(p, F){
+  return Math.max(0.12, (p<0.5) ? 1.0 : 1.0-(0.9*F)*((p-0.5)/0.5));   // platô forte, decai na 2ª metade
+}
+// CORRIDA INICIAL: a maior puxada da briga — o peixe dispara ao ser fisgado e SUSTENTA alto por vários
+// segundos (não é a textura da espécie, é a corrida). Usada no 1º tranco depois do saque.
+function corridaInicial(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(0.6,pdur*0.10); pts.push({t,pot:rnd(94,100)*fat});          // dispara forte
+  while(t<end-0.8){ t+=rnd(1.4,2.4); pts.push({t,pot:rnd(85,97)*fat}); }   // sustenta alto (corrida longa)
+  return t;
+}
+// ÚLTIMA INVESTIDA: surto seco e forte no ÚLTIMO tranco — o peixe se joga ao "ver o barco", mesmo cansado.
+// Vem sempre como clímax antes de cair pra 0 (recolhido), independente de quando a briga terminou.
+function ultimaInvestida(pts,t,pdur,fat){
+  const end=t+pdur;
+  t+=Math.min(0.4,pdur*0.12); pts.push({t,pot:rnd(90,100)*fat});          // surto seco e forte
+  while(t<end-0.5){ t+=rnd(0.8,1.4); pts.push({t,pot:rnd(82,96)*fat}); }   // segura o surto
+  return t;
+}
+// Monta a briga: FISGADA + CORRIDA INICIAL + N trancos da espécie (pe), tudo sob o ARCO (arcoEnv): o peixe
+// dispara, batalha, CANSA (trancos caem + janelas crescem) e dá a última investida. Suavizada e escalada pelo teto.
 function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens, espaco){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
@@ -623,25 +645,31 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
   const base=(isFinite(puxada)&&puxada>0)?puxada:45;
   const pullBudget=Math.min(DURACAO-8, base*rnd(0.9,1.1));  // total de segundos PUXANDO (blocos mais longos)
   const N=Math.round(rnd(nMin,nMax));                 // nº de trancos
+  const pdurRun=Math.min(12, Math.max(4, pullBudget*0.22));            // corrida inicial = a MAIOR puxada
+  const pdurOutros=Math.max(1.5,(pullBudget-pdurRun)/Math.max(1,N-1)); // demais trancos dividem o resto
   const fill=rnd(82,89);
   const restTotal=Math.max(N*3, (fill-t0)-pullBudget); // tempo em 0% (recolhimento), descontando a fisgada
   // pesos das janelas CRESCENTES conforme a fadiga (F=0: iguais · F=1: MUITO maiores no fim)
   const w=[]; let wsum=0;
   for(let k=0;k<N;k++){ const x=(N>1)?k/(N-1):0; const wk=1+(6.0*F)*x; w.push(wk); wsum+=wk; }
-  let kFis2=Math.round(rnd(N*0.5, N-1.2)); kFis2=Math.max(1,Math.min(N-1,kFis2));  // 2ª fisgada: uma vez do MEIO→FIM
+  let kFis2=(N>=6)?Math.max(2,Math.min(N-2,Math.round(rnd(N*0.45,N*0.65)))):-1;  // 2ª fisgada no MEIO (só se N≥6)
   let t=t0;
   for(let k=0;k<N;k++){
-    const x=(N>1)?k/(N-1):0;
-    const fat=1-(0.9*F)*x;                            // trancos enfraquecem MUITO no fim conforme a fadiga
+    const fat=arcoEnv(t/DURACAO,F);                   // ENVELOPE da briga (arco de fases, no TEMPO) escala a amplitude
     if(k===0){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }  // saque inicial (a fisgada física já cobriu o começo)
-    else if(k===kFis2){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }                // 2ª fisgada (meio→fim, sem preparação)
-    else { const pdur=(pullBudget/N)*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }                 // tranco da espécie
+    else if(k===1){ t=corridaInicial(pts, t, pdurRun, fat); }          // CORRIDA INICIAL (longa, sustentada)
+    else if(k===kFis2){ t=fisgadaStrike(pts, t, fisEstilo, fisDur, fisPico); }                // 2ª fisgada (meio)
+    else { const pdur=pdurOutros*rnd(0.8,1.2); t=pe(pts, t, pdur, fat); }                     // tranco da espécie
     t+=rnd(0.4,0.8); pts.push({t,pot:0});             // rampa pra 0
     let wdur=restTotal*(w[k]/wsum)*rnd(0.85,1.15);    // janela cresce ao longo do tempo
     wdur=Math.max(2.0, Math.min(16, wdur));
+    wdur=Math.min(wdur, Math.max(1.5, (DURACAO-11)-t));  // não invade os ~11s reservados pra última investida
     t+=wdur; pts.push({t,pot:0});
-    if(t>DURACAO-4) break;
+    if(t>DURACAO-12) break;                            // reserva o fim pra ÚLTIMA INVESTIDA (clímax garantido)
   }
+  // ÚLTIMA INVESTIDA — clímax FINAL garantido (qualquer espécie), no fim real da briga; depois colapsa (recolhido)
+  { const dUI=Math.min(7, DURACAO-2-t);
+    if(dUI>=3){ t=ultimaInvestida(pts, t, dUI, rnd(0.9,1.0)); t+=Math.min(0.7, Math.max(0.2, DURACAO-t)); pts.push({t,pot:0}); } }
   // INTENSIDADE DA ASSINATURA: contrasta os trancos em torno do PICO da briga (espaço bruto, antes do teto).
   // ig=1 (intens 50%) = padrão · <50 achata (vales sobem, mais genérico) · >50 aprofunda os vales (caráter exagerado).
   const ig=(isFinite(intens)?Math.max(0,Math.min(100,intens)):50)/50;
