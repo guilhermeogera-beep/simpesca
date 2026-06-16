@@ -581,6 +581,12 @@ function fisgadaStrike(pts, t, estilo, fisDur, fisPico){
     dt(0.7,1.1);  pts.push(p(68,80));
     return t;
   }
+  if(estilo==='brutal'){               // golpe ÚNICO devastador com queda seca no meio (trairão)
+    dt(0.10,0.18); pts.push(p(98,100));   // estaca instantânea no talo
+    dt(0.5,0.8);   pts.push(p(18,30));    // some (queda seca, gap)
+    dt(0.2,0.35);  pts.push(p(94,100));   // crava de novo
+    return t;
+  }
   // 'forte' (padrão): saque firme e rápido (pirarará)
   dt(0.3,0.5); pts.push(p(90,100));
   dt(0.9,1.5); pts.push(p(78,90));
@@ -619,63 +625,70 @@ function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fis
   pts.forEach(p=>{ if(!p.fis) p.pot*=tf; });          // teto só nos trancos; a fisgada já está no fisPico
   return finalizarFight(suavizar(pts));
 }
-// PIRARARÁ — força BRUTA: blocos longos, potência ALTA e ESTÁVEL (mergulho pesado, quase sem alívio)
+// PIRARARÁ — FORÇA BRUTA: swells lentos e PESADOS (sobe-desce devagar entre alto e médio-alto), sem estalos
 function pePirarara(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.8,pdur*0.18); pts.push({t,pot:rnd(88,98)*fat});            // crava forte
-  while(t<end-1.0){ t+=rnd(2.4,3.8); pts.push({t,pot:rnd(84,98)*fat}); }   // sustenta alto e estável (ondas largas e suaves)
+  t+=Math.min(0.7,pdur*0.16); pts.push({t,pot:rnd(86,98)*fat});            // crava forte
+  while(t<end-1.0){
+    t+=rnd(2.2,3.4); pts.push({t,pot:rnd(60,76)*fat});                     // afrouxa devagar (mergulho lento)
+    if(t>=end-1.0)break;
+    t+=rnd(2.2,3.4); pts.push({t,pot:rnd(90,100)*fat});                    // volta a puxar pesado (swell)
+  }
   return t;
 }
 function fightPirarara(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico); }
-// TAMBAQUI — TEIMOSO: bombeio circular -> arranque forte (seco), alívio parcial (suave), repetindo
+// TAMBAQUI — BOMBEIO RÍTMICO: serra metronômica (puxa-alivia em TEMPO CONSTANTE), o clássico "bombeio circular"
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
+  const sobe=rnd(0.28,0.40), desce=rnd(0.85,1.05);                         // tempos FIXOS no bloco => ritmo regular
+  const alto=rnd(82,92), baixo=rnd(32,46);
   while(t<end-0.4){
-    t+=rnd(0.3,0.5); pts.push({t,pot:rnd(85,97)*fat});                     // arranque (subida seca)
-    t+=rnd(0.7,1.2); pts.push({t,pot:rnd(42,60)*fat});                     // alívio parcial (descida)
+    t+=sobe;  pts.push({t,pot:alto*fat*rnd(0.96,1.04)});                   // arranque seco
+    t+=desce; pts.push({t,pot:baixo*fat*rnd(0.90,1.10)});                  // alívio suave (ritmo constante)
   }
   return t;
 }
 function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico); }
-// TUCUNARÉ — EXPLOSIVO: cabeçadas violentas e irregulares + mini-saltos (quedas profundas, quase frouxo)
+// TUCUNARÉ — EXPLOSIVO ERRÁTICO: estalos de ALTURA VARIÁVEL em tempos irregulares + mergulhos aleatórios (caos total)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
   while(t<end){
-    t+=rnd(0.16,0.34); pts.push({t,pot:rnd(86,99)*fat});                   // pico violento
+    const pico=(Math.random()<0.5)?rnd(86,100):rnd(46,70);                 // pico ALTO ou médio (imprevisível)
+    t+=rnd(0.13,0.30); pts.push({t,pot:pico*fat});                         // cabeçada violenta
     if(t>=end)break;
-    const baixo=(Math.random()<0.35)?rnd(6,20):rnd(34,54);                 // às vezes mini-salto (quase frouxo)
-    t+=rnd(0.16,0.38); pts.push({t,pot:baixo*fat});
+    const baixo=(Math.random()<0.45)?rnd(4,16):rnd(26,48);                 // às vezes quase frouxo (mini-salto)
+    t+=rnd(0.13,0.40); pts.push({t,pot:baixo*fat});
   }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTucunare, 10, 14, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
-// DOURADO — ACROBÁTICO: corrida forte sustentada + SALTOS espetaculares (alívio quase total -> tranco)
+function fightTucunare(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
+// DOURADO — ACROBÁTICO: corridas MÉDIAS pontuadas por SALTOS (afrouxa TOTAL=0% -> estala no talo ao cair)
 function peDourado(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(0.5,pdur*0.22); pts.push({t,pot:rnd(84,97)*fat});             // arrancada
+  t+=Math.min(0.5,pdur*0.2); pts.push({t,pot:rnd(60,80)*fat});              // arrancada (corrida média)
   while(t<end-0.4){
-    t+=rnd(0.6,1.2); pts.push({t,pot:rnd(72,92)*fat});                      // corrida forte
-    if(t<end-0.5 && Math.random()<0.6){ t+=rnd(0.2,0.4); pts.push({t,pot:rnd(4,14)*fat}); t+=rnd(0.18,0.35); pts.push({t,pot:rnd(86,99)*fat}); } // SALTO: frouxo -> tranco
+    t+=rnd(0.7,1.3); pts.push({t,pot:rnd(56,78)*fat});                      // corrida sustentada (média)
+    if(t<end-0.6 && Math.random()<0.7){ t+=rnd(0.18,0.32); pts.push({t,pot:0}); t+=rnd(0.15,0.28); pts.push({t,pot:rnd(92,100)*fat}); } // SALTO: linha frouxa (0%) -> estala no talo
   }
   return t;
 }
 function fightDourado(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
-// TRAIRÃO — BRUTAL e seco: golpes fortes e abruptos, pressão alta (recua pouco, sem alívio total)
+// TRAIRÃO — BRUTAL e SECO: golpes curtos no talo com QUEDAS ABRUPTAS entre eles (staccato violento, on/off)
 function peTrairao(pts,t,pdur,fat){
   const end=t+pdur;
   while(t<end){
-    t+=rnd(0.18,0.38); pts.push({t,pot:rnd(88,99)*fat});                   // golpe seco e forte
+    t+=rnd(0.15,0.28); pts.push({t,pot:rnd(88,100)*fat});                  // golpe seco no talo
     if(t>=end)break;
-    t+=rnd(0.4,0.9);  pts.push({t,pot:rnd(50,70)*fat});                    // recua pouco (mantém pressão alta)
+    t+=rnd(0.5,1.0);  pts.push({t,pot:rnd(20,38)*fat});                    // CAI bruscamente (gap) antes de golpear de novo
   }
   return t;
 }
-function fightTrairao(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'explosiva', fisDur, fisPico); }
-// JAÚ — PESO MORTO: blocos longuíssimos, potência altíssima e quase CONSTANTE (mal se mexe)
+function fightTrairao(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico); }
+// JAÚ — PESO MORTO: PAREDE de potência altíssima e quase CONSTANTE, blocos longuíssimos (mal se mexe)
 function peJau(pts,t,pdur,fat){
   const end=t+pdur;
-  t+=Math.min(1.0,pdur*0.15); pts.push({t,pot:rnd(90,99)*fat});            // ferra pesado
-  while(t<end-1.2){ t+=rnd(3.0,5.0); pts.push({t,pot:rnd(88,99)*fat}); }   // arrasta no fundo: altíssimo e plano
+  t+=Math.min(1.0,pdur*0.12); pts.push({t,pot:rnd(92,100)*fat});           // ferra pesado e SEGURA
+  while(t<end-1.2){ t+=rnd(3.6,5.6); pts.push({t,pot:rnd(91,100)*fat}); }  // arrasta no fundo: plano e no talo
   return t;
 }
 function fightJau(teto,fadiga,puxada,fisDur,fisPico){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico); }
