@@ -158,20 +158,6 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   </div>
 </div>
 
-<!-- FISGADA FÍSICA (puxadas do motor) -->
-<div class="card">
-  <div class="secao-titulo"><span>🎣</span> Fisgada física — puxadas do motor no início</div>
-  <div class="cal-grid">
-    <div class="cal-campo"><label>Potência (%)</label><input type="number" id="fisPot" step="1" min="0" max="100" value="15"></div>
-    <div class="cal-campo"><label>Voltas por puxada</label><input type="number" id="fisVoltas" step="1" min="1" max="20" value="1"></div>
-    <div class="cal-campo"><label>Duração (s)</label><input type="number" id="fisDurSeg" step="0.5" min="0" max="30" value="5"></div>
-    <button class="btn btn-green" onclick="salvarFisFis()">💾 Salvar</button>
-    <button class="btn btn-accent" onclick="testarFisgada()">▶ Testar</button>
-    <button class="btn btn-red" onclick="pararFisgadaFisica()">■ Parar</button>
-  </div>
-  <div class="cal-help">O ESP dá <b>puxadas</b>: rampa sobe até a <b>potência</b>, roda as <b>voltas</b>, rampa desce a 0 e pausa — repetindo pela <b>duração</b>. Depois entra a curva normal. O player usa estes valores no início de cada jogada.</div>
-</div>
-
 <!-- EDITOR DE CURVA POR PONTOS -->
 <div class="card">
   <div class="secao-titulo" style="margin-bottom:12px"><span>⚡</span> Curva de Potência (por pontos) <span id="copiaAviso" class="copia-aviso"></span></div>
@@ -228,14 +214,18 @@ async function ligar(device){
   btUI('conectado','🟢 Conectado'); log('Bluetooth conectado','ok');
 }
 // ── FISGADA FÍSICA (config + teste) ───────────────────────────
-function lerFisFis(){ return { pot:Math.max(0,Math.min(100,parseFloat(document.getElementById('fisPot').value)||0)), voltas:Math.max(1,parseInt(document.getElementById('fisVoltas').value)||1), dur:Math.max(0,parseFloat(document.getElementById('fisDurSeg').value)||0) }; }
-function fisFisDurSeg(){ const el=document.getElementById('fisDurSeg'); if(el){ const v=parseFloat(el.value); if(isFinite(v)) return Math.max(0,v); } const s=parseFloat(localStorage.getItem('simpesca_fisfis_dur')); return isFinite(s)?Math.max(0,s):5; }
+// Config da fisgada física POR PEIXE (inputs fisFisPot/fisFisVoltas/fisFisDur na .gen-row)
+function fisFisCfg(idx){
+  const g=(id,d)=>{ const el=document.getElementById(id+idx); const v=el?parseFloat(el.value):NaN; return isFinite(v)?v:d; };
+  return { pot:Math.max(0,Math.min(100,g('fisFisPot',15))), voltas:Math.max(1,Math.round(g('fisFisVoltas',1))), dur:Math.max(0,g('fisFisDur',5)) };
+}
+function fisFisDurSeg(idx){ return fisFisCfg(idx).dur; }
 // Pontos ESTIMADOS do formato da fisgada física (SUBIDA→RODA→DESCIDA→PAUSA, repetindo por dur) — só pra
 // DESENHAR no gráfico; quem executa é o ESP (a curva do app fica em 0 aqui). RODA é estimado pela velocidade
 // do motor (o tempo exato depende do encoder no ESP, que o app não conhece).
 const FIS_SUB=0.3, FIS_PAUSA=0.2;   // = FIS_RAMPA_MS / FIS_PAUSA_MS do firmware (em s)
-function pontosFisgadaFisica(){
-  const c=lerFisFis();
+function pontosFisgadaFisica(idx){
+  const c=fisFisCfg(idx);
   if(!(c.dur>0) || !(c.pot>0)) return [];
   const vel=velMotor()*(c.pot/100);                                  // m/s estimado nessa potência
   let roda=(vel>0)?(c.voltas*metrosPorVolta())/vel:0.5; roda=Math.max(0.15,Math.min(2.5,roda));  // tempo girando as voltas
@@ -248,11 +238,8 @@ function pontosFisgadaFisica(){
   }
   return pts;
 }
-function salvarFisFis(){ const c=lerFisFis(); localStorage.setItem('simpesca_fisfis_pot',c.pot); localStorage.setItem('simpesca_fisfis_voltas',c.voltas); localStorage.setItem('simpesca_fisfis_dur',c.dur); log('Fisgada física salva: '+c.pot+'% · '+c.voltas+' volta(s) · '+c.dur+'s','ok'); }
-function carregarFisFis(){ const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; }; document.getElementById('fisPot').value=g('simpesca_fisfis_pot',15); document.getElementById('fisVoltas').value=g('simpesca_fisfis_voltas',1); document.getElementById('fisDurSeg').value=g('simpesca_fisfis_dur',5); }
 function enviarFisgadaFisica(c){ if(!fisgadaChar){ log('Conecte o Bluetooth (firmware sem fisgada física)','err'); return; } const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot),Math.round(c.voltas),ms&0xFF,(ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
 function pararFisgadaFisica(){ if(!fisgadaChar) return; try{ const b=new Uint8Array([0,0,0,0]); fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} log('Fisgada física parada','info'); }
-function testarFisgada(){ const c=lerFisFis(); salvarFisFis(); enviarFisgadaFisica(c); log('▶ Testando fisgada física ('+c.dur+'s · '+c.voltas+' volta(s)/puxada)','info'); }
 async function reconectar(){ if(navigator.bluetooth&&navigator.bluetooth.getDevices){ try{ const d=await navigator.bluetooth.getDevices(); if(d.length) await ligar(d[0]).catch(()=>{}); }catch(e){} } }
 function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math.max(0,Math.min(100,Math.round(pct)))]); try{ motorChar.writeValueWithoutResponse?motorChar.writeValueWithoutResponse(b):motorChar.writeValue(b);}catch(e){} }
 function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; travaAtiva=false; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Linha do carretel zerada (re-spool)','info'); }
@@ -345,6 +332,10 @@ function montarBlocosSims(){
         '<label title="0% = não cansa · 100% = cansa muito (trancos caem + janelas crescem)">fadiga <input type="number" id="fadiga'+i+'" min="0" max="100" value="50">%</label>'+
         '<label title="Tempo total de motor ligado (puxada). Maior = blocos mais longos, peixe puxa mais linha">puxada <input type="number" id="puxada'+i+'" min="5" max="80" value="55">s</label>'+
         '<label title="Distância entre pontos no tempo: 0 = densos (atual) · 100 = bem espaçados. Maior = o motor físico tem tempo de alcançar cada nível (não vira borrão)">espaço <input type="number" id="espaco'+i+'" min="0" max="100" value="40">/100</label>'+
+        '<span style="opacity:0.85;border-left:1px solid var(--border);padding-left:8px;margin-left:2px;">🎣 fisgada física:</span>'+
+        '<label title="Potência das puxadas da fisgada física (executadas pelo ESP no início da jogada)">pot <input type="number" id="fisFisPot'+i+'" min="0" max="100" value="15" oninput="renderCurva('+i+')">%</label>'+
+        '<label title="Voltas do encoder por puxada da fisgada física">voltas <input type="number" id="fisFisVoltas'+i+'" min="1" max="20" value="1" oninput="renderCurva('+i+')"></label>'+
+        '<label title="Duração total da fisgada física (s) — a briga gerada começa depois disso">dur <input type="number" id="fisFisDur'+i+'" min="0" max="30" step="0.5" value="5" oninput="renderCurva('+i+')">s</label>'+
         '<span>🎲 = nova briga com estes ajustes</span>'+
       '</div>'+
       '<div id="tl'+i+'" class="timeline-wrap"><div class="curve-area" id="curva'+i+'"></div><div id="playhead'+i+'" class="tl-playhead"></div></div>';
@@ -384,7 +375,7 @@ function renderTicks(idx){
 }
 function renderCurva(idx){
   renderTicks(idx);
-  const area=document.getElementById('curva'+idx); const pts=SIMS[idx].pontos; const durFis=fisFisDurSeg();
+  const area=document.getElementById('curva'+idx); const pts=SIMS[idx].pontos; const durFis=fisFisDurSeg(idx);
   let inner='';
   if(pts.length){
     const coords=pts.map(p=>[(p.t/DURACAO)*100, 100-p.pot]);
@@ -394,7 +385,7 @@ function renderCurva(idx){
     inner+=`<polygon points="0,100 ${linePts} 100,100" fill="rgba(0,212,255,0.12)"/><polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
   }
   if(durFis>0){   // FORMATO (estimado) das puxadas da fisgada física, mesmo sistema de coords da curva
-    const fp=pontosFisgadaFisica();
+    const fp=pontosFisgadaFisica(idx);
     if(fp.length>1){
       const lp=fp.map(p=>Math.min(100,(p.t/DURACAO)*100).toFixed(2)+','+(100-p.pot).toFixed(2)).join(' ');
       inner+=`<polyline points="${lp}" fill="none" stroke="#ffaa00" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
@@ -532,7 +523,7 @@ document.addEventListener('keydown',e=>{
 // ══ PLAY / PAUSE / STOP (preview) ─────────────────────────────
 function playSim(idx){ const sim=SIMS[idx]; if(sim.estaRodando) return; sim.estaRodando=true; sim.tempoAtual=0;
   metrosGanhos=0; metrosPerdidos=0; atualizarContadores();   // novo teste: zera Ganhos/Perdidos (a LINHA DO CARRETEL acumula, não zera)
-  if(fisgadaChar) enviarFisgadaFisica(lerFisFis());   // dispara a fisgada física no começo (o ESP ignora a curva durante ela)
+  if(fisgadaChar) enviarFisgadaFisica(fisFisCfg(idx));   // dispara a fisgada física DESTE peixe (o ESP ignora a curva durante ela)
   sim.intervalo=setInterval(()=>{ sim.tempoAtual=Math.min(sim.tempoAtual+0.1,DURACAO); const pot=interpolarPontos(sim.pontos,sim.tempoAtual); aplicarMotor(pot); atualizarSimGauge(idx,pot); atualizarInterfaceTempo(); if(sim.tempoAtual>=DURACAO) stopSim(idx); },100);
 }
 function pauseSim(idx){ const sim=SIMS[idx]; sim.estaRodando=false; clearInterval(sim.intervalo); pararFisgadaFisica(); }
@@ -669,10 +660,10 @@ function ultimaInvestida(pts,t,pdur,fat){
 }
 // Monta a briga: FISGADA + CORRIDA INICIAL + N trancos da espécie (pe), tudo sob o ARCO (arcoEnv): o peixe
 // dispara, batalha, CANSA (trancos caem + janelas crescem) e dá a última investida. Suavizada e escalada pelo teto.
-function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens, espaco){
+function buildFight(pe, nMin, nMax, teto, fadiga, puxada, fisEstilo, fisDur, fisPico, intens, espaco, durFis){
   const F=(isFinite(fadiga)?Math.max(0,Math.min(100,fadiga)):50)/100;  // 0=não cansa · 1=cansa muito
   const tf=(isFinite(teto)&&teto>0?Math.min(teto,100):100)/100;        // teto escala os TRANCOS (não a fisgada)
-  const t0=fisFisDurSeg();                            // a briga começa DEPOIS da fisgada física (motor 0 até lá)
+  const t0=isFinite(durFis)?Math.max(0,durFis):5;     // a briga começa DEPOIS da fisgada física DESTE peixe (motor 0 até lá)
   const pts=[{t:0,pot:0}];
   if(t0>0) pts.push({t:t0,pot:0});                    // segura em 0% durante a fisgada física
   const base=(isFinite(puxada)&&puxada>0)?puxada:45;
@@ -722,7 +713,7 @@ function pePirarara(pts,t,pdur,fat){
   }
   return t;
 }
-function fightPirarara(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico, intens, espaco); }
+function fightPirarara(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(pePirarara, 4, 6, teto, fadiga, puxada, 'forte', fisDur, fisPico, intens, espaco, durFis); }
 // TAMBAQUI — BOMBEIO RÍTMICO: serra metronômica (puxa-alivia em TEMPO CONSTANTE), o clássico "bombeio circular"
 function peTambaqui(pts,t,pdur,fat){
   const end=t+pdur;
@@ -734,7 +725,7 @@ function peTambaqui(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico, intens, espaco); }
+function fightTambaqui(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(peTambaqui, 7, 9, teto, fadiga, puxada, 'teimosa', fisDur, fisPico, intens, espaco, durFis); }
 // TUCUNARÉ — EXPLOSIVO ERRÁTICO: estalos de ALTURA VARIÁVEL em tempos irregulares + mergulhos aleatórios (caos total)
 function peTucunare(pts,t,pdur,fat){
   const end=t+pdur;
@@ -747,7 +738,7 @@ function peTucunare(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTucunare(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco); }
+function fightTucunare(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(peTucunare, 11, 15, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco, durFis); }
 // DOURADO — ACROBÁTICO: corridas MÉDIAS pontuadas por SALTOS (afrouxa TOTAL=0% -> estala no talo ao cair)
 function peDourado(pts,t,pdur,fat){
   const end=t+pdur;
@@ -758,7 +749,7 @@ function peDourado(pts,t,pdur,fat){
   }
   return t;
 }
-function fightDourado(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco); }
+function fightDourado(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(peDourado, 7, 10, teto, fadiga, puxada, 'explosiva', fisDur, fisPico, intens, espaco, durFis); }
 // TRAIRÃO — BRUTAL e SECO: golpes curtos no talo com QUEDAS ABRUPTAS entre eles (staccato violento, on/off)
 function peTrairao(pts,t,pdur,fat){
   const end=t+pdur;
@@ -769,7 +760,7 @@ function peTrairao(pts,t,pdur,fat){
   }
   return t;
 }
-function fightTrairao(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico, intens, espaco); }
+function fightTrairao(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(peTrairao, 8, 11, teto, fadiga, puxada, 'brutal', fisDur, fisPico, intens, espaco, durFis); }
 // JAÚ — PESO MORTO: PAREDE de potência altíssima e quase CONSTANTE, blocos longuíssimos (mal se mexe)
 function peJau(pts,t,pdur,fat){
   const end=t+pdur;
@@ -777,7 +768,7 @@ function peJau(pts,t,pdur,fat){
   while(t<end-1.2){ t+=rnd(3.6,5.6); pts.push({t,pot:rnd(91,100)*fat}); }  // arrasta no fundo: plano e no talo
   return t;
 }
-function fightJau(teto,fadiga,puxada,fisDur,fisPico,intens,espaco){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico, intens, espaco); }
+function fightJau(teto,fadiga,puxada,fisDur,fisPico,intens,espaco,durFis){ return buildFight(peJau, 3, 5, teto, fadiga, puxada, 'lenta', fisDur, fisPico, intens, espaco, durFis); }
 const FIGHTS={pirarara:fightPirarara, tambaqui:fightTambaqui, tucunare:fightTucunare, dourado:fightDourado, trairao:fightTrairao, jau:fightJau};
 // Ajustes do gerador POR PEIXE (inputs na linha de cada simulação)
 function cfgGerador(idx){
@@ -789,9 +780,10 @@ function cfgGerador(idx){
   let fisDur=g('fisDur',2); if(!(fisDur>0)) fisDur=2;
   let intens=g('intens',50); intens=Math.max(0,Math.min(100,intens));
   let espaco=g('espaco',40); espaco=Math.max(0,Math.min(100,espaco));
-  return {teto,fadiga,puxada,fisPico,fisDur,intens,espaco};
+  const durFis=fisFisCfg(idx).dur;   // duração da fisgada física DESTE peixe (define onde a briga começa)
+  return {teto,fadiga,puxada,fisPico,fisDur,intens,espaco,durFis};
 }
-function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico,c.intens,c.espaco); }
+function gerarCurvaEspecie(idx){ const c=cfgGerador(idx); return (FIGHTS[LETRAS[idx]]||fightTucunare)(c.teto,c.fadiga,c.puxada,c.fisDur,c.fisPico,c.intens,c.espaco,c.durFis); }
 function regerar(idx){
   const c=cfgGerador(idx);
   SIMS[idx].pontos=gerarCurvaEspecie(idx); salvarPontos(idx); simAtiva=idx; selPonto=-1; multiSel=[]; fecharEditorPonto(); renderCurva(idx);
@@ -799,7 +791,8 @@ function regerar(idx){
   log('🎲 '+NOMES[idx]+' (assinatura '+c.intens+'% · teto '+c.teto+'% · fadiga '+c.fadiga+'% · puxada '+c.puxada+'s · fisgada '+c.fisPico+'%/'+c.fisDur+'× · espaço '+c.espaco+') — nova briga gerada','ok');
 }
 // Persiste/recupera os ajustes do gerador POR PEIXE (simpesca_gen_<id>_<campo>)
-const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens'],['espaco','espaco']];
+const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens'],['espaco','espaco'],['fisFisPot','fisfispot'],['fisFisVoltas','fisfisvoltas'],['fisFisDur','fisfisdur']];
+const FISFIS_GLOBAL={fisfispot:'simpesca_fisfis_pot', fisfisvoltas:'simpesca_fisfis_voltas', fisfisdur:'simpesca_fisfis_dur'};  // migração da fisgada física global antiga
 function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); }
 function carregarGenCfg(){
   for(let i=0;i<NSIMS;i++){ const id=LETRAS[i];
@@ -807,6 +800,7 @@ function carregarGenCfg(){
       const el=document.getElementById(inp+i); if(!el) return;
       let v=localStorage.getItem('simpesca_gen_'+id+'_'+key);
       if(v===null) v=localStorage.getItem('simpesca_gen_'+key);   // migra dos ajustes globais antigos
+      if(v===null && FISFIS_GLOBAL[key]) v=localStorage.getItem(FISFIS_GLOBAL[key]);   // migra da fisgada física global antiga
       if(v!==null) el.value=v;
       el.addEventListener('change',()=>salvarGenCfg(i));
     });
@@ -820,9 +814,7 @@ window.addEventListener('load',()=>{
   document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calVel').value=velMotor();
   document.getElementById('calOffset').value=offsetMotor();
-  carregarFisFis();
-  ['fisDurSeg','fisPot','fisVoltas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>renderTodas()); });   // atualiza a faixa + formato das puxadas ao vivo
-  montarBlocosSims();          // cria os blocos (inputs por peixe)
+  montarBlocosSims();          // cria os blocos (inputs por peixe, incl. fisgada física)
   carregarGenCfg();            // carrega os ajustes salvos de cada peixe
   for(let i=0;i<NSIMS;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();

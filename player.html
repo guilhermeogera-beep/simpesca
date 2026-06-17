@@ -188,9 +188,10 @@ async function ligar(device){
   btUI('conectado','🟢 Conectado'); mostrarToast('Bluetooth conectado');
 }
 // ── Fisgada física (puxadas do motor no início) ───────────────
-function fisgadaFisicaCfg(){
-  const g=(k,d)=>{ const v=parseFloat(localStorage.getItem(k)); return isFinite(v)?v:d; };
-  return { pot:Math.max(0,Math.min(100,g('simpesca_fisfis_pot',15))), voltas:Math.max(1,g('simpesca_fisfis_voltas',1)), dur:Math.max(0,g('simpesca_fisfis_dur',5)) };
+const FISFIS_GLOBAL={fisfispot:'simpesca_fisfis_pot', fisfisvoltas:'simpesca_fisfis_voltas', fisfisdur:'simpesca_fisfis_dur'};
+function fisgadaFisicaCfg(id){   // POR PEIXE (simpesca_gen_<id>_fisfis*), com fallback do global antigo e padrões
+  const g=(key,d)=>{ let v=parseFloat(localStorage.getItem('simpesca_gen_'+id+'_'+key)); if(isFinite(v))return v; v=parseFloat(localStorage.getItem(FISFIS_GLOBAL[key])); return isFinite(v)?v:d; };
+  return { pot:Math.max(0,Math.min(100,g('fisfispot',15))), voltas:Math.max(1,Math.round(g('fisfisvoltas',1))), dur:Math.max(0,g('fisfisdur',5)) };
 }
 function enviarFisgadaFisica(c){ if(!fisgadaChar) return; const ms=Math.round(c.dur*1000); const b=new Uint8Array([Math.round(c.pot), Math.round(c.voltas), ms&0xFF, (ms>>8)&0xFF]); try{ fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
 function pararFisgadaFisica(){ if(!fisgadaChar) return; try{ const b=new Uint8Array([0,0,0,0]); fisgadaChar.writeValueWithoutResponse?fisgadaChar.writeValueWithoutResponse(b):fisgadaChar.writeValue(b); }catch(e){} }
@@ -341,7 +342,7 @@ function desenharTimeline(sim){
   const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, P=sim.pontos;
   const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;
   const yOf=t=>H-(interpolarPontos(P,t)/100)*(H-4)-2;
-  const durFis=fisgadaFisicaCfg().dur;
+  const durFis=fisgadaFisicaCfg(simTocando).dur;
   const xFis=durFis>0 ? ((durFis-t0)/span)*W : 0;        // borda direita da fisgada
   const xStart=Math.min(W, Math.max(0, xFis));           // a CURVA só começa aqui (depois da fisgada)
   ctx.clearRect(0,0,W,H);
@@ -447,7 +448,7 @@ function iniciarSim(id){
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
   emJogo=true; simTocando=id; atualizarVisibilidadeHUD();
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
-  const fis=fisgadaFisicaCfg();
+  const fis=fisgadaFisicaCfg(id);
   if(fisgadaChar && fis.dur>0 && fis.pot>0){
     contando=false;                        // não conta as puxadinhas da fisgada física
     enviarFisgadaFisica(fis);              // ESP dá as puxadas (rampa-voltas-rampa-pausa)
