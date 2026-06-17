@@ -32,6 +32,14 @@
         .progresso-txt { font-size:11px; color:#7b8d9e; margin-top:6px; }
         .status { font-size:12px; color:#555; margin-top:20px; }
         .status.ok { color:#00e676; } .status.err { color:#ff1744; }
+        .local-sec { width:85%; max-width:320px; background:#0d151d; border:1px solid #1a2736; border-radius:12px; padding:14px 16px; margin-bottom:14px; text-align:left; }
+        .local-sec-titulo { font-size:11px; letter-spacing:2px; color:#7b8d9e; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+        .local-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; margin-bottom:10px; }
+        .local-item { font-size:11px; color:#7b8d9e; display:flex; align-items:center; gap:4px; }
+        .local-item .dot { width:8px; height:8px; border-radius:50%; background:#1a2736; flex-shrink:0; }
+        .local-item .dot.ok { background:#00e676; }
+        .btn-local { width:100%; background:#10201a; color:#00e676; border:1px solid #00e676; padding:9px; border-radius:8px; font-size:12px; letter-spacing:1px; cursor:pointer; font-family:inherit; text-transform:uppercase; }
+        .btn-local:active { opacity:0.7; }
     </style>
 </head>
 <body>
@@ -60,11 +68,53 @@
         <div class="progresso-txt" id="progressoTxt">Baixando...</div>
     </div>
     <button id="btnConectar" class="btn" onclick="abrirPainel()">🎣 Abrir Painel</button>
+
+    <div class="local-sec">
+        <div class="local-sec-titulo">📂 Vídeos locais <span style="font-size:10px;color:#3d5d7e">(opcional — sem internet)</span></div>
+        <div class="local-grid" id="localGrid"></div>
+        <button class="btn-local" onclick="importarVideos()">📂 Selecionar vídeos do dispositivo</button>
+    </div>
+
     <p class="status" id="statusSW">Carregando...</p>
 
     <script>
         const MEDIA_CACHE = 'simpesca-media-v2';
         const VIDEOS = ['video_pirarara.mp4','video_tambaqui.mp4','video_tucunare.mp4','video_dourado.mp4','video_trairao.mp4','video_jau.mp4'];
+        const ESPECIES_IDS = ['pirarara','tambaqui','tucunare','dourado','trairao','jau'];
+        const ESPECIES_NOMES = {pirarara:'Pirarará',tambaqui:'Tambacu',tucunare:'Tucunaré',dourado:'Dourado',trairao:'Trairão',jau:'Jaú'};
+
+        // ── IndexedDB para vídeos locais ──────────────────────────
+        const VIDEO_DB='simpesca-videos', VIDEO_STORE='videos';
+        function abrirVideoDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open(VIDEO_DB,1); r.onupgradeneeded=e=>e.target.result.createObjectStore(VIDEO_STORE); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
+        async function salvarVideoDB(key,blob){ const db=await abrirVideoDB(); return new Promise((res,rej)=>{ const tx=db.transaction(VIDEO_STORE,'readwrite'); tx.objectStore(VIDEO_STORE).put(blob,key); tx.oncomplete=res; tx.onerror=rej; }); }
+        async function temVideoDB(key){ const db=await abrirVideoDB(); return new Promise((res,rej)=>{ const r=db.transaction(VIDEO_STORE,'readonly').objectStore(VIDEO_STORE).getKey(key); r.onsuccess=e=>res(!!e.target.result); r.onerror=rej; }); }
+
+        async function atualizarStatusLocais(){
+            const grid=document.getElementById('localGrid'); grid.innerHTML='';
+            for(const id of ESPECIES_IDS){
+                let tem=false; try{ tem=await temVideoDB('video_'+id); }catch(e){}
+                const div=document.createElement('div'); div.className='local-item';
+                div.innerHTML='<span class="dot'+(tem?' ok':'')+'"></span><span>'+(tem?'<b style="color:#00e676">':'')+ESPECIES_NOMES[id]+(tem?'</b>':'')+'</span>';
+                grid.appendChild(div);
+            }
+        }
+
+        async function importarVideos(){
+            const input=document.createElement('input'); input.type='file'; input.accept='.mp4'; input.multiple=true;
+            input.onchange=async()=>{
+                const files=Array.from(input.files); if(!files.length) return;
+                let salvos=0;
+                for(const f of files){
+                    const nome=f.name.toLowerCase().replace('.mp4','');
+                    const id=ESPECIES_IDS.find(i=>nome.includes(i)||nome==='video_'+i||nome===i);
+                    if(id){ try{ await salvarVideoDB('video_'+id,f); salvos++; }catch(e){ alert('Erro ao salvar '+f.name+': '+e); } }
+                }
+                if(salvos>0) alert(salvos+' vídeo(s) salvo(s) com sucesso! Eles serão usados no lugar dos vídeos online.');
+                else alert('Nenhum vídeo reconhecido. Nomeie os arquivos contendo o nome do peixe (ex: video_pirarara.mp4).');
+                await atualizarStatusLocais();
+            };
+            input.click();
+        }
         function abrirPainel(){ window.location.href = 'player.html'; }
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         if (isIOS) document.getElementById('dicaIOS').style.display = 'block';
@@ -112,6 +162,7 @@
                 .then(()=>{ const s=document.getElementById('statusSW'); s.textContent='✅ App pronto para uso offline'; s.className='status ok'; verificarVideos(); })
                 .catch(()=>{ const s=document.getElementById('statusSW'); s.textContent='⚠️ Erro ao registrar service worker'; s.className='status err'; });
         }
+        atualizarStatusLocais();
     </script>
 </body>
 </html>
