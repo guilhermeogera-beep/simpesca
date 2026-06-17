@@ -71,6 +71,11 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudConfig .hc-tit{font-size:0.6rem;letter-spacing:1.5px;color:#7e96ad;text-transform:uppercase;margin-bottom:6px;}
 #hudConfig label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;}
 #hudConfig input{accent-color:var(--accent);cursor:pointer;width:15px;height:15px;}
+#hudSync{position:fixed;bottom:14px;right:14px;z-index:64;display:none;align-items:center;gap:8px;background:rgba(0,0,0,0.6);border:1px solid #ffb84d;border-radius:22px;padding:5px 10px 5px 13px;color:#ffc061;font-size:0.85rem;font-weight:700;}
+#hudSync.visivel{display:flex;}
+#hudSync button{background:rgba(255,170,0,0.16);border:1px solid #ffb84d;color:#ffc061;border-radius:13px;font-family:inherit;font-size:0.82rem;font-weight:800;padding:5px 11px;cursor:pointer;}
+#hudSync button:active{background:rgba(255,170,0,0.38);}
+#hudSync .hs-val{min-width:46px;text-align:center;font-family:monospace;font-weight:800;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:20px;padding:6px 18px;font-size:0.7rem;color:var(--accent);pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;}
 .toast.visivel{opacity:1;}
 .rk-filtros{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -109,12 +114,14 @@ input[type=text]:focus{border-color:var(--accent);}
 <div id="hudEstado" class="recolher">🎣 RECOLHA A LINHA</div>
 <div id="hudCarretel">📍 0.0 m</div>
 <div id="hudTimeline"><canvas id="tlCanvas" width="600" height="80"></canvas></div>
+<div id="hudSync"><span>⏱</span><button onclick="nudgeSync(-0.2)">−0.2</button><span class="hs-val" id="hudSyncVal">0.0s</span><button onclick="nudgeSync(0.2)">+0.2</button></div>
 <div id="hudConfig">
   <div class="hc-tit">👁 Exibir na tela</div>
   <label><input type="checkbox" id="cfgLinha" checked> Linha enrolada</label>
   <label><input type="checkbox" id="cfgEstado" checked> Estado (puxa/recolhe)</label>
   <label><input type="checkbox" id="cfgBarra" checked> Barra de antecipação</label>
   <label><input type="checkbox" id="cfgCarretel"> Linha no carretel / trava</label>
+  <label><input type="checkbox" id="cfgSync" checked> Ajuste de sincronia (⏱)</label>
 </div>
 
 <div class="fs-overlay" id="nomeOverlay">
@@ -340,7 +347,7 @@ function aplicarMotor(pct){ pct=Math.max(0,Math.min(100,pct));
 // ── BARRA DE ANTECIPAÇÃO (estilo waveform) + visibilidade configurável dos HUDs ──
 let simTocando=null, tlRAF=null, emJogo=false;
 const TL_PASSADO=1.4, TL_FUTURO=6.0;   // segundos à esquerda (passado) e à direita (futuro) do "AGORA"
-const hudCfg={linha:true, estado:true, barra:true, carretel:false};
+const hudCfg={linha:true, estado:true, barra:true, carretel:false, sync:true};
 function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocando!=null) desenharTimeline(SIMS[simTocando]); }
 function desenharTimeline(sim){
   const cv=document.getElementById('tlCanvas'); if(!cv) return;
@@ -382,21 +389,33 @@ function atualizarVisibilidadeHUD(){
   document.getElementById('hudEstado').classList.toggle('visivel', emJogo && hudCfg.estado);
   document.getElementById('hudTimeline').classList.toggle('visivel', emJogo && hudCfg.barra);
   document.getElementById('hudCarretel').classList.toggle('visivel', emJogo && hudCfg.carretel);
+  document.getElementById('hudSync').classList.toggle('visivel', emJogo && hudCfg.sync);
+  if(emJogo && hudCfg.sync) atualizarHudSync();
   const rodar = simTocando!=null && hudCfg.barra;
   if(rodar){ if(!tlRAF) tlRAF=requestAnimationFrame(loopTimeline); }
   else if(tlRAF){ cancelAnimationFrame(tlRAF); tlRAF=null; }
 }
 function toggleConfig(){ document.getElementById('hudConfig').classList.toggle('visivel'); }
-function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); localStorage.setItem('simpesca_hud_carretel',hudCfg.carretel?'1':'0'); }
+// Ajuste de sincronia AO VIVO durante o jogo (nudge ∓0,2s no peixe tocando)
+function atualizarHudSync(){ const el=document.getElementById('hudSyncVal'); if(el && simTocando!=null) el.textContent=syncVideo(simTocando).toFixed(1)+'s'; }
+function nudgeSync(delta){
+  if(simTocando==null) return;
+  let v=Math.max(-30,Math.min(30,Math.round((syncVideo(simTocando)+delta)*10)/10));
+  localStorage.setItem('simpesca_sync_'+simTocando, v);
+  const card=document.getElementById('sync_'+simTocando); if(card) card.value=v;   // mantém o card alinhado
+  atualizarHudSync();
+}
+function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); localStorage.setItem('simpesca_hud_carretel',hudCfg.carretel?'1':'0'); localStorage.setItem('simpesca_hud_sync',hudCfg.sync?'1':'0'); }
 function carregarHudCfg(){
   const g=(k,d)=>{ const v=localStorage.getItem(k); return v===null?d:v==='1'; };
-  hudCfg.linha=g('simpesca_hud_linha',true); hudCfg.estado=g('simpesca_hud_estado',true); hudCfg.barra=g('simpesca_hud_barra',true); hudCfg.carretel=g('simpesca_hud_carretel',false);
-  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra'), cc=document.getElementById('cfgCarretel');
-  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra; cc.checked=hudCfg.carretel;
+  hudCfg.linha=g('simpesca_hud_linha',true); hudCfg.estado=g('simpesca_hud_estado',true); hudCfg.barra=g('simpesca_hud_barra',true); hudCfg.carretel=g('simpesca_hud_carretel',false); hudCfg.sync=g('simpesca_hud_sync',true);
+  const cl=document.getElementById('cfgLinha'), ce=document.getElementById('cfgEstado'), cb=document.getElementById('cfgBarra'), cc=document.getElementById('cfgCarretel'), cs=document.getElementById('cfgSync');
+  cl.checked=hudCfg.linha; ce.checked=hudCfg.estado; cb.checked=hudCfg.barra; cc.checked=hudCfg.carretel; cs.checked=hudCfg.sync;
   cl.addEventListener('change',()=>{ hudCfg.linha=cl.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   ce.addEventListener('change',()=>{ hudCfg.estado=ce.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cb.addEventListener('change',()=>{ hudCfg.barra=cb.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cc.addEventListener('change',()=>{ hudCfg.carretel=cc.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cs.addEventListener('change',()=>{ hudCfg.sync=cs.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
 }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
@@ -424,7 +443,7 @@ function confirmarNome(){ const v=document.getElementById('inputNome').value.tri
 document.getElementById('inputNome').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarNome(); });
 
 // Leva os overlays (contagem/pausa/resultado) pra DENTRO do vídeo (aparecerem em tela cheia) e devolve depois
-const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudCarretel','hudTimeline'];
+const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinha','hudEstado','hudCarretel','hudTimeline','hudSync'];
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
