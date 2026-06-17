@@ -72,6 +72,12 @@
     <div class="local-sec">
         <div class="local-sec-titulo">📂 Vídeos locais <span style="font-size:10px;color:#3d5d7e">(opcional — sem internet)</span></div>
         <div class="local-grid" id="localGrid"></div>
+        <input type="file" accept=".mp4" id="fi_pirarara" style="display:none" onchange="salvarArquivo('pirarara',this)">
+        <input type="file" accept=".mp4" id="fi_tambaqui"  style="display:none" onchange="salvarArquivo('tambaqui',this)">
+        <input type="file" accept=".mp4" id="fi_tucunare"  style="display:none" onchange="salvarArquivo('tucunare',this)">
+        <input type="file" accept=".mp4" id="fi_dourado"   style="display:none" onchange="salvarArquivo('dourado',this)">
+        <input type="file" accept=".mp4" id="fi_trairao"   style="display:none" onchange="salvarArquivo('trairao',this)">
+        <input type="file" accept=".mp4" id="fi_jau"       style="display:none" onchange="salvarArquivo('jau',this)">
     </div>
 
     <p class="status" id="statusSW">Carregando...</p>
@@ -94,29 +100,22 @@
                 let tem=false; try{ tem=await temVideoDB('video_'+id); }catch(e){}
                 const div=document.createElement('div'); div.className='local-item';
                 div.innerHTML=
-                    '<button onclick="importarVideo(\''+id+'\')" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:5px;width:100%;padding:3px 0;">'+
+                    '<label for="fi_'+id+'" style="cursor:pointer;display:flex;align-items:center;gap:5px;width:100%;padding:3px 0;">'+
                     '<span class="dot'+(tem?' ok':'')+'" id="dot_'+id+'"></span>'+
                     '<span id="lbl_'+id+'" style="'+(tem?'color:#00e676;font-weight:bold':'')+'">'+(tem?'✅ ':'')+ESPECIES_NOMES[id]+'</span>'+
-                    '</button>';
+                    '</label>';
                 grid.appendChild(div);
             }
         }
 
-        async function importarVideo(id){
-            const input=document.createElement('input'); input.type='file'; input.accept='.mp4';
-            input.style.cssText='position:fixed;top:-999px;left:-999px;opacity:0;';
-            document.body.appendChild(input);
-            input.onchange=async()=>{
-                const f=input.files[0];
-                document.body.removeChild(input);
-                if(!f) return;
-                try{
-                    await salvarVideoDB('video_'+id,f);
-                    document.getElementById('dot_'+id).className='dot ok';
-                    const lbl=document.getElementById('lbl_'+id); lbl.style.color='#00e676'; lbl.style.fontWeight='bold'; lbl.textContent='✅ '+ESPECIES_NOMES[id];
-                }catch(e){ alert('Erro ao salvar: '+e); }
-            };
-            input.click();
+        async function salvarArquivo(id, input){
+            const f=input.files[0]; if(!f) return;
+            try{
+                await salvarVideoDB('video_'+id,f);
+                document.getElementById('dot_'+id).className='dot ok';
+                const lbl=document.getElementById('lbl_'+id); lbl.style.color='#00e676'; lbl.style.fontWeight='bold'; lbl.textContent='✅ '+ESPECIES_NOMES[id];
+            }catch(e){ alert('Erro ao salvar: '+e); }
+            input.value='';
         }
         function abrirPainel(){ window.location.href = 'player.html'; }
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
