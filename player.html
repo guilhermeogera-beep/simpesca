@@ -260,9 +260,12 @@ function gatilhosParaPontos(gatilhos){
   });
   return p.map(x=>({t:Math.round(x.t*100)/100, pot:Math.max(0,Math.min(100,Math.round(x.pot)))})).sort((a,b)=>a.t-b.t);
 }
+let curvasGitHub={};
 function carregarPontos(id){
-  // 1º: curva salva da espécie (editada/gerada no dashboard)
+  // 1º: curva salva localmente (editada/gerada no dashboard)
   try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
+  // 2º: curva do GitHub (curvas.json)
+  if(curvasGitHub[id]&&Array.isArray(curvasGitHub[id])&&curvasGitHub[id].length) return curvasGitHub[id].slice().sort((a,b)=>a.t-b.t);
   // fallback: curvas antigas A/B/C (cíclico) ou padrão embutido
   const idx=Math.max(0,ESPECIES.findIndex(e=>e.id===id)), L=['A','B','C'][idx%3];
   try{ const r=localStorage.getItem('simpesca_pontos_'+L); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
@@ -300,7 +303,8 @@ const VIDEO_DB='simpesca-videos', VIDEO_STORE='videos';
 function abrirVideoDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open(VIDEO_DB,1); r.onupgradeneeded=e=>e.target.result.createObjectStore(VIDEO_STORE); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
 async function lerVideoDB(key){ const db=await abrirVideoDB(); return new Promise((res,rej)=>{ const r=db.transaction(VIDEO_STORE,'readonly').objectStore(VIDEO_STORE).get(key); r.onsuccess=e=>res(e.target.result||null); r.onerror=rej; }); }
 
-window.addEventListener('load',()=>{
+window.addEventListener('load',async()=>{
+  try{ const r=await fetch('curvas.json'); if(r.ok){ const d=await r.json(); curvasGitHub=d.curvas||{}; } }catch(e){}
   // monta os cards (1 por peixe)
   const grid=document.getElementById('simsGrid');
   ESPECIES.forEach((e,i)=>{
