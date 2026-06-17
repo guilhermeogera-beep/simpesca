@@ -72,7 +72,6 @@
     <div class="local-sec">
         <div class="local-sec-titulo">📂 Vídeos locais <span style="font-size:10px;color:#3d5d7e">(opcional — sem internet)</span></div>
         <div class="local-grid" id="localGrid"></div>
-        <button class="btn-local" onclick="importarVideos()">📂 Selecionar vídeos do dispositivo</button>
     </div>
 
     <p class="status" id="statusSW">Carregando...</p>
@@ -94,24 +93,24 @@
             for(const id of ESPECIES_IDS){
                 let tem=false; try{ tem=await temVideoDB('video_'+id); }catch(e){}
                 const div=document.createElement('div'); div.className='local-item';
-                div.innerHTML='<span class="dot'+(tem?' ok':'')+'"></span><span>'+(tem?'<b style="color:#00e676">':'')+ESPECIES_NOMES[id]+(tem?'</b>':'')+'</span>';
+                div.innerHTML=
+                    '<button onclick="importarVideo(\''+id+'\')" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:5px;width:100%;padding:3px 0;">'+
+                    '<span class="dot'+(tem?' ok':'')+'" id="dot_'+id+'"></span>'+
+                    '<span id="lbl_'+id+'" style="'+(tem?'color:#00e676;font-weight:bold':'')+'">'+(tem?'✅ ':'')+ESPECIES_NOMES[id]+'</span>'+
+                    '</button>';
                 grid.appendChild(div);
             }
         }
 
-        async function importarVideos(){
-            const input=document.createElement('input'); input.type='file'; input.accept='.mp4'; input.multiple=true;
+        async function importarVideo(id){
+            const input=document.createElement('input'); input.type='file'; input.accept='.mp4';
             input.onchange=async()=>{
-                const files=Array.from(input.files); if(!files.length) return;
-                let salvos=0;
-                for(const f of files){
-                    const nome=f.name.toLowerCase().replace('.mp4','');
-                    const id=ESPECIES_IDS.find(i=>nome.includes(i)||nome==='video_'+i||nome===i);
-                    if(id){ try{ await salvarVideoDB('video_'+id,f); salvos++; }catch(e){ alert('Erro ao salvar '+f.name+': '+e); } }
-                }
-                if(salvos>0) alert(salvos+' vídeo(s) salvo(s) com sucesso! Eles serão usados no lugar dos vídeos online.');
-                else alert('Nenhum vídeo reconhecido. Nomeie os arquivos contendo o nome do peixe (ex: video_pirarara.mp4).');
-                await atualizarStatusLocais();
+                const f=input.files[0]; if(!f) return;
+                try{
+                    await salvarVideoDB('video_'+id,f);
+                    document.getElementById('dot_'+id).className='dot ok';
+                    const lbl=document.getElementById('lbl_'+id); lbl.style.color='#00e676'; lbl.style.fontWeight='bold'; lbl.textContent='✅ '+ESPECIES_NOMES[id];
+                }catch(e){ alert('Erro ao salvar: '+e); }
             };
             input.click();
         }
