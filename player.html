@@ -274,13 +274,16 @@ function interpolarPontos(pontos, t){
 // UMA simulação POR PEIXE: cada espécie tem seu vídeo (video_<id>.mp4) e sua curva (simpesca_pontos_<id>)
 const ESPECIES=[
   {id:'pirarara', nome:'Pirarará'},
-  {id:'tambaqui', nome:'Tambaqui'},
+  {id:'tambaqui', nome:'Tambacu'},
   {id:'tucunare', nome:'Tucunaré'},
   {id:'dourado',  nome:'Dourado'},
   {id:'trairao',  nome:'Trairão'},
   {id:'jau',      nome:'Jaú'}
 ];
 function nomePeixe(id){ const e=ESPECIES.find(x=>x.id===id); return e?e.nome:id; }
+// Sincronia POR VÍDEO: atraso (s) da simulação vs o vídeo. Positivo = motor age mais tarde (alinha com o vídeo).
+function syncVideo(id){ const v=parseFloat(localStorage.getItem('simpesca_sync_'+id)); return isFinite(v)?v:0; }
+function salvarSync(id){ const el=document.getElementById('sync_'+id); if(!el) return; let v=parseFloat(el.value); if(!isFinite(v)) v=0; v=Math.max(-30,Math.min(30,Math.round(v*10)/10)); el.value=v; localStorage.setItem('simpesca_sync_'+id,v); }
 const SIMS={};
 ESPECIES.forEach(e=>{ SIMS[e.id]={letra:e.id,nome:e.nome,video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false}; });
 let simEmContagem=null, simEmPausa=null, nomeJogador='';
@@ -297,7 +300,8 @@ window.addEventListener('load',()=>{
         '<video id="video_'+e.id+'" preload="metadata" playsinline><source src="video_'+e.id+'.mp4" type="video/mp4"></video>'+
         '<div class="video-progress"><div class="video-progress-bar" id="prog_'+e.id+'"></div></div>'+
         '<div class="overlay" id="overlay_'+e.id+'"><button class="btn-play" onclick="pedirNome(\''+e.id+'\')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">'+e.nome+'</span></div>'+
-      '</div>';
+      '</div>'+
+      '<div style="text-align:center;margin-top:6px;font-size:0.72rem;color:#7b8d9e;"><label title="Atraso da simulação em relação ao vídeo (s). Positivo = as ações do motor acontecem mais tarde. Ajuste pra casar a briga com o vídeo.">⏱ sincronia <input type="number" id="sync_'+e.id+'" step="0.1" value="0" onchange="salvarSync(\''+e.id+'\')" style="width:62px;text-align:center;background:#0d151d;border:1px solid #1a2736;border-radius:5px;color:#e0e6ed;font-family:monospace;padding:3px 4px;outline:none;"> s</label></div>';
     grid.appendChild(bloco);
   });
   ESPECIES.forEach(e=>{
@@ -305,6 +309,7 @@ window.addEventListener('load',()=>{
     s.video=document.getElementById('video_'+id); s.wrapper=document.getElementById('wrapper_'+id);
     s.overlay=document.getElementById('overlay_'+id); s.prog=document.getElementById('prog_'+id);
     s.pontos=carregarPontos(id);
+    const sy=document.getElementById('sync_'+id); if(sy) sy.value=syncVideo(id);   // carrega a sincronia salva
     s.video.addEventListener('click',()=>{ if(s.estaRodando) pausarSim(id); });
     s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
     s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
@@ -340,7 +345,7 @@ function loopTimeline(){ tlRAF=requestAnimationFrame(loopTimeline); if(simTocand
 function desenharTimeline(sim){
   const cv=document.getElementById('tlCanvas'); if(!cv) return;
   const ctx=cv.getContext('2d'), W=cv.width, H=cv.height, P=sim.pontos;
-  const now=sim.video.currentTime||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;
+  const now=(sim.video.currentTime-syncVideo(simTocando))||0, t0=now-TL_PASSADO, span=TL_PASSADO+TL_FUTURO, N=140;   // tempo EFETIVO (com a sincronia), igual ao motor
   const yOf=t=>H-(interpolarPontos(P,t)/100)*(H-4)-2;
   const durFis=fisgadaFisicaCfg(simTocando).dur;
   const xFis=durFis>0 ? ((durFis-t0)/span)*W : 0;        // borda direita da fisgada
@@ -437,8 +442,8 @@ function iniciarContagem(id){
   const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); iniciarSim(id); } else tick(); },1000);
 }
 function loopSim(sim){
-  // A potência segue a CURVA DE PONTOS, no tempo do vídeo
-  return setInterval(()=>{ aplicarMotor(interpolarPontos(sim.pontos, sim.video.currentTime)); },100);
+  // A potência segue a CURVA DE PONTOS, no tempo do vídeo deslocado pela SINCRONIA do peixe
+  return setInterval(()=>{ aplicarMotor(interpolarPontos(sim.pontos, sim.video.currentTime - syncVideo(sim.letra))); },100);
 }
 function iniciarSim(id){
   const sim=SIMS[id];
@@ -448,22 +453,27 @@ function iniciarSim(id){
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
   emJogo=true; simTocando=id; atualizarVisibilidadeHUD();
   sim.video.currentTime=0; sim.video.play().catch(()=>{});
+  contando=false;                          // durante o atraso de sincronia (intro do vídeo) não conta
   const fis=fisgadaFisicaCfg(id);
-  if(fisgadaChar && fis.dur>0 && fis.pot>0){
-    contando=false;                        // não conta as puxadinhas da fisgada física
-    enviarFisgadaFisica(fis);              // ESP dá as puxadas (rampa-voltas-rampa-pausa)
-    const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! segure...';
-    sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
-  } else {
-    contando=true;                         // sem fisgada física: curva já começa
-    sim.intervalo=loopSim(sim);
-  }
+  const sync=Math.max(0, syncVideo(id));   // atraso (s): a sim só começa quando o vídeo chega aqui
+  const comecar=()=>{
+    if(fisgadaChar && fis.dur>0 && fis.pot>0){
+      contando=false;                      // não conta as puxadinhas da fisgada física
+      enviarFisgadaFisica(fis);            // ESP dá as puxadas (rampa-voltas-rampa-pausa)
+      const est=document.getElementById('hudEstado'); est.classList.remove('puxando','recolher'); est.classList.add('fisgada'); est.textContent='🎣 FISGADA! segure...';
+      sim.fisgadaTimer=setTimeout(()=>{ contando=true; sim.intervalo=loopSim(sim); }, fis.dur*1000);  // depois entra a curva
+    } else {
+      contando=true;                       // sem fisgada física: curva já começa
+      sim.intervalo=loopSim(sim);
+    }
+  };
+  if(sync>0) sim.syncTimer=setTimeout(comecar, sync*1000); else comecar();   // espera o intro do vídeo antes de fisgar
 }
-function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica(); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
+function pausarSim(id){ const sim=SIMS[id]; sim.estaRodando=false; contando=false; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); clearTimeout(sim.syncTimer); pararFisgadaFisica(); simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0); simEmPausa=id; document.getElementById('pauseOverlay').classList.add('visivel'); }
 function continuarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; const sim=SIMS[simEmPausa]; sim.estaRodando=true; contando=true; simTocando=simEmPausa; atualizarVisibilidadeHUD(); sim.video.play().catch(()=>{}); sim.intervalo=loopSim(sim); simEmPausa=null; }
 function reiniciarSim(){ document.getElementById('pauseOverlay').classList.remove('visivel'); if(!simEmPausa) return; encerrarSim(simEmPausa,true,false); simEmPausa=null; }
 function encerrarSim(id, sairFS, salvar){
-  const sim=SIMS[id]; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); pararFisgadaFisica();
+  const sim=SIMS[id]; clearInterval(sim.intervalo); clearTimeout(sim.fisgadaTimer); clearTimeout(sim.syncTimer); pararFisgadaFisica();
   sim.estaRodando=false; contando=false; emJogo=false; simTocando=null; atualizarVisibilidadeHUD(); sim.video.pause(); aplicarMotor(0);  // fim dos 90s
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
