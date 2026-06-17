@@ -209,8 +209,8 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <button class="btn btn-red" onclick="limparSim()">🗑 Limpar</button>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #1a2736;">
-    <button class="btn btn-green" onclick="exportarTodasCurvas()" title="Baixa curvas.json com todos os peixes — suba no GitHub para sincronizar outros dispositivos">⬇ Exportar curvas.json</button>
-    <label class="btn btn-outline" style="cursor:pointer;" title="Importa curvas.json (substitui todas as curvas)">⬆ Importar curvas.json<input type="file" accept=".json" onchange="importarTodasCurvas(event)" style="display:none"></label>
+    <button class="btn btn-green" onclick="exportarTodasCurvas()" title="Baixa curvas.json com todos os peixes para subir no GitHub">⬇ Exportar curvas.json</button>
+    <span id="ghSyncStatus" style="font-size:11px;align-self:center;color:#7b8d9e;"></span>
   </div>
 </div>
 
@@ -390,10 +390,12 @@ let simAtiva=0, selPonto=-1, clip=null, multiSel=[], arrastouPonto=false, simHov
 function carregarSim(idx){
   const id=LETRAS[idx]; let pts=null;
   try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) pts=d; } }catch(e){}
-  // migração: curvas antigas das Sims A/B/C viram as 3 primeiras espécies
+  // 1º: GitHub (curvas.json) — fonte principal quando online
+  if(curvasGitHub[id]&&Array.isArray(curvasGitHub[id])&&curvasGitHub[id].length){ pts=curvasGitHub[id]; }
+  // 2º: localStorage (curvas editadas localmente / offline)
+  if(!pts){ try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) pts=d; } }catch(e){} }
+  // migração: curvas antigas das Sims A/B/C
   if(!pts && idx<3){ try{ const r=localStorage.getItem('simpesca_pontos_'+['A','B','C'][idx]); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) pts=d; } }catch(e){} }
-  // fallback: curvas do GitHub (curvas.json)
-  if(!pts && curvasGitHub[id]&&Array.isArray(curvasGitHub[id])&&curvasGitHub[id].length){ pts=curvasGitHub[id]; }
   // padrão: gera a briga característica da espécie
   if(!pts){ pts=gerarCurvaEspecie(idx); }
   SIMS[idx].pontos=pts.slice().sort((a,b)=>a.t-b.t);
@@ -885,7 +887,15 @@ function carregarGenCfg(){
 let curvasGitHub={};
 window.addEventListener('load',async()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  try{ const r=await fetch('curvas.json'); if(r.ok){ const d=await r.json(); curvasGitHub=d.curvas||{}; } }catch(e){}
+  const st=document.getElementById('ghSyncStatus');
+  try{
+    const r=await fetch('curvas.json?t='+Date.now()); // cache-bust p/ pegar versão nova
+    if(r.ok){
+      const d=await r.json(); curvasGitHub=d.curvas||{};
+      const n=Object.keys(curvasGitHub).length;
+      if(n>0){ st.style.color='#00e676'; st.textContent='✅ '+n+' curvas do GitHub'; }
+    }
+  }catch(e){ st.style.color='#7b8d9e'; st.textContent='📁 offline — usando curvas locais'; }
   document.getElementById('calMpv').value=metrosPorVolta();
   document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calVel').value=velMotor();
