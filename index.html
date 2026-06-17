@@ -104,8 +104,12 @@
 
         async function importarVideo(id){
             const input=document.createElement('input'); input.type='file'; input.accept='.mp4';
+            input.style.cssText='position:fixed;top:-999px;left:-999px;opacity:0;';
+            document.body.appendChild(input);
             input.onchange=async()=>{
-                const f=input.files[0]; if(!f) return;
+                const f=input.files[0];
+                document.body.removeChild(input);
+                if(!f) return;
                 try{
                     await salvarVideoDB('video_'+id,f);
                     document.getElementById('dot_'+id).className='dot ok';
