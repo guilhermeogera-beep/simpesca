@@ -88,6 +88,30 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 #log span{display:block;} #log .ok{color:var(--green);} #log .err{color:var(--red);} #log .info{color:var(--accent);}
 .copia-aviso{font-size:0.7rem;color:var(--yellow);margin-left:6px;}
 select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;}
+/* ── MOBILE: compacta e evita o estouro horizontal em telas estreitas ── */
+.rotacionar-dica{display:none;}
+@media (max-width:760px){
+  html{overflow-x:hidden;}
+  body{padding:10px;overflow-x:hidden;}
+  .card{padding:14px 12px;}
+  .secao-titulo{display:block;font-size:0.66rem;}
+  header{gap:8px 10px;}
+  header h1{font-size:1.1rem;flex-basis:100%;}
+  #btnBT{margin-left:0;}
+  .btn-link{font-size:0.62rem;padding:6px 10px;}
+  .cal-grid{gap:10px;}
+  .cal-grid .cal-campo{flex:1 1 100%;}
+  .cont3>div{flex:1 1 100% !important;min-width:0 !important;}
+  .gen-row{font-size:0.56rem;gap:6px 9px;}
+  .gen-row input{width:46px;font-size:0.72rem;}
+  .timeline-wrap{height:160px;}
+  .ponto-handle{width:9px;height:9px;}
+  .ponto-handle.sel,.ponto-handle.multi{width:12px;height:12px;}
+  .sim-controls{gap:5px;}
+}
+@media (max-width:760px) and (orientation:portrait){
+  .rotacionar-dica{display:block;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.35);border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:0.72rem;color:var(--accent);text-align:center;line-height:1.5;}
+}
 </style>
 </head>
 <body>
@@ -98,6 +122,8 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <a href="ranking.html" class="btn-link">🏆 Ranking</a>
   <a href="player.html" class="btn-link">▶ Player</a>
 </header>
+
+<div class="rotacionar-dica">📱 ↻ <span>Vire o celular (modo <b>paisagem</b>) pra editar as simulações com mais espaço.</span></div>
 
 <div class="card" id="gaugeArea">
   <div id="gaugeLabel">Tensão do Motor</div>
@@ -135,7 +161,7 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
 <!-- CONTADORES DE LINHA (teste) -->
 <div class="card">
   <div class="secao-titulo"><span>🎣</span> Linha — Ganhos / Perdidos (teste)</div>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+  <div class="cont3" style="display:flex;gap:14px;flex-wrap:wrap;">
     <div style="flex:1;min-width:120px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.35);border-radius:10px;padding:14px;text-align:center;">
       <div class="cal-sub">⬆ Ganhos (recolheu)</div>
       <div class="cal-val metros" id="ctGanhos" style="font-size:2.1rem;margin-top:4px;">0.0 m</div>
