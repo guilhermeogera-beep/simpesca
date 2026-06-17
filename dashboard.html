@@ -90,6 +90,9 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:inherit;}
 /* ── MOBILE: compacta e evita o estouro horizontal em telas estreitas ── */
 .rotacionar-dica{display:none;}
+.rotacionar-dica button{margin:8px 5px 0;background:rgba(0,212,255,0.15);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;}
+#btnSairFS{display:none;position:fixed;top:8px;right:8px;z-index:9999;background:rgba(0,0,0,0.65);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:8px 13px;font-family:inherit;font-size:0.8rem;font-weight:600;cursor:pointer;}
+#btnSairFS.on{display:block;}
 @media (max-width:760px){
   html{overflow-x:hidden;}
   body{padding:10px;overflow-x:hidden;}
@@ -123,7 +126,8 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
   <a href="player.html" class="btn-link">▶ Player</a>
 </header>
 
-<div class="rotacionar-dica">📱 ↻ <span>Vire o celular (modo <b>paisagem</b>) pra editar as simulações com mais espaço.</span></div>
+<div class="rotacionar-dica">📱 <span>Tela apertada pra editar? Force a <b>paisagem</b> + tela cheia:</span><br><button type="button" onclick="forcarPaisagem()">🔄 Forçar paisagem</button></div>
+<button type="button" id="btnSairFS" onclick="voltarNormal()">↩ Voltar ao normal</button>
 
 <div class="card" id="gaugeArea">
   <div id="gaugeLabel">Tensão do Motor</div>
@@ -428,6 +432,22 @@ function renderCurva(idx){
   } else if(band){ band.style.display='none'; }
 }
 function renderTodas(){ for(let i=0;i<NSIMS;i++) renderCurva(i); }
+// Força PAISAGEM: entra em tela cheia e trava a orientação (sobrepõe o auto-rotação do Android, mesmo travado)
+function forcarPaisagem(){
+  const el=document.documentElement, req=el.requestFullscreen||el.webkitRequestFullscreen;
+  const travar=()=>{ try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){} };
+  if(req){ const p=req.call(el); (p&&p.then)?p.then(travar).catch(travar):travar(); }
+  else { travar(); }
+}
+// Volta ao normal: destrava a orientação e sai da tela cheia
+function voltarNormal(){
+  try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  if(document.fullscreenElement||document.webkitFullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+}
+// Botão flutuante "↩ Voltar" só aparece enquanto está em tela cheia (sempre alcançável, mesmo em paisagem)
+function atualizarBtnFS(){ const b=document.getElementById('btnSairFS'); if(b) b.classList.toggle('on', !!(document.fullscreenElement||document.webkitFullscreenElement)); }
+document.addEventListener('fullscreenchange',atualizarBtnFS);
+document.addEventListener('webkitfullscreenchange',atualizarBtnFS);
 
 function setupArea(idx){
   const area=document.getElementById('curva'+idx);
