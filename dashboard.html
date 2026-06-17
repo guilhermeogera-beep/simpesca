@@ -148,6 +148,8 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <div class="cal-campo"><label>Vel. motor a 100% (m/s)</label><input type="number" id="calVel" step="0.01" min="0" value="2.5"></div>
     <div class="cal-campo"><label>Offset motor (% p/ girar)</label><input type="number" id="calOffset" step="1" min="0" max="90" value="15"></div>
     <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
+    <button class="btn btn-green" onclick="exportarConfig()" title="Baixa config.json para subir no GitHub e sincronizar outros dispositivos">⬇ Exportar config.json</button>
+    <span id="cfgSyncStatus" style="font-size:11px;color:#7b8d9e;align-self:center;"></span>
   </div>
   <div class="cal-live">
     <div><div class="cal-val cont" id="calCont">0</div><div class="cal-sub">contagem</div></div>
@@ -588,6 +590,47 @@ function atualizarInterfaceTempo(){ for(let i=0;i<NSIMS;i++){ const el=document.
 // ══ AÇÕES (padrão / limpar / export / import) ─────────────────
 function limparSim(){ const idx=parseInt(document.getElementById('selSimAcao').value); if(!confirm('Apagar todos os pontos do '+NOMES[idx]+'?')) return; SIMS[idx].pontos=[]; salvarPontos(idx); fecharEditorPonto(); renderCurva(idx); log(NOMES[idx]+' apagado','err'); }
 function exportarJSON(){ const idx=parseInt(document.getElementById('selSimAcao').value); const payload={versao:2,tipo:'pontos',especie:LETRAS[idx],duracao:DURACAO,criado:new Date().toISOString(),pontos:SIMS[idx].pontos}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='curva_'+LETRAS[idx]+'.json'; a.click(); URL.revokeObjectURL(a.href); log(NOMES[idx]+' exportado','ok'); }
+function exportarConfig(){
+  const cal={
+    mpv: metrosPorVolta(), limite: limiteLinha(),
+    velmax: velMotor(), offset: offsetMotor(),
+    inv: localStorage.getItem('simpesca_cal_inv')||'0'
+  };
+  const gen={};
+  LETRAS.forEach((id,i)=>{
+    gen[id]={};
+    GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+i); if(el) gen[id][key]=el.value; });
+  });
+  const sync={};
+  LETRAS.forEach(id=>{ const v=localStorage.getItem('simpesca_sync_'+id); sync[id]=v||'0'; });
+  const payload={versao:1,tipo:'config',criado:new Date().toISOString(),cal,gen,sync};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='config.json'; a.click(); URL.revokeObjectURL(a.href);
+  log('config.json exportado — suba no GitHub (site/config.json)','ok');
+}
+function aplicarConfig(d){
+  if(!d) return;
+  if(d.cal){
+    if(d.cal.mpv)    { localStorage.setItem('simpesca_cal_mpv',    d.cal.mpv);    document.getElementById('calMpv').value=d.cal.mpv; }
+    if(d.cal.limite) { localStorage.setItem('simpesca_cal_limite', d.cal.limite); document.getElementById('calLimite').value=d.cal.limite; }
+    if(d.cal.velmax) { localStorage.setItem('simpesca_cal_velmax', d.cal.velmax); document.getElementById('calVel').value=d.cal.velmax; }
+    if(d.cal.offset!=null){ localStorage.setItem('simpesca_cal_offset',d.cal.offset); document.getElementById('calOffset').value=d.cal.offset; }
+    if(d.cal.inv!=null)   { localStorage.setItem('simpesca_cal_inv', d.cal.inv); }
+  }
+  if(d.gen){
+    LETRAS.forEach((id,i)=>{
+      if(!d.gen[id]) return;
+      GEN_CAMPOS.forEach(([inp,key])=>{
+        if(d.gen[id][key]==null) return;
+        localStorage.setItem('simpesca_gen_'+id+'_'+key, d.gen[id][key]);
+        const el=document.getElementById(inp+i); if(el) el.value=d.gen[id][key];
+      });
+    });
+  }
+  if(d.sync){
+    LETRAS.forEach(id=>{ if(d.sync[id]!=null) localStorage.setItem('simpesca_sync_'+id, d.sync[id]); });
+  }
+}
 function exportarTodasCurvas(){
   const curvas={}; LETRAS.forEach((id,i)=>{ curvas[id]=SIMS[i].pontos; });
   const payload={versao:1,tipo:'curvas_todas',criado:new Date().toISOString(),curvas};
@@ -887,15 +930,17 @@ function carregarGenCfg(){
 let curvasGitHub={};
 window.addEventListener('load',async()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  const st=document.getElementById('ghSyncStatus');
+  const st=document.getElementById('ghSyncStatus'), cs=document.getElementById('cfgSyncStatus');
   try{
-    const r=await fetch('curvas.json?t='+Date.now()); // cache-bust p/ pegar versão nova
-    if(r.ok){
-      const d=await r.json(); curvasGitHub=d.curvas||{};
-      const n=Object.keys(curvasGitHub).length;
-      if(n>0){ st.style.color='#00e676'; st.textContent='✅ '+n+' curvas do GitHub'; }
-    }
-  }catch(e){ st.style.color='#7b8d9e'; st.textContent='📁 offline — usando curvas locais'; }
+    const [rc, rg] = await Promise.all([
+      fetch('curvas.json?t='+Date.now()).catch(()=>null),
+      fetch('config.json?t='+Date.now()).catch(()=>null)
+    ]);
+    if(rc&&rc.ok){ const d=await rc.json(); curvasGitHub=d.curvas||{}; const n=Object.keys(curvasGitHub).length; if(n>0){ st.style.color='#00e676'; st.textContent='✅ '+n+' curvas do GitHub'; } }
+    else{ st.style.color='#7b8d9e'; st.textContent='📁 offline — curvas locais'; }
+    if(rg&&rg.ok){ const d=await rg.json(); if(d.cal||d.gen||d.sync){ aplicarConfig(d); cs.style.color='#00e676'; cs.textContent='✅ config do GitHub'; } }
+    else{ cs.style.color='#7b8d9e'; cs.textContent='📁 offline — config local'; }
+  }catch(e){}
   document.getElementById('calMpv').value=metrosPorVolta();
   document.getElementById('calLimite').value=limiteLinha();
   document.getElementById('calVel').value=velMotor();

@@ -10,6 +10,7 @@ const APP_SHELL = [
   '/simpesca/ranking.html',
   '/simpesca/manifest.json',
   '/simpesca/curvas.json',
+  '/simpesca/config.json',
   '/simpesca/icons/icon-192.png',
   '/simpesca/icons/icon-512.png'
 ];
