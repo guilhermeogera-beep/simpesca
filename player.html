@@ -300,7 +300,7 @@ const VIDEO_DB='simpesca-videos', VIDEO_STORE='videos';
 function abrirVideoDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open(VIDEO_DB,1); r.onupgradeneeded=e=>e.target.result.createObjectStore(VIDEO_STORE); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
 async function lerVideoDB(key){ const db=await abrirVideoDB(); return new Promise((res,rej)=>{ const r=db.transaction(VIDEO_STORE,'readonly').objectStore(VIDEO_STORE).get(key); r.onsuccess=e=>res(e.target.result||null); r.onerror=rej; }); }
 
-window.addEventListener('load',async()=>{
+window.addEventListener('load',()=>{
   // monta os cards (1 por peixe)
   const grid=document.getElementById('simsGrid');
   ESPECIES.forEach((e,i)=>{
@@ -316,16 +316,6 @@ window.addEventListener('load',async()=>{
       '<div class="card-sync" style="text-align:center;margin-top:6px;font-size:0.72rem;color:#7b8d9e;"><label title="Atraso da simulação em relação ao vídeo (s). Positivo = as ações do motor acontecem mais tarde. Ajuste pra casar a briga com o vídeo.">⏱ sincronia <input type="number" id="sync_'+e.id+'" step="0.1" value="0" onchange="salvarSync(\''+e.id+'\')" style="width:62px;text-align:center;background:#0d151d;border:1px solid #1a2736;border-radius:5px;color:#e0e6ed;font-family:monospace;padding:3px 4px;outline:none;"> s</label></div>';
     grid.appendChild(bloco);
   });
-  // substitui src por blob local (IndexedDB) quando disponível
-  for(const e of ESPECIES){
-    try{
-      const blob=await lerVideoDB('video_'+e.id);
-      if(blob){
-        const vid=document.getElementById('video_'+e.id);
-        vid.src=URL.createObjectURL(blob);
-      }
-    }catch(err){}
-  }
   ESPECIES.forEach(e=>{
     const id=e.id, s=SIMS[id];
     s.video=document.getElementById('video_'+id); s.wrapper=document.getElementById('wrapper_'+id);
@@ -335,6 +325,13 @@ window.addEventListener('load',async()=>{
     s.video.addEventListener('click',()=>{ if(s.estaRodando) pausarSim(id); });
     s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
     s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
+  });
+  // substitui src por blob local (IndexedDB) quando disponível — assíncrono, não bloqueia init
+  ESPECIES.forEach(async e=>{
+    try{
+      const blob=await lerVideoDB('video_'+e.id);
+      if(blob) SIMS[e.id].video.src=URL.createObjectURL(blob);
+    }catch(err){}
   });
   // filtros do ranking (1 por peixe)
   const rkF=document.getElementById('rkFiltros');
