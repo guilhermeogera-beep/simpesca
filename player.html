@@ -308,7 +308,7 @@ window.addEventListener('load',()=>{
         '<div class="video-progress"><div class="video-progress-bar" id="prog_'+e.id+'"></div></div>'+
         '<div class="overlay" id="overlay_'+e.id+'"><button class="btn-play" onclick="pedirNome(\''+e.id+'\')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">'+e.nome+'</span></div>'+
       '</div>'+
-      '<div style="text-align:center;margin-top:6px;font-size:0.72rem;color:#7b8d9e;"><label title="Atraso da simulação em relação ao vídeo (s). Positivo = as ações do motor acontecem mais tarde. Ajuste pra casar a briga com o vídeo.">⏱ sincronia <input type="number" id="sync_'+e.id+'" step="0.1" value="0" onchange="salvarSync(\''+e.id+'\')" style="width:62px;text-align:center;background:#0d151d;border:1px solid #1a2736;border-radius:5px;color:#e0e6ed;font-family:monospace;padding:3px 4px;outline:none;"> s</label></div>';
+      '<div class="card-sync" style="text-align:center;margin-top:6px;font-size:0.72rem;color:#7b8d9e;"><label title="Atraso da simulação em relação ao vídeo (s). Positivo = as ações do motor acontecem mais tarde. Ajuste pra casar a briga com o vídeo.">⏱ sincronia <input type="number" id="sync_'+e.id+'" step="0.1" value="0" onchange="salvarSync(\''+e.id+'\')" style="width:62px;text-align:center;background:#0d151d;border:1px solid #1a2736;border-radius:5px;color:#e0e6ed;font-family:monospace;padding:3px 4px;outline:none;"> s</label></div>';
     grid.appendChild(bloco);
   });
   ESPECIES.forEach(e=>{
@@ -405,6 +405,8 @@ function nudgeSync(delta){
   const card=document.getElementById('sync_'+simTocando); if(card) card.value=v;   // mantém o card alinhado
   atualizarHudSync();
 }
+// mostra/esconde o campo ⏱ sincronia nos cards (tela de seleção) conforme o toggle do EXIBIR
+function atualizarSyncCards(){ document.querySelectorAll('.card-sync').forEach(el=>{ el.style.display = hudCfg.sync ? '' : 'none'; }); }
 function salvarHudCfg(){ localStorage.setItem('simpesca_hud_linha',hudCfg.linha?'1':'0'); localStorage.setItem('simpesca_hud_estado',hudCfg.estado?'1':'0'); localStorage.setItem('simpesca_hud_barra',hudCfg.barra?'1':'0'); localStorage.setItem('simpesca_hud_carretel',hudCfg.carretel?'1':'0'); localStorage.setItem('simpesca_hud_sync',hudCfg.sync?'1':'0'); }
 function carregarHudCfg(){
   const g=(k,d)=>{ const v=localStorage.getItem(k); return v===null?d:v==='1'; };
@@ -415,7 +417,8 @@ function carregarHudCfg(){
   ce.addEventListener('change',()=>{ hudCfg.estado=ce.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cb.addEventListener('change',()=>{ hudCfg.barra=cb.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cc.addEventListener('change',()=>{ hudCfg.carretel=cc.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
-  cs.addEventListener('change',()=>{ hudCfg.sync=cs.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
+  cs.addEventListener('change',()=>{ hudCfg.sync=cs.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); atualizarSyncCards(); });
+  atualizarSyncCards();   // aplica o estado salvo aos campos dos cards no load
 }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
