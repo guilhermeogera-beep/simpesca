@@ -40,9 +40,13 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 .sim-nome-overlay{font-size:0.7rem;letter-spacing:2px;color:var(--text);text-transform:uppercase;opacity:0.7;}
 .fs-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.92);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px;}
 .fs-overlay.visivel{display:flex;}
-.countdown-num{font-size:8rem;font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;}
+.countdown-num{font-size:9rem;font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;}
 @keyframes pulse{0%{transform:scale(1.3);opacity:0;}50%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
 .lbl{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
+#segCountdown{width:min(460px,94%);border:1.5px solid rgba(255,23,68,0.6);background:rgba(255,23,68,0.1);border-radius:14px;padding:16px 20px;}
+#segCountdown .seg-tit{display:flex;align-items:center;justify-content:center;gap:8px;color:#ff5c7a;font-size:0.85rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;}
+#segCountdown .seg-item{display:flex;align-items:center;gap:12px;color:#ffdbe2;font-size:1.3rem;font-weight:700;text-align:left;margin:10px 0;line-height:1.25;}
+#segCountdown .seg-item .ic{font-size:1.6rem;flex-shrink:0;}
 .titulo-grande{font-size:1.1rem;letter-spacing:3px;color:var(--text);text-transform:uppercase;}
 .metros-grande{font-size:3.4rem;font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,230,118,0.4);}
 .posicao-grande{font-size:1.7rem;font-weight:800;color:var(--accent);letter-spacing:1px;}
@@ -141,7 +145,14 @@ input[type=text]:focus{border-color:var(--accent);}
   <div class="lbl">enrole a linha de volta no carretel até zerar</div>
   <div class="fs-btns"><button class="btn-fs btn-ok" id="linhaOvlOk" onclick="linhaOvlContinuar()" disabled>enrole mais...</button><button class="btn-fs btn-sec" onclick="fecharLinhaOverlay()">Cancelar</button></div>
 </div>
-<div class="fs-overlay" id="countdownOverlay"><div class="countdown-num" id="countdownNum">5</div><div class="lbl">Preparando simulação</div></div>
+<div class="fs-overlay" id="countdownOverlay"><div class="countdown-num" id="countdownNum">5</div><div class="lbl">Preparando simulação</div>
+  <div id="segCountdown">
+    <div class="seg-tit">⚠️ Segurança</div>
+    <div class="seg-item"><span class="ic">✋</span> Mantenha as mãos longe da linha</div>
+    <div class="seg-item"><span class="ic">🎣</span> Segure a vara com firmeza e não solte</div>
+    <div class="seg-item"><span class="ic">🛑</span> Se precisar, peça para parar a qualquer momento</div>
+  </div>
+</div>
 <div class="fs-overlay" id="pauseOverlay"><div class="titulo-grande">⏸ Pausado</div><div class="fs-btns"><button class="btn-fs btn-ok" onclick="continuarSim()">▶ Continuar</button><button class="btn-fs btn-red" onclick="reiniciarSim()">↺ Reiniciar</button></div></div>
 <div class="fs-overlay" id="resultadoOverlay">
   <div class="recorde" id="resultadoRecorde">🏆 Novo recorde!</div>
@@ -574,6 +585,20 @@ const OVERLAYS_FS=['countdownOverlay','pauseOverlay','resultadoOverlay','hudLinh
 function moverOverlaysPara(parent){ OVERLAYS_FS.forEach(id=>parent.appendChild(document.getElementById(id))); }
 function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(document.getElementById(id))); }
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
+// Bip da contagem — UM AudioContext reaproveitado + oscilador curto descartável (sem arquivo de som, sem leak)
+let audioCtx=null;
+function bip(freq,dur){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain(), now=audioCtx.currentTime, d=dur||0.12;
+    o.type='sine'; o.frequency.value=freq||760; o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.35, now+0.012);   // ataque rápido (sem clique)
+    g.gain.exponentialRampToValueAtTime(0.0001, now+d);     // decaimento
+    o.start(now); o.stop(now+d+0.02);                        // para sozinho; é coletado depois
+  }catch(e){}
+}
 function iniciarContagem(id){
   const sim=SIMS[id], w=sim.wrapper;
   carregarVideo(id);                                                  // carrega SÓ este vídeo (5s da contagem dão tempo de bufferizar)
@@ -585,8 +610,8 @@ function iniciarContagem(id){
   document.addEventListener('fullscreenchange',onFS); document.addEventListener('webkitfullscreenchange',onFS);
   const ov=document.getElementById('countdownOverlay'), num=document.getElementById('countdownNum');
   ov.classList.add('visivel'); let n=5; num.textContent=n;
-  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; }; tick();
-  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); ov.classList.remove('visivel'); iniciarSim(id); } else tick(); },1000);
+  const tick=()=>{ num.style.animation='none'; void num.offsetWidth; num.style.animation='pulse 0.9s ease-in-out'; num.textContent=n; bip(760,0.12); }; tick();   // bip a cada número
+  const t=setInterval(()=>{ n--; if(n<=0){ clearInterval(t); bip(1180,0.26); ov.classList.remove('visivel'); iniciarSim(id); } else tick(); },1000);   // bip diferente no "já"
 }
 function loopSim(sim){
   // A potência segue a CURVA DE PONTOS, no tempo do vídeo deslocado pela SINCRONIA do peixe
