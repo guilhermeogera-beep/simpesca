@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "tipo": "config",
-  "criado": "2026-06-18T21:54:16.550Z",
+  "criado": "2026-06-18T22:33:52.822Z",
   "cal": {
     "mpv": 0.0854,
     "limite": -151,
@@ -38,7 +38,7 @@
       "teto": "51",
       "fadiga": "50",
       "puxada": "55",
-      "fispico": "62",
+      "fispico": "30",
       "fisdur": "2",
       "intens": "81",
       "espaco": "40",
