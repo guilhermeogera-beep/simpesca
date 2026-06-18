@@ -63,9 +63,10 @@ const ESPECIES=[
 ];
 function nomePeixe(id){ const e=ESPECIES.find(x=>x.id===id); return e?e.nome:('Sim '+id); }
 function carregar(){ try{ return JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){ return []; } }
+function nomeValido(n){ n=(n||'').trim().toLowerCase(); return n!=='' && n!=='jogador'; }   // jogada sem nome não conta
 function fmtData(iso){ const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function render(){
-  const todos=carregar();
+  const todos=carregar().filter(r=>nomeValido(r.nome));   // esconde jogadas sem nome / "Jogador"
   let lista = filtroAtual==='todos' ? todos : todos.filter(r=>r.sim===filtroAtual);
   lista.sort((a,b)=>b.metros-a.metros);
   const el=document.getElementById('lista');

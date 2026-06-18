@@ -652,21 +652,30 @@ function encerrarSim(id, sairFS, salvar){
   devolverOverlays();
   sim.overlay.classList.remove('oculto');
   liberarVideoAtual();                       // tira o vídeo da memória ao voltar pra seleção
-  if(salvar){ salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id); }
+  if(salvar){ const ok=nomeValido(nomeJogador); if(ok) salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id, ok); }
 }
 
 // ══ RANKING ───────────────────────────────────────────────────
+// nome "de verdade": não vazio e diferente de "Jogador" (placeholder). Jogada sem nome não entra no ranking.
+function nomeValido(n){ n=(n||'').trim().toLowerCase(); return n!=='' && n!=='jogador'; }
 function salvarRanking(nome, metros, sim){ let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){} lista.push({nome, metros:Math.round(metros*10)/10, sim, data:new Date().toISOString()}); localStorage.setItem('simpesca_ranking', JSON.stringify(lista)); }
-function mostrarResultado(nome, metros, sim){
+function mostrarResultado(nome, metros, sim, salvou){
+  document.getElementById('resultadoMetros').textContent=metros.toFixed(1)+' m';
+  const posEl=document.getElementById('resultadoPos'), nomeEl=document.getElementById('resultadoNome'), rec=document.getElementById('resultadoRecorde');
+  if(salvou===false){                                    // jogada sem nome: mostra os metros, mas não salva nem posiciona
+    nomeEl.textContent='Jogada de teste';
+    posEl.textContent='Não salvo no ranking (sem nome)';
+    rec.style.display='none';
+    document.getElementById('resultadoOverlay').classList.add('visivel');
+    return;
+  }
   const m=Math.round(metros*10)/10;
   let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
   const naSim=lista.filter(r=>r.sim===sim); const total=naSim.length;
   const pos=naSim.filter(r=>r.metros>m).length + 1;
   const medalha = pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
-  document.getElementById('resultadoMetros').textContent=metros.toFixed(1)+' m';
-  document.getElementById('resultadoPos').textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' no '+nomePeixe(sim);
-  document.getElementById('resultadoNome').textContent=nome;
-  const rec=document.getElementById('resultadoRecorde');
+  posEl.textContent=(medalha?medalha+' ':'')+pos+'º lugar · de '+total+' no '+nomePeixe(sim);
+  nomeEl.textContent=nome;
   if(total===1){ rec.textContent='🎣 Primeira jogada desta simulação!'; rec.style.display='block'; }
   else if(pos===1){ rec.textContent='🏆 Novo recorde!'; rec.style.display='block'; }
   else rec.style.display='none';
@@ -682,6 +691,7 @@ function filtrarRanking(sim,btn){ rkFiltro=sim; document.querySelectorAll('.rk-f
 function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function renderRanking(){
   let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
+  lista=lista.filter(r=>nomeValido(r.nome));         // não mostra jogadas sem nome / "Jogador"
   if(rkFiltro!=='todos') lista=lista.filter(r=>r.sim===rkFiltro);
   else lista=lista.filter(r=>peixeVisivel(r.sim));   // "Todas" esconde os peixes desmarcados no EXIBIR
   lista.sort((a,b)=>b.metros-a.metros);
