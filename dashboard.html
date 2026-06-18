@@ -148,8 +148,23 @@ select{background:var(--surface);border:1px solid var(--border);color:var(--text
     <div class="cal-campo"><label>Vel. motor a 100% (m/s)</label><input type="number" id="calVel" step="0.01" min="0" value="2.5"></div>
     <div class="cal-campo"><label>Offset motor (% p/ girar)</label><input type="number" id="calOffset" step="1" min="0" max="90" value="15"></div>
     <button class="btn btn-green" onclick="salvarCal()">💾 Salvar</button>
-    <button class="btn btn-green" onclick="exportarConfig()" title="Baixa config.json para subir no GitHub e sincronizar outros dispositivos">⬇ Exportar config.json</button>
+    <button class="btn btn-green" onclick="exportarConfig()" title="Baixa config.json (backup manual)">⬇ Exportar config.json</button>
     <span id="cfgSyncStatus" style="font-size:11px;color:#7b8d9e;align-self:center;"></span>
+  </div>
+  <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1a2736;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#e0e6ed;white-space:nowrap;">☁️ Salvar automático no GitHub</span>
+      <span id="ghAutoStatus" style="font-size:12px;font-weight:bold;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <span style="font-size:11px;color:#7b8d9e;white-space:nowrap;">🔑 Token:</span>
+      <input type="password" id="githubToken" placeholder="github_pat_..." oninput="salvarToken(this.value)" style="flex:1;min-width:180px;background:#0d151d;border:1px solid #1a2736;border-radius:6px;color:#e0e6ed;font-family:monospace;font-size:12px;padding:5px 8px;outline:none;">
+    </div>
+    <div style="font-size:10px;color:#3d5d7e;margin-top:5px;line-height:1.5;">
+      Configure SÓ neste computador de edição. O totem não precisa (só lê).
+      Crie em <b>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained</b>,
+      repo <b>simpesca</b>, permissão <b>Contents: Read and write</b>.
+    </div>
   </div>
   <div class="cal-live">
     <div><div class="cal-val cont" id="calCont">0</div><div class="cal-sub">contagem</div></div>
@@ -281,7 +296,7 @@ function escreverMotor(pct){ if(!motorChar) return; const b=new Uint8Array([Math
 function zerarEncoder(){ contagemEncoder=0; contAnt=0; primeiraLeitura=true; metrosGanhos=0; metrosPerdidos=0; travaAtiva=false; atualizarCalLive(); atualizarContadores(); if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } log('Linha do carretel zerada (re-spool)','info'); }
 function atualizarContadores(){ const g=document.getElementById('ctGanhos'); if(!g) return; const net=linhaCarretel(), L=limiteLinha(); g.textContent=metrosGanhos.toFixed(1)+' m'; document.getElementById('ctPerdidos').textContent=metrosPerdidos.toFixed(1)+' m'; const s=document.getElementById('ctSaldo'); s.textContent=net.toFixed(1)+' / '+L.toFixed(0)+' m'; s.style.color=(Math.abs(net)>=Math.abs(L))?'var(--red)':''; }
 function zerarContadores(){ metrosGanhos=0; metrosPerdidos=0; contagemEncoder=0; contAnt=0; primeiraLeitura=true; travaAtiva=false; if(linhaChar){ try{ linhaChar.writeValue(new Uint8Array([0])); }catch(e){} } atualizarCalLive(); atualizarContadores(); log('Contadores + linha do carretel zerados','info'); }
-function inverterLado(){ const novo=!(localStorage.getItem('simpesca_cal_inv')==='1'); localStorage.setItem('simpesca_cal_inv', novo?'1':'0'); const tmp=metrosGanhos; metrosGanhos=metrosPerdidos; metrosPerdidos=tmp; travaAtiva=false; atualizarCalLive(); atualizarContadores(); log('Lado invertido: '+(novo?'INVERTIDO':'normal')+' (ganhos ⇄ perdidos)','info'); }
+function inverterLado(){ const novo=!(localStorage.getItem('simpesca_cal_inv')==='1'); localStorage.setItem('simpesca_cal_inv', novo?'1':'0'); const tmp=metrosGanhos; metrosGanhos=metrosPerdidos; metrosPerdidos=tmp; travaAtiva=false; atualizarCalLive(); atualizarContadores(); agendarSync('config'); log('Lado invertido: '+(novo?'INVERTIDO':'normal')+' (ganhos ⇄ perdidos)','info'); }
 // SEGURANÇA (teste): saldo líquido atingiu o limite -> para o motor e a prévia
 let travaAtiva=false;
 function checarLimiteSegurancaDash(){
@@ -310,9 +325,9 @@ function atualizarEstimativas(){ for(let i=0;i<NSIMS;i++){ const e=document.getE
 function inverterDir(){ return localStorage.getItem('simpesca_cal_inv')==='1'; }
 function contagemParaMetros(c){ let m=(c/4096)*metrosPorVolta(); if(inverterDir()) m=-m; return m; }
 function atualizarCalLive(){ const voltas=contagemEncoder/4096, m=Math.max(0,contagemParaMetros(contagemEncoder)); document.getElementById('calCont').textContent=contagemEncoder; document.getElementById('calVoltas').textContent=voltas.toFixed(2); document.getElementById('calMetros').textContent=m.toFixed(1)+' m'; }
-function salvarCal(){ const mpv=parseFloat(document.getElementById('calMpv').value); if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv); const vel=parseFloat(document.getElementById('calVel').value); if(isFinite(vel)&&vel>0) localStorage.setItem('simpesca_cal_velmax',vel); const off=parseFloat(document.getElementById('calOffset').value); if(isFinite(off)&&off>=0&&off<100) localStorage.setItem('simpesca_cal_offset',off); atualizarCalLive(); atualizarEstimativas(); log('Calibração salva: '+mpv+' m/volta · motor '+vel+' m/s · offset '+off+'%','ok'); }
-function salvarLimite(){ const lim=parseFloat(document.getElementById('calLimite').value); if(isFinite(lim)&&lim!==0){ localStorage.setItem('simpesca_cal_limite',lim); travaAtiva=false; atualizarContadores(); log('Limite de linha (trava) salvo: '+lim+' m','ok'); } else log('Limite inválido (não pode ser 0/vazio)','err'); }
-function calcularMpv(){ const real=parseFloat(document.getElementById('calReal').value); const voltas=Math.abs(contagemEncoder)/4096; if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; } if(voltas<0.01){ log('Recolha a linha antes de calcular','err'); return; } const mpv=real/voltas; document.getElementById('calMpv').value=mpv.toFixed(4); localStorage.setItem('simpesca_cal_mpv',mpv); atualizarCalLive(); log('Calibrado: '+mpv.toFixed(4)+' m/volta','ok'); }
+function salvarCal(){ const mpv=parseFloat(document.getElementById('calMpv').value); if(isFinite(mpv)&&mpv>0) localStorage.setItem('simpesca_cal_mpv',mpv); const vel=parseFloat(document.getElementById('calVel').value); if(isFinite(vel)&&vel>0) localStorage.setItem('simpesca_cal_velmax',vel); const off=parseFloat(document.getElementById('calOffset').value); if(isFinite(off)&&off>=0&&off<100) localStorage.setItem('simpesca_cal_offset',off); atualizarCalLive(); atualizarEstimativas(); agendarSync('config'); log('Calibração salva: '+mpv+' m/volta · motor '+vel+' m/s · offset '+off+'%','ok'); }
+function salvarLimite(){ const lim=parseFloat(document.getElementById('calLimite').value); if(isFinite(lim)&&lim!==0){ localStorage.setItem('simpesca_cal_limite',lim); travaAtiva=false; atualizarContadores(); agendarSync('config'); log('Limite de linha (trava) salvo: '+lim+' m','ok'); } else log('Limite inválido (não pode ser 0/vazio)','err'); }
+function calcularMpv(){ const real=parseFloat(document.getElementById('calReal').value); const voltas=Math.abs(contagemEncoder)/4096; if(!(real>0)){ log('Digite os metros reais recolhidos','err'); return; } if(voltas<0.01){ log('Recolha a linha antes de calcular','err'); return; } const mpv=real/voltas; document.getElementById('calMpv').value=mpv.toFixed(4); localStorage.setItem('simpesca_cal_mpv',mpv); atualizarCalLive(); agendarSync('config'); log('Calibrado: '+mpv.toFixed(4)+' m/volta','ok'); }
 
 // ══ GAUGES / LOG ──────────────────────────────────────────────
 let ultimoLogTrava=0;
@@ -402,7 +417,7 @@ function carregarSim(idx){
   if(!pts){ pts=gerarCurvaEspecie(idx); }
   SIMS[idx].pontos=pts.slice().sort((a,b)=>a.t-b.t);
 }
-function salvarPontos(idx){ try{ localStorage.setItem('simpesca_pontos_'+LETRAS[idx], JSON.stringify(SIMS[idx].pontos)); }catch(e){} }
+function salvarPontos(idx){ try{ localStorage.setItem('simpesca_pontos_'+LETRAS[idx], JSON.stringify(SIMS[idx].pontos)); }catch(e){} agendarSync('curvas'); }
 
 // ══ RENDER DA CURVA ───────────────────────────────────────────
 function renderTicks(idx){
@@ -606,8 +621,60 @@ function exportarConfig(){
   const payload={versao:1,tipo:'config',criado:new Date().toISOString(),cal,gen,sync};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='config.json'; a.click(); URL.revokeObjectURL(a.href);
-  log('config.json exportado — suba no GitHub (site/config.json)','ok');
+  log('config.json exportado (backup manual)','ok');
 }
+
+// ══ AUTO-SAVE no GitHub (só neste PC, com token; o totem só lê) ════════
+const GH_REPO='guilhermeogera-beep/simpesca';      // repo onde o GitHub Pages publica
+const GH_PATH={curvas:'curvas.json', config:'config.json'};   // caminho NO REPO (raiz). Ajuste se estiverem noutra pasta.
+let ghDirty={curvas:false,config:false}, ghTimer=null, ghEnviando=false;
+function ghToken(){ return (localStorage.getItem('simpesca_github_token')||'').trim(); }
+function salvarToken(v){ localStorage.setItem('simpesca_github_token',(v||'').trim()); setSyncBadge(ghToken()?'idle':'notoken'); }
+function montarCurvasObj(){ const curvas={}; LETRAS.forEach((id,i)=>{ curvas[id]=SIMS[i].pontos; }); return {versao:1,tipo:'curvas_todas',criado:new Date().toISOString(),curvas}; }
+function montarConfigObj(){
+  const cal={mpv:metrosPorVolta(),limite:limiteLinha(),velmax:velMotor(),offset:offsetMotor(),inv:localStorage.getItem('simpesca_cal_inv')||'0'};
+  const gen={}; LETRAS.forEach((id,i)=>{ gen[id]={}; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+i); if(el) gen[id][key]=el.value; }); });
+  const sync={}; LETRAS.forEach(id=>{ sync[id]=localStorage.getItem('simpesca_sync_'+id)||'0'; });
+  return {versao:1,tipo:'config',criado:new Date().toISOString(),cal,gen,sync};
+}
+async function ghPut(path,obj){
+  const tk=ghToken(); if(!tk) return false;
+  const headers={'Authorization':'token '+tk,'Accept':'application/vnd.github+json'};
+  const url='https://api.github.com/repos/'+GH_REPO+'/contents/'+path;
+  let sha=null;
+  try{ const g=await fetch(url,{headers,cache:'no-store'}); if(g.ok) sha=(await g.json()).sha; else if(g.status!==404) return false; }catch(e){ return false; }
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(obj,null,2))));
+  const body={message:'auto: atualiza '+path,content}; if(sha) body.sha=sha;
+  let r; try{ r=await fetch(url,{method:'PUT',headers,body:JSON.stringify(body)}); }catch(e){ return false; }
+  if(r&&(r.status===409||r.status===422)){            // sha desatualizado -> rebusca e tenta 1x
+    try{ const g=await fetch(url,{headers,cache:'no-store'}); if(g.ok){ body.sha=(await g.json()).sha; r=await fetch(url,{method:'PUT',headers,body:JSON.stringify(body)}); } }catch(e){ return false; }
+  }
+  return !!(r&&r.ok);
+}
+function agendarSync(tipo){                            // 'curvas' | 'config'
+  if(!ghToken()) return;                               // sem token (ex.: totem) não publica
+  ghDirty[tipo]=true; localStorage.setItem('simpesca_sync_pend','1');
+  setSyncBadge('pend'); clearTimeout(ghTimer); ghTimer=setTimeout(fazerSync,2500);
+}
+async function fazerSync(){
+  if(ghEnviando||!ghToken()) return;
+  if(!navigator.onLine){ setSyncBadge('off'); return; }
+  ghEnviando=true; setSyncBadge('saving');
+  let ok=true;
+  if(ghDirty.curvas){ if(await ghPut(GH_PATH.curvas,montarCurvasObj())) ghDirty.curvas=false; else ok=false; }
+  if(ghDirty.config){ if(await ghPut(GH_PATH.config,montarConfigObj())) ghDirty.config=false; else ok=false; }
+  ghEnviando=false;
+  if(ok&&!ghDirty.curvas&&!ghDirty.config){ localStorage.removeItem('simpesca_sync_pend'); setSyncBadge('ok'); }
+  else setSyncBadge('err');
+}
+function setSyncBadge(st){
+  const e=document.getElementById('ghAutoStatus'); if(!e) return;
+  if(!ghToken()){ e.textContent='⚪ desligado (sem token)'; e.style.color='#7b8d9e'; return; }
+  const m={idle:['🟢 ligado','#00e676'],pend:['⏳ pendente...','#ffd600'],saving:['☁️ salvando...','#7b8d9e'],ok:['✅ salvo na nuvem','#00e676'],off:['📴 offline — sobe quando voltar','#ffd600'],err:['❌ falha (confira o token)','#ff1744'],notoken:['⚪ desligado (sem token)','#7b8d9e']};
+  const [t,c]=m[st]||['','#7b8d9e']; e.textContent=t; e.style.color=c;
+}
+window.addEventListener('online',()=>{ if(localStorage.getItem('simpesca_sync_pend')) fazerSync(); });
+
 function aplicarConfig(d){
   if(!d) return;
   if(d.cal){
@@ -912,7 +979,7 @@ function regerar(idx){
 // Persiste/recupera os ajustes do gerador POR PEIXE (simpesca_gen_<id>_<campo>)
 const GEN_CAMPOS=[['teto','teto'],['fadiga','fadiga'],['puxada','puxada'],['fisPico','fispico'],['fisDur','fisdur'],['intens','intens'],['espaco','espaco'],['fisFisPot','fisfispot'],['fisFisVoltas','fisfisvoltas'],['fisFisDur','fisfisdur']];
 const FISFIS_GLOBAL={fisfispot:'simpesca_fisfis_pot', fisfisvoltas:'simpesca_fisfis_voltas', fisfisdur:'simpesca_fisfis_dur'};  // migração da fisgada física global antiga
-function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); }
+function salvarGenCfg(idx){ const id=LETRAS[idx]; GEN_CAMPOS.forEach(([inp,key])=>{ const el=document.getElementById(inp+idx); if(el) localStorage.setItem('simpesca_gen_'+id+'_'+key, el.value); }); agendarSync('config'); }
 function carregarGenCfg(){
   for(let i=0;i<NSIMS;i++){ const id=LETRAS[i];
     GEN_CAMPOS.forEach(([inp,key])=>{
@@ -950,6 +1017,10 @@ window.addEventListener('load',async()=>{
   for(let i=0;i<NSIMS;i++){ carregarSim(i); setupArea(i); }
   atualizarInterfaceTempo(); renderTodas(); atualizarGauge(0); atualizarCalLive(); atualizarContadores(); atualizarEstimativas();
   reconectar();
+  // auto-save GitHub: preenche o token salvo, mostra o status e retoma pendências
+  const tk=localStorage.getItem('simpesca_github_token'); const f=document.getElementById('githubToken'); if(tk&&f) f.value=tk;
+  setSyncBadge(ghToken()?(localStorage.getItem('simpesca_sync_pend')?'pend':'idle'):'notoken');
+  if(ghToken() && navigator.onLine && localStorage.getItem('simpesca_sync_pend')){ ghDirty.curvas=true; ghDirty.config=true; fazerSync(); }
   log('Dashboard pronto — editor por pontos ('+DURACAO+'s)','ok');
 });
 </script>

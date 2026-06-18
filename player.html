@@ -293,7 +293,7 @@ const ESPECIES=[
 function nomePeixe(id){ const e=ESPECIES.find(x=>x.id===id); return e?e.nome:id; }
 // Sincronia POR VÍDEO: atraso (s) da simulação vs o vídeo. Positivo = motor age mais tarde (alinha com o vídeo).
 function syncVideo(id){ const v=parseFloat(localStorage.getItem('simpesca_sync_'+id)); return isFinite(v)?v:0; }
-function salvarSync(id){ const el=document.getElementById('sync_'+id); if(!el) return; let v=parseFloat(el.value); if(!isFinite(v)) v=0; v=Math.max(-30,Math.min(30,Math.round(v*10)/10)); el.value=v; localStorage.setItem('simpesca_sync_'+id,v); }
+function salvarSync(id){ const el=document.getElementById('sync_'+id); if(!el) return; let v=parseFloat(el.value); if(!isFinite(v)) v=0; v=Math.max(-30,Math.min(30,Math.round(v*10)/10)); el.value=v; localStorage.setItem('simpesca_sync_'+id,v); agendarSyncPlayer(); }
 const SIMS={};
 ESPECIES.forEach(e=>{ SIMS[e.id]={letra:e.id,nome:e.nome,video:null,wrapper:null,overlay:null,prog:null,pontos:[],intervalo:null,estaRodando:false}; });
 let simEmContagem=null, simEmPausa=null, nomeJogador='';
@@ -341,6 +341,38 @@ function aplicarConfigPlayer(d){
   ESPECIES.forEach(e=>{ if(s[e.id]!=null) localStorage.setItem('simpesca_sync_'+e.id, s[e.id]); });
 }
 
+// ── AUTO-SAVE da sincronia no GitHub (só num PC com token; o totem não tem token → só lê) ──
+const GH_REPO='guilhermeogera-beep/simpesca', GH_CONFIG='config.json';
+function ghToken(){ return (localStorage.getItem('simpesca_github_token')||'').trim(); }
+let ghSyncTimer=null, ghSyncEnviando=false;
+function agendarSyncPlayer(){
+  if(!ghToken()) return;                                  // sem token (totem): não publica
+  localStorage.setItem('simpesca_sync_pend','1');
+  clearTimeout(ghSyncTimer); ghSyncTimer=setTimeout(enviarSyncPlayer, 2500);
+}
+async function enviarSyncPlayer(){
+  if(ghSyncEnviando || !ghToken()) return;
+  if(!navigator.onLine) return;                           // sobe quando a internet voltar
+  ghSyncEnviando=true;
+  const headers={'Authorization':'token '+ghToken(),'Accept':'application/vnd.github+json'};
+  const url='https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_CONFIG;
+  let cfg={versao:1,tipo:'config',cal:{},gen:{},sync:{}}, sha=null, getOk=false, is404=false;
+  try{ const g=await fetch(url,{headers,cache:'no-store'});
+    if(g.ok){ const j=await g.json(); sha=j.sha; try{ cfg=JSON.parse(decodeURIComponent(escape(atob((j.content||'').replace(/\s/g,''))))); }catch(e){} getOk=true; }
+    else if(g.status===404){ is404=true; }                // arquivo ainda não existe: vai criar
+  }catch(e){ ghSyncEnviando=false; return; }               // offline/erro de rede: tenta depois
+  if(!getOk && !is404){ ghSyncEnviando=false; return; }     // erro (rate limit/token): NÃO arrisca sobrescrever cal/gen
+  cfg.sync=cfg.sync||{}; ESPECIES.forEach(e=>{ cfg.sync[e.id]=localStorage.getItem('simpesca_sync_'+e.id)||'0'; });
+  cfg.criado=new Date().toISOString();
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(cfg,null,2))));
+  const body={message:'auto: sincronia',content}; if(sha) body.sha=sha;
+  let ok=false; try{ const r=await fetch(url,{method:'PUT',headers,body:JSON.stringify(body)}); ok=r.ok; }catch(e){}
+  ghSyncEnviando=false;
+  if(ok){ localStorage.removeItem('simpesca_sync_pend'); mostrarToast('☁️ sincronia salva na nuvem'); }
+  else mostrarToast('⏳ sincronia: sobe quando tiver internet');
+}
+window.addEventListener('online',()=>{ if(ghToken() && localStorage.getItem('simpesca_sync_pend')) enviarSyncPlayer(); });
+
 window.addEventListener('load',async()=>{
   // GitHub é a fonte de verdade: curvas (curvas.json) + calibração/sincronia (config.json)
   try{
@@ -385,6 +417,7 @@ window.addEventListener('load',async()=>{
   document.getElementById('inputNome').value=localStorage.getItem('simpesca_ultimo_nome')||'';
   carregarHudCfg();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  if(ghToken() && navigator.onLine && localStorage.getItem('simpesca_sync_pend')) enviarSyncPlayer();   // retoma sincronia pendente
   tentarReconectar();
 });
 
@@ -462,6 +495,7 @@ function nudgeSync(delta){
   localStorage.setItem('simpesca_sync_'+simTocando, v);
   const card=document.getElementById('sync_'+simTocando); if(card) card.value=v;   // mantém o card alinhado
   atualizarHudSync();
+  agendarSyncPlayer();
 }
 // mostra/esconde o campo ⏱ sincronia nos cards (tela de seleção) conforme o toggle do EXIBIR
 function atualizarSyncCards(){ document.querySelectorAll('.card-sync').forEach(el=>{ el.style.display = hudCfg.sync ? '' : 'none'; }); }
