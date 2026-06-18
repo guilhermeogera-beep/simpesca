@@ -65,7 +65,7 @@ input[type="range"]::-webkit-slider-thumb{height:24px;width:24px;border-radius:5
 .tl-playhead{position:absolute;top:0;bottom:20px;width:2px;background:var(--accent);left:0%;pointer-events:none;box-shadow:0 0 8px var(--accent);z-index:9;}
 .fisgada-band{position:absolute;top:0;bottom:20px;left:0;z-index:5;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,170,0,0.10),rgba(255,170,0,0.10) 6px,rgba(255,170,0,0.20) 6px,rgba(255,170,0,0.20) 12px);border-right:2px dashed rgba(255,170,0,0.7);}
 .fisgada-band .lbl{position:absolute;top:3px;left:5px;font-size:0.58rem;color:#ffc061;font-weight:700;letter-spacing:0.5px;white-space:nowrap;text-shadow:0 1px 2px #000;}
-#pontoEditor{display:none;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.95);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
+#pontoEditor{display:none;position:fixed;z-index:200;align-items:flex-end;gap:14px;flex-wrap:wrap;background:rgba(13,21,29,0.98);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,0.6);max-width:calc(100vw - 16px);}
 #pontoEditor .campo{display:flex;flex-direction:column;gap:3px;}
 #pontoEditor label{font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
 #pontoEditor input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:0.9rem;padding:6px 8px;width:96px;text-align:center;outline:none;}
@@ -488,7 +488,7 @@ function setupArea(idx){
     let pot=Math.max(0,Math.min(100,Math.round(100-((e.clientY-rect.top)/rect.height*100))));
     const novo={t,pot}; SIMS[idx].pontos.push(novo); SIMS[idx].pontos.sort((a,b)=>a.t-b.t);
     simAtiva=idx; multiSel=[]; selPonto=SIMS[idx].pontos.indexOf(novo);
-    salvarPontos(idx); renderCurva(idx); abrirEditorPonto();
+    salvarPontos(idx); renderCurva(idx); abrirEditorPonto(e);
     log('Ponto adicionado no '+NOMES[idx]+' ('+t.toFixed(1)+'s, '+pot+'%)','info');
   });
 }
@@ -496,7 +496,7 @@ function iniciarDragPonto(e,idx,i){
   e.stopPropagation(); e.preventDefault();
   if(e.ctrlKey||e.metaKey){ toggleMulti(idx,i); return; }   // Ctrl+clique = marcar/desmarcar
   if(idx===simAtiva && multiSel.indexOf(SIMS[idx].pontos[i])>-1){ iniciarDragGrupo(e,idx); return; } // arrastar grupo marcado
-  simAtiva=idx; multiSel=[]; selPonto=i; arrastouPonto=false; abrirEditorPonto(); renderCurva(idx);
+  simAtiva=idx; multiSel=[]; selPonto=i; arrastouPonto=false; abrirEditorPonto(e); renderCurva(idx);
   const area=document.getElementById('curva'+idx); const rect=area.getBoundingClientRect();
   const onMove=ev=>{ arrastouPonto=true; const p=SIMS[idx].pontos[selPonto]; if(!p) return;
     p.t=round2(Math.max(0,Math.min(DURACAO,(ev.clientX-rect.left)/rect.width*DURACAO)));
@@ -537,7 +537,16 @@ function iniciarDragGrupo(e,idx){
 
 // ══ EDITOR DO PONTO ───────────────────────────────────────────
 const pEditor=document.getElementById('pontoEditor');
-function abrirEditorPonto(){ camposDoPonto(); pEditor.style.display='flex'; }
+function abrirEditorPonto(e){ camposDoPonto(); pEditor.style.display='flex'; posicionarEditorPonto(e); }
+function posicionarEditorPonto(e){
+  if(!e || e.clientX==null){ pEditor.style.left='50%'; pEditor.style.top='80px'; pEditor.style.transform='translateX(-50%)'; return; }
+  pEditor.style.transform='none';
+  const w=pEditor.offsetWidth||280, h=pEditor.offsetHeight||130;
+  let x=e.clientX+16, y=e.clientY+16;                       // abre logo ao lado do ponto clicado
+  x=Math.max(8, Math.min(window.innerWidth - w - 8, x));    // não deixa sair da tela
+  y=Math.max(8, Math.min(window.innerHeight - h - 8, y));
+  pEditor.style.left=x+'px'; pEditor.style.top=y+'px';
+}
 function fecharEditorPonto(){ pEditor.style.display='none'; selPonto=-1; renderTodas(); }
 function camposDoPonto(){ const p=SIMS[simAtiva].pontos[selPonto]; if(!p) return; document.getElementById('pTempo').value=p.t; document.getElementById('pPot').value=p.pot; }
 function removerPonto(){ if(selPonto>-1){ SIMS[simAtiva].pontos.splice(selPonto,1); salvarPontos(simAtiva); fecharEditorPonto(); renderCurva(simAtiva); } }
