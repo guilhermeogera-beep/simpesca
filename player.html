@@ -66,8 +66,11 @@ input[type=text]:focus{border-color:var(--accent);}
 #hudTimeline{position:fixed;top:58px;left:14px;z-index:61;width:280px;max-width:58vw;height:38px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:9px;padding:3px;display:none;pointer-events:none;}
 #hudTimeline.visivel{display:block;}
 #tlCanvas{width:100%;height:100%;display:block;border-radius:6px;}
-#hudConfig{position:fixed;top:56px;right:14px;z-index:120;background:#0a1420;border:1px solid var(--accent);border-radius:10px;padding:10px 12px;display:none;font-size:0.78rem;color:var(--text);min-width:184px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+#hudConfig{position:fixed;top:56px;right:14px;z-index:120;background:#0a1420;border:1px solid var(--accent);border-radius:10px;padding:10px 12px;display:none;font-size:0.78rem;color:var(--text);min-width:184px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 70px);overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
 #hudConfig.visivel{display:block;}
+#hudConfig .hc-header{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;background:#0a1420;padding-bottom:8px;margin-bottom:4px;z-index:1;}
+#hudConfig .hc-fechar{background:rgba(0,212,255,0.12);border:1px solid var(--accent);color:var(--accent);border-radius:7px;width:30px;height:30px;font-size:1rem;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+#hudConfig .hc-fechar:active{background:rgba(0,212,255,0.3);}
 #hudConfig .hc-tit{font-size:0.6rem;letter-spacing:1.5px;color:#7e96ad;text-transform:uppercase;margin-bottom:6px;}
 #hudConfig label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;}
 #hudConfig input{accent-color:var(--accent);cursor:pointer;width:15px;height:15px;}
@@ -116,12 +119,14 @@ input[type=text]:focus{border-color:var(--accent);}
 <div id="hudTimeline"><canvas id="tlCanvas" width="600" height="80"></canvas></div>
 <div id="hudSync"><span>⏱</span><button onclick="nudgeSync(-0.2)">−0.2</button><span class="hs-val" id="hudSyncVal">0.0s</span><button onclick="nudgeSync(0.2)">+0.2</button></div>
 <div id="hudConfig">
-  <div class="hc-tit">👁 Exibir na tela</div>
+  <div class="hc-header"><span class="hc-tit" style="margin:0;">👁 Exibir na tela</span><button class="hc-fechar" onclick="toggleConfig()" aria-label="Fechar" title="Fechar">✕</button></div>
   <label><input type="checkbox" id="cfgLinha" checked> Linha enrolada</label>
   <label><input type="checkbox" id="cfgEstado" checked> Estado (puxa/recolhe)</label>
   <label><input type="checkbox" id="cfgBarra" checked> Barra de antecipação</label>
   <label><input type="checkbox" id="cfgCarretel"> Linha no carretel / trava</label>
   <label><input type="checkbox" id="cfgSync" checked> Ajuste de sincronia (⏱)</label>
+  <div class="hc-tit" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">🐟 Peixes na tela</div>
+  <div id="cfgPeixes"></div>
 </div>
 
 <div class="fs-overlay" id="nomeOverlay">
@@ -387,7 +392,7 @@ window.addEventListener('load',async()=>{
   const grid=document.getElementById('simsGrid');
   ESPECIES.forEach((e,i)=>{
     const cls=['a','b','c'][i%3];
-    const bloco=document.createElement('div'); bloco.className='sim-bloco';
+    const bloco=document.createElement('div'); bloco.className='sim-bloco'; bloco.id='bloco_'+e.id;
     bloco.innerHTML=
       '<div class="sim-titulo"><span class="sim-badge sim-badge-'+cls+'">🐟 '+e.nome.toUpperCase()+'</span></div>'+
       '<div class="video-wrapper" id="wrapper_'+e.id+'">'+
@@ -511,6 +516,33 @@ function carregarHudCfg(){
   cc.addEventListener('change',()=>{ hudCfg.carretel=cc.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); });
   cs.addEventListener('change',()=>{ hudCfg.sync=cs.checked; salvarHudCfg(); atualizarVisibilidadeHUD(); atualizarSyncCards(); });
   atualizarSyncCards();   // aplica o estado salvo aos campos dos cards no load
+  montarCfgPeixes();      // checkboxes de "peixes na tela"
+  aplicarVisibilidadePeixes();
+}
+
+// ── Mostrar/ocultar peixes na tela de seleção (painel EXIBIR) ──
+function peixeVisivel(id){ return localStorage.getItem('simpesca_peixe_'+id)!=='0'; }   // padrão: visível
+function aplicarVisibilidadePeixes(){
+  ESPECIES.forEach(e=>{
+    const vis=peixeVisivel(e.id);
+    const b=document.getElementById('bloco_'+e.id); if(b) b.style.display=vis?'':'none';                 // card na seleção
+    const f=document.querySelector('.rk-filtro[data-sim="'+e.id+'"]'); if(f) f.style.display=vis?'':'none'; // botão de filtro do ranking
+  });
+  if(rkFiltro!=='todos' && !peixeVisivel(rkFiltro)){     // o filtro ativo virou um peixe oculto -> volta pra Todas
+    rkFiltro='todos';
+    document.querySelectorAll('.rk-filtro').forEach(b=>b.classList.toggle('ativo', b.dataset.sim==='todos'));
+  }
+  if(document.getElementById('rankingOverlay').classList.contains('visivel')) renderRanking();            // atualiza a lista se estiver aberta
+}
+function montarCfgPeixes(){
+  const box=document.getElementById('cfgPeixes'); if(!box) return; box.innerHTML='';
+  ESPECIES.forEach(e=>{
+    const lab=document.createElement('label');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=peixeVisivel(e.id);
+    cb.addEventListener('change',()=>{ localStorage.setItem('simpesca_peixe_'+e.id, cb.checked?'1':'0'); aplicarVisibilidadePeixes(); });
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+e.nome));
+    box.appendChild(lab);
+  });
 }
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
@@ -626,6 +658,7 @@ function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 function renderRanking(){
   let lista=[]; try{ lista=JSON.parse(localStorage.getItem('simpesca_ranking'))||[]; }catch(e){}
   if(rkFiltro!=='todos') lista=lista.filter(r=>r.sim===rkFiltro);
+  else lista=lista.filter(r=>peixeVisivel(r.sim));   // "Todas" esconde os peixes desmarcados no EXIBIR
   lista.sort((a,b)=>b.metros-a.metros);
   const el=document.getElementById('rkLista');
   if(!lista.length){ el.innerHTML='<div class="rk-vazio">Nenhuma jogada registrada ainda. 🎣</div>'; return; }
