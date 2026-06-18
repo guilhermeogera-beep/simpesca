@@ -40,7 +40,7 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 .sim-nome-overlay{font-size:0.7rem;letter-spacing:2px;color:var(--text);text-transform:uppercase;opacity:0.7;}
 .fs-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,16,0.92);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px;}
 .fs-overlay.visivel{display:flex;}
-.countdown-num{font-size:min(18rem,34vh);font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;}
+.countdown-num{font-size:min(18rem,34vh);font-weight:900;color:var(--accent);text-shadow:0 0 60px rgba(0,212,255,0.6);line-height:1;animation:pulse 1s ease-in-out;will-change:transform,opacity;transform:translateZ(0);backface-visibility:hidden;}
 @keyframes pulse{0%{transform:scale(1.3);opacity:0;}50%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
 .lbl{font-size:0.7rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;}
 #segCountdown{width:min(620px,94%);border:2px solid rgba(255,23,68,0.65);background:rgba(255,23,68,0.1);border-radius:16px;padding:24px 30px;}
@@ -558,6 +558,7 @@ function montarCfgPeixes(){
 
 // ══ NOME → CONTAGEM → PLAY ════════════════════════════════════
 function pedirNome(id){
+  carregarVideo(id);   // PRÉ-CARREGA o vídeo já aqui (durante a digitação do nome) -> a contagem roda sem disputar com o load
   // valida se o carretel tem linha suficiente pra ESTA simulação (estimativa de quanto o peixe puxa)
   const precisa=estimarLinhaPts(carregarPontos(id));
   if(linhaDisponivel() < precisa){ abrirLinhaOverlay(id, precisa); return; }
