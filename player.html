@@ -262,10 +262,10 @@ function gatilhosParaPontos(gatilhos){
 }
 let curvasGitHub={};
 function carregarPontos(id){
-  // 1º: curva salva localmente (editada/gerada no dashboard)
-  try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
-  // 2º: curva do GitHub (curvas.json)
+  // 1º: GitHub (curvas.json) — fonte de verdade entre dispositivos
   if(curvasGitHub[id]&&Array.isArray(curvasGitHub[id])&&curvasGitHub[id].length) return curvasGitHub[id].slice().sort((a,b)=>a.t-b.t);
+  // 2º: localStorage (offline, ou editado localmente nesta máquina)
+  try{ const r=localStorage.getItem('simpesca_pontos_'+id); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
   // fallback: curvas antigas A/B/C (cíclico) ou padrão embutido
   const idx=Math.max(0,ESPECIES.findIndex(e=>e.id===id)), L=['A','B','C'][idx%3];
   try{ const r=localStorage.getItem('simpesca_pontos_'+L); if(r){ const d=JSON.parse(r); if(Array.isArray(d)&&d.length) return d.slice().sort((a,b)=>a.t-b.t); } }catch(e){}
@@ -303,8 +303,54 @@ const VIDEO_DB='simpesca-videos', VIDEO_STORE='videos';
 function abrirVideoDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open(VIDEO_DB,1); r.onupgradeneeded=e=>e.target.result.createObjectStore(VIDEO_STORE); r.onsuccess=e=>res(e.target.result); r.onerror=rej; }); }
 async function lerVideoDB(key){ const db=await abrirVideoDB(); return new Promise((res,rej)=>{ const r=db.transaction(VIDEO_STORE,'readonly').objectStore(VIDEO_STORE).get(key); r.onsuccess=e=>res(e.target.result||null); r.onerror=rej; }); }
 
+// ── LAZY-LOAD: 1 vídeo por vez na memória (totem trava com os 6 abertos) ──
+let videoCarregado=null;
+async function carregarVideo(id){
+  if(videoCarregado===id) return;            // já está na memória
+  liberarVideoAtual();                        // libera o anterior antes de abrir o novo
+  const sim=SIMS[id];
+  try{
+    const blob=await lerVideoDB('video_'+id);
+    if(blob){ sim._url=URL.createObjectURL(blob); sim.video.src=sim._url; }   // vídeo local (IndexedDB)
+    else    { sim._url=null; sim.video.src='video_'+id+'.mp4'; }              // fallback: rede/cache
+  }catch(e){ sim._url=null; sim.video.src='video_'+id+'.mp4'; }
+  sim.video.load();
+  videoCarregado=id;
+}
+function liberarVideoAtual(){
+  if(videoCarregado===null) return;
+  const sim=SIMS[videoCarregado];
+  try{ sim.video.pause(); }catch(e){}
+  sim.video.removeAttribute('src');
+  if(sim._url){ URL.revokeObjectURL(sim._url); sim._url=null; }   // devolve a memória do blob
+  try{ sim.video.load(); }catch(e){}                              // libera o decodificador
+  if(sim.prog) sim.prog.style.width='0%';                          // zera a barra de progresso do card
+  videoCarregado=null;
+}
+
+// Aplica calibração + sincronia vindas do config.json do GitHub (fonte de verdade entre dispositivos)
+function aplicarConfigPlayer(d){
+  if(!d) return;
+  const c=d.cal||{};
+  if(c.mpv)          localStorage.setItem('simpesca_cal_mpv', c.mpv);
+  if(c.limite)       localStorage.setItem('simpesca_cal_limite', c.limite);
+  if(c.velmax)       localStorage.setItem('simpesca_cal_velmax', c.velmax);
+  if(c.offset!=null) localStorage.setItem('simpesca_cal_offset', c.offset);
+  if(c.inv!=null)    localStorage.setItem('simpesca_cal_inv', c.inv);
+  const s=d.sync||{};
+  ESPECIES.forEach(e=>{ if(s[e.id]!=null) localStorage.setItem('simpesca_sync_'+e.id, s[e.id]); });
+}
+
 window.addEventListener('load',async()=>{
-  try{ const r=await fetch('curvas.json'); if(r.ok){ const d=await r.json(); curvasGitHub=d.curvas||{}; } }catch(e){}
+  // GitHub é a fonte de verdade: curvas (curvas.json) + calibração/sincronia (config.json)
+  try{
+    const [rc,rg]=await Promise.all([
+      fetch('curvas.json',{cache:'no-store'}).catch(()=>null),   // online: fresco · offline: SW serve o cacheado
+      fetch('config.json',{cache:'no-store'}).catch(()=>null)
+    ]);
+    if(rc&&rc.ok){ const d=await rc.json(); curvasGitHub=d.curvas||{}; }
+    if(rg&&rg.ok){ const d=await rg.json(); aplicarConfigPlayer(d); }
+  }catch(e){}
   // monta os cards (1 por peixe)
   const grid=document.getElementById('simsGrid');
   ESPECIES.forEach((e,i)=>{
@@ -313,7 +359,7 @@ window.addEventListener('load',async()=>{
     bloco.innerHTML=
       '<div class="sim-titulo"><span class="sim-badge sim-badge-'+cls+'">🐟 '+e.nome.toUpperCase()+'</span></div>'+
       '<div class="video-wrapper" id="wrapper_'+e.id+'">'+
-        '<video id="video_'+e.id+'" preload="metadata" playsinline><source src="video_'+e.id+'.mp4" type="video/mp4"></video>'+
+        '<video id="video_'+e.id+'" preload="none" playsinline></video>'+
         '<div class="video-progress"><div class="video-progress-bar" id="prog_'+e.id+'"></div></div>'+
         '<div class="overlay" id="overlay_'+e.id+'"><button class="btn-play" onclick="pedirNome(\''+e.id+'\')"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><span class="sim-nome-overlay">'+e.nome+'</span></div>'+
       '</div>'+
@@ -330,13 +376,9 @@ window.addEventListener('load',async()=>{
     s.video.addEventListener('timeupdate',()=>{ s.prog.style.width=((s.video.currentTime/s.video.duration)*100||0)+'%'; });
     s.video.addEventListener('ended',()=>encerrarSim(id,true,true));
   });
-  // substitui src por blob local (IndexedDB) quando disponível — assíncrono, não bloqueia init
-  ESPECIES.forEach(async e=>{
-    try{
-      const blob=await lerVideoDB('video_'+e.id);
-      if(blob) SIMS[e.id].video.src=URL.createObjectURL(blob);
-    }catch(err){}
-  });
+  // OBS: os vídeos NÃO são carregados aqui. Pra economizar memória do totem (que trava com 6
+  // vídeos abertos ao mesmo tempo), cada vídeo só entra na memória quando o peixe é escolhido
+  // (carregarVideo) e é liberado ao terminar (liberarVideoAtual).
   // filtros do ranking (1 por peixe)
   const rkF=document.getElementById('rkFiltros');
   ESPECIES.forEach(e=>{ const b=document.createElement('button'); b.className='rk-filtro'; b.dataset.sim=e.id; b.textContent=e.nome; b.onclick=()=>filtrarRanking(e.id,b); rkF.appendChild(b); });
@@ -468,6 +510,7 @@ function devolverOverlays(){ OVERLAYS_FS.forEach(id=>document.body.appendChild(d
 // Chamado DIRETO do clique/Enter (gesto do usuário) -> pode entrar em tela cheia
 function iniciarContagem(id){
   const sim=SIMS[id], w=sim.wrapper;
+  carregarVideo(id);                                                  // carrega SÓ este vídeo (5s da contagem dão tempo de bufferizar)
   document.getElementById('hudConfig').classList.remove('visivel');   // fecha o painel de exibição
   moverOverlaysPara(w);
   const req=w.requestFullscreen||w.webkitRequestFullscreen;      // tela cheia JÁ no gesto do usuário
@@ -485,7 +528,7 @@ function loopSim(sim){
 }
 function iniciarSim(id){
   const sim=SIMS[id];
-  sim.pontos=carregarPontos(id);          // pega edições recentes do dashboard
+  sim.pontos=carregarPontos(id);          // recarrega a curva (GitHub manda; pega a versão publicada)
   sim.estaRodando=true;
   sim.overlay.classList.add('oculto');
   novoJogoContadores();                    // novo jogador: zera só a contagem do jogo; a linha do carretel acumula
@@ -516,7 +559,8 @@ function encerrarSim(id, sairFS, salvar){
   const metros=metrosAtuais();
   if(sairFS){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
   devolverOverlays();
-  sim.overlay.classList.remove('oculto'); sim.video.currentTime=0;
+  sim.overlay.classList.remove('oculto');
+  liberarVideoAtual();                       // tira o vídeo da memória ao voltar pra seleção
   if(salvar){ salvarRanking(nomeJogador, metros, id); mostrarResultado(nomeJogador, metros, id); }
 }
 

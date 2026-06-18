@@ -933,8 +933,8 @@ window.addEventListener('load',async()=>{
   const st=document.getElementById('ghSyncStatus'), cs=document.getElementById('cfgSyncStatus');
   try{
     const [rc, rg] = await Promise.all([
-      fetch('curvas.json?t='+Date.now()).catch(()=>null),
-      fetch('config.json?t='+Date.now()).catch(()=>null)
+      fetch('curvas.json',{cache:'no-store'}).catch(()=>null),   // online: fresco · offline: SW serve o cacheado
+      fetch('config.json',{cache:'no-store'}).catch(()=>null)
     ]);
     if(rc&&rc.ok){ const d=await rc.json(); curvasGitHub=d.curvas||{}; const n=Object.keys(curvasGitHub).length; if(n>0){ st.style.color='#00e676'; st.textContent='✅ '+n+' curvas do GitHub'; } }
     else{ st.style.color='#7b8d9e'; st.textContent='📁 offline — curvas locais'; }

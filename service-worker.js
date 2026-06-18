@@ -1,6 +1,6 @@
-// Dois caches: SHELL (app, atualiza fácil) e MEDIA (vídeos, persistente)
-const SHELL_CACHE = 'simpesca-shell-v5';
-const MEDIA_CACHE = 'simpesca-media-v2';   // v2: vídeos por peixe (video_<especie>.mp4)
+// Cache do SHELL do app (HTML/JS/JSON/ícones). Os VÍDEOS não passam por aqui:
+// ficam no IndexedDB do navegador (importados manualmente em index.html).
+const SHELL_CACHE = 'simpesca-shell-v6';
 
 const APP_SHELL = [
   '/simpesca/',
@@ -28,8 +28,8 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys
-        .filter(k => k !== SHELL_CACHE && k !== MEDIA_CACHE)
-        .map(k => caches.delete(k)))   // remove shells antigos; NUNCA apaga o MEDIA
+        .filter(k => k !== SHELL_CACHE)
+        .map(k => caches.delete(k)))   // remove caches antigos (inclui o antigo cache de vídeos)
     )
   );
   self.clients.claim();
@@ -39,20 +39,7 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = event.request.url;
 
-  // Vídeos: cache-first (servem offline; baixam 1x)
-  if (url.endsWith('.mp4')) {
-    event.respondWith(
-      caches.match(event.request).then(r => r ||
-        fetch(event.request).then(net => {
-          if (net && net.ok) { const c = net.clone(); caches.open(MEDIA_CACHE).then(x => x.put(event.request, c)); }
-          return net;
-        })
-      )
-    );
-    return;
-  }
-
-  // App (HTML/JS/ícones): rede-primeiro (pega versão nova online),
+  // App (HTML/JS/JSON/ícones): rede-primeiro (pega versão nova online),
   // cai pro cache quando offline.
   event.respondWith(
     fetch(event.request).then(net => {

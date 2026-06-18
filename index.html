@@ -22,24 +22,18 @@
         .btn { border:none; padding:15px 30px; font-weight:bold; border-radius:30px; cursor:pointer; text-transform:uppercase; font-size:14px; width:85%; max-width:320px; margin-bottom:14px; letter-spacing:1px; }
         .btn:active { opacity:0.8; } .btn:disabled { opacity:0.5; cursor:default; }
         #btnInstalar { background:linear-gradient(135deg,#0077b6,#00d4ff); color:white; display:none; box-shadow:0 4px 20px rgba(0,180,216,0.4); }
-        #btnBaixar { background:#102a1a; color:#00e676; border:1px solid #00e676; }
         #btnConectar { background:#00d4ff; color:#050a0f; font-weight:900; box-shadow:0 4px 20px rgba(0,212,255,0.35); }
         #dicaIOS { display:none; background:rgba(0,180,216,0.07); border:1px solid rgba(0,180,216,0.2); border-radius:12px; padding:14px 18px; font-size:12px; color:#7b8d9e; max-width:300px; margin-bottom:16px; line-height:1.7; }
         #dicaIOS span { color:#00d4ff; font-weight:bold; }
-        .progresso-wrap { width:85%; max-width:320px; margin-bottom:14px; display:none; }
-        .progresso-bar { height:8px; background:#0d151d; border:1px solid #1a2736; border-radius:6px; overflow:hidden; }
-        .progresso-fill { height:100%; width:0%; background:linear-gradient(90deg,#0077b6,#00e676); transition:width 0.3s; }
-        .progresso-txt { font-size:11px; color:#7b8d9e; margin-top:6px; }
         .status { font-size:12px; color:#555; margin-top:20px; }
         .status.ok { color:#00e676; } .status.err { color:#ff1744; }
         .local-sec { width:85%; max-width:320px; background:#0d151d; border:1px solid #1a2736; border-radius:12px; padding:14px 16px; margin-bottom:14px; text-align:left; }
-        .local-sec-titulo { font-size:11px; letter-spacing:2px; color:#7b8d9e; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-        .local-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; margin-bottom:10px; }
-        .local-item { font-size:11px; color:#7b8d9e; display:flex; align-items:center; gap:4px; }
-        .local-item .dot { width:8px; height:8px; border-radius:50%; background:#1a2736; flex-shrink:0; }
+        .local-sec-titulo { font-size:11px; letter-spacing:2px; color:#7b8d9e; text-transform:uppercase; margin-bottom:4px; }
+        .local-sec-dica { font-size:11px; color:#3d5d7e; margin-bottom:10px; line-height:1.5; }
+        .local-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; }
+        .local-item { font-size:12px; color:#7b8d9e; }
+        .local-item .dot { width:9px; height:9px; border-radius:50%; background:#1a2736; flex-shrink:0; }
         .local-item .dot.ok { background:#00e676; }
-        .btn-local { width:100%; background:#10201a; color:#00e676; border:1px solid #00e676; padding:9px; border-radius:8px; font-size:12px; letter-spacing:1px; cursor:pointer; font-family:inherit; text-transform:uppercase; }
-        .btn-local:active { opacity:0.7; }
     </style>
 </head>
 <body>
@@ -48,11 +42,11 @@
     <p class="subtitulo">Simulador de Pesca · Bluetooth</p>
 
     <div class="instrucao">
-        <strong>Primeira vez (com internet):</strong>
+        <strong>Configuração (uma vez):</strong>
         1. <span>Instale</span> o app no aparelho<br>
-        2. <span>Baixe os vídeos</span> para uso offline<br>
-        <strong style="margin-top:10px;">No local (sem internet):</strong>
-        3. Abra o app e toque em <span>Abrir Painel</span><br>
+        2. <span>Importe os vídeos</span> do dispositivo (abaixo)<br>
+        <strong style="margin-top:10px;">Para jogar:</strong>
+        3. Toque em <span>Abrir Painel</span><br>
         4. Toque em <span>Conectar</span> (Bluetooth)
     </div>
 
@@ -62,15 +56,10 @@
     </div>
 
     <button id="btnInstalar" class="btn">📥 Instalar Aplicativo</button>
-    <button id="btnBaixar" class="btn" onclick="baixarVideos()">⬇️ Baixar vídeos (offline)</button>
-    <div class="progresso-wrap" id="progressoWrap">
-        <div class="progresso-bar"><div class="progresso-fill" id="progressoFill"></div></div>
-        <div class="progresso-txt" id="progressoTxt">Baixando...</div>
-    </div>
-    <button id="btnConectar" class="btn" onclick="abrirPainel()">🎣 Abrir Painel</button>
 
     <div class="local-sec">
-        <div class="local-sec-titulo">📂 Vídeos locais <span style="font-size:10px;color:#3d5d7e">(opcional — sem internet)</span></div>
+        <div class="local-sec-titulo">📂 Vídeos do dispositivo</div>
+        <div class="local-sec-dica">Toque em cada peixe e escolha o vídeo (.mp4) salvo no aparelho. Fica guardado offline.</div>
         <div class="local-grid" id="localGrid"></div>
         <input type="file" accept=".mp4" id="fi_pirarara" style="display:none" onchange="salvarArquivo('pirarara',this)">
         <input type="file" accept=".mp4" id="fi_tambaqui"  style="display:none" onchange="salvarArquivo('tambaqui',this)">
@@ -80,11 +69,10 @@
         <input type="file" accept=".mp4" id="fi_jau"       style="display:none" onchange="salvarArquivo('jau',this)">
     </div>
 
+    <button id="btnConectar" class="btn" onclick="abrirPainel()">🎣 Abrir Painel</button>
     <p class="status" id="statusSW">Carregando...</p>
 
     <script>
-        const MEDIA_CACHE = 'simpesca-media-v2';
-        const VIDEOS = ['video_pirarara.mp4','video_tambaqui.mp4','video_tucunare.mp4','video_dourado.mp4','video_trairao.mp4','video_jau.mp4'];
         const ESPECIES_IDS = ['pirarara','tambaqui','tucunare','dourado','trairao','jau'];
         const ESPECIES_NOMES = {pirarara:'Pirarará',tambaqui:'Tambacu',tucunare:'Tucunaré',dourado:'Dourado',trairao:'Trairão',jau:'Jaú'};
 
@@ -100,7 +88,7 @@
                 let tem=false; try{ tem=await temVideoDB('video_'+id); }catch(e){}
                 const div=document.createElement('div'); div.className='local-item';
                 div.innerHTML=
-                    '<label for="fi_'+id+'" style="cursor:pointer;display:flex;align-items:center;gap:5px;width:100%;padding:3px 0;">'+
+                    '<label for="fi_'+id+'" style="cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;padding:4px 0;">'+
                     '<span class="dot'+(tem?' ok':'')+'" id="dot_'+id+'"></span>'+
                     '<span id="lbl_'+id+'" style="'+(tem?'color:#00e676;font-weight:bold':'')+'">'+(tem?'✅ ':'')+ESPECIES_NOMES[id]+'</span>'+
                     '</label>';
@@ -117,37 +105,10 @@
             }catch(e){ alert('Erro ao salvar: '+e); }
             input.value='';
         }
+
         function abrirPainel(){ window.location.href = 'player.html'; }
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         if (isIOS) document.getElementById('dicaIOS').style.display = 'block';
-
-        async function baixarVideos(){
-            const wrap=document.getElementById('progressoWrap'), fill=document.getElementById('progressoFill'),
-                  txt=document.getElementById('progressoTxt'), btn=document.getElementById('btnBaixar');
-            wrap.style.display='block'; btn.disabled=true;
-            const falhas=[];
-            const cache=await caches.open(MEDIA_CACHE);
-            for(let i=0;i<VIDEOS.length;i++){
-                txt.textContent=`Baixando vídeo ${i+1} de ${VIDEOS.length}... (${VIDEOS[i]})`;
-                try{ await cache.add(VIDEOS[i]); }catch(e){ falhas.push(VIDEOS[i]); }
-                fill.style.width=Math.round(((i+1)/VIDEOS.length)*100)+'%';
-            }
-            if(!falhas.length){
-                txt.textContent='✅ Vídeos salvos! Pronto para uso offline.';
-                btn.textContent='✅ Vídeos baixados';
-            } else {
-                txt.innerHTML='⚠️ '+(VIDEOS.length-falhas.length)+' de '+VIDEOS.length+' baixados. Faltou no servidor:<br>'+falhas.join('<br>');
-                btn.disabled=false;
-            }
-        }
-        async function verificarVideos(){
-            if(!('caches' in window)) return;
-            try{
-                const cache=await caches.open(MEDIA_CACHE); let todos=true;
-                for(const v of VIDEOS){ if(!(await cache.match(v))) todos=false; }
-                if(todos){ const b=document.getElementById('btnBaixar'); b.textContent='✅ Vídeos baixados'; b.disabled=true; }
-            }catch(e){}
-        }
 
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredPrompt=e; document.getElementById('btnInstalar').style.display='block'; });
@@ -161,7 +122,7 @@
 
         if('serviceWorker' in navigator){
             navigator.serviceWorker.register('/simpesca/service-worker.js')
-                .then(()=>{ const s=document.getElementById('statusSW'); s.textContent='✅ App pronto para uso offline'; s.className='status ok'; verificarVideos(); })
+                .then(()=>{ const s=document.getElementById('statusSW'); s.textContent='✅ App pronto para uso offline'; s.className='status ok'; })
                 .catch(()=>{ const s=document.getElementById('statusSW'); s.textContent='⚠️ Erro ao registrar service worker'; s.className='status err'; });
         }
         atualizarStatusLocais();
