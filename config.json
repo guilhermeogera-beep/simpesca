@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "tipo": "config",
-  "criado": "2026-06-18T22:34:06.176Z",
+  "criado": "2026-06-19T02:47:18.567Z",
   "cal": {
     "mpv": 0.0854,
     "limite": -151,
@@ -31,7 +31,7 @@
       "intens": "100",
       "espaco": "65",
       "fisfispot": "15",
-      "fisfisvoltas": "2",
+      "fisfisvoltas": "8",
       "fisfisdur": "5"
     },
     "tucunare": {
