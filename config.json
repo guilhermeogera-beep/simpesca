@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "tipo": "config",
-  "criado": "2026-06-19T02:47:50.798Z",
+  "criado": "2026-06-19T02:48:47.379Z",
   "cal": {
     "mpv": 0.0854,
     "limite": -151,
@@ -80,7 +80,7 @@
       "espaco": "51",
       "fisfispot": "15",
       "fisfisvoltas": "2",
-      "fisfisdur": "5"
+      "fisfisdur": "0"
     }
   },
   "sync": {
