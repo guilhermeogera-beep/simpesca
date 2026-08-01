@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Roleta de Brindes</title>
+<style>
+  :root{
+    --bg1:#0f1226; --bg2:#1b1f3b; --card:#20264f; --line:#33407a;
+    --txt:#eef1ff; --muted:#a4acd8; --accent:#ffcc33; --accent2:#ff5470;
+    --ok:#38d39f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--txt); background:radial-gradient(1200px 800px at 50% -10%, #2a3170 0%, var(--bg2) 45%, var(--bg1) 100%);
+    display:flex; flex-direction:column; align-items:center; min-height:100%;
+    overflow-x:hidden;
+  }
+
+  /* ---- TOPO: botão de configurações ---- */
+  header{
+    width:100%; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; gap:12px;
+  }
+  header h1{
+    font-size:clamp(18px,4.5vw,26px); margin:0; letter-spacing:.5px;
+    display:flex; align-items:center; gap:8px;
+  }
+  header h1 span{filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}
+  .btn{
+    border:0; cursor:pointer; font-weight:700; border-radius:14px;
+    padding:12px 18px; font-size:16px; color:#1a1030;
+    background:linear-gradient(180deg,#ffe08a,var(--accent));
+    box-shadow:0 6px 18px rgba(255,204,51,.28), inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .btn:active{transform:translateY(1px) scale(.99);}
+  .btn.ghost{
+    background:var(--card); color:var(--txt); border:1px solid var(--line);
+    box-shadow:none; font-weight:600;
+  }
+  .btn[disabled]{opacity:.5; cursor:not-allowed; filter:grayscale(.3);}
+
+  /* ---- MEIO: a roleta ---- */
+  main{
+    flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:22px; padding:8px 16px 32px;
+  }
+  .roleta-wrap{
+    position:relative; width:min(86vw, 480px); aspect-ratio:1/1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  /* fallback p/ Safari antigo (iPad) que não entende aspect-ratio:
+     o JS define a altura = largura; isto garante um mínimo até isso rodar */
+  .roleta-wrap{ min-height:min(86vw, 480px); }
+  .ponteiro{
+    position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0; height:0; z-index:5;
+    border-left:20px solid transparent; border-right:20px solid transparent;
+    border-top:34px solid var(--accent2);
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));
+  }
+  canvas{
+    width:100%; height:100%; border-radius:50%;
+    box-shadow:0 18px 50px rgba(0,0,0,.5), 0 0 0 10px rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.08);
+    background:#141838;
+  }
+  .hub{
+    position:absolute; width:16%; height:16%; border-radius:50%; z-index:4;
+    background:radial-gradient(circle at 35% 30%, #fff, #d9def0 40%, #aeb6e0 100%);
+    box-shadow:0 6px 16px rgba(0,0,0,.5), inset 0 -3px 8px rgba(0,0,0,.25);
+    display:flex; align-items:center; justify-content:center; font-size:min(6vw,26px);
+  }
+
+  /* ---- ABAIXO: botão sortear ---- */
+  .girar{
+    border:0; cursor:pointer; color:#fff; font-weight:800;
+    font-size:clamp(20px,5vw,26px); letter-spacing:1px; text-transform:uppercase;
+    padding:18px 46px; border-radius:999px;
+    background:linear-gradient(180deg,#ff7a95,var(--accent2));
+    box-shadow:0 10px 28px rgba(255,84,112,.4), inset 0 1px 0 rgba(255,255,255,.4);
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .girar:active{transform:translateY(2px) scale(.99);}
+  .girar[disabled]{opacity:.55; cursor:not-allowed; filter:grayscale(.4);}
+
+  /* ---- Overlays ---- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(6,8,22,.72);
+    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; padding:18px; z-index:20;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    width:min(620px,100%); max-height:90vh; overflow:auto;
+    background:linear-gradient(180deg,var(--card),#191d3f); border:1px solid var(--line);
+    border-radius:20px; padding:22px; box-shadow:0 30px 80px rgba(0,0,0,.6);
+  }
+  .modal h2{margin:0 0 4px; font-size:22px;}
+  .modal p.sub{margin:0 0 16px; color:var(--muted); font-size:14px;}
+
+  /* cabeçalho de colunas */
+  .cols{
+    display:flex; align-items:center; gap:8px; padding:0 4px 8px;
+    font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .col-nome{flex:1;}
+  .col-qtd{width:70px; text-align:center;}
+  .col-pct{width:74px; text-align:center;}
+  .col-del{width:40px;}
+
+  .prize-row{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .prize-row input[type=color]{
+    width:38px; height:44px; padding:0; border:1px solid var(--line);
+    border-radius:10px; background:#12162f; cursor:pointer; flex:none;
+  }
+  .prize-row input[type=text]{
+    flex:1; min-width:0; background:#12162f; border:1px solid var(--line); color:var(--txt);
+    border-radius:10px; padding:11px 12px; font-size:15px;
+  }
+  .prize-row input[type=number]{
+    background:#12162f; border:1px solid var(--line); color:var(--txt);
+    border-radius:10px; padding:11px 6px; font-size:15px; text-align:center;
+    -moz-appearance:textfield;
+  }
+  .prize-row input[type=number]::-webkit-outer-spin-button,
+  .prize-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .inp-qtd{width:70px; flex:none;}
+  .inp-pct{width:74px; flex:none;}
+  input:focus{outline:none; border-color:var(--accent);}
+  .del{
+    background:#3a2140; border:1px solid #6b2f52; color:#ff9db4; cursor:pointer;
+    border-radius:10px; width:40px; height:44px; font-size:18px; flex:none;
+  }
+  .soma{
+    margin-top:10px; font-size:13px; color:var(--muted);
+  }
+  .soma b{color:var(--txt);}
+  .divider{height:1px; background:var(--line); margin:16px 0;}
+  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
+  .actions .btn{flex:1; text-align:center; min-width:120px;}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5;}
+
+  .resultado{text-align:center;}
+  .resultado .emoji{font-size:60px; line-height:1; margin-bottom:6px;}
+  .resultado .premio{
+    font-size:clamp(24px,6.5vw,38px); font-weight:800; margin:6px 0 4px;
+    padding:10px 16px; border-radius:14px; display:inline-block; color:#fff;
+  }
+  .resultado .estoque{color:var(--muted); font-size:14px; margin-top:6px;}
+  .confete{position:fixed; inset:0; pointer-events:none; z-index:19;}
+</style>
+</head>
+<body>
+
+  <!-- TOPO -->
+  <header>
+    <h1><span>🎁</span> Roleta de Brindes</h1>
+    <button class="btn ghost" id="btnConfig">⚙ Configurações</button>
+  </header>
+
+  <!-- MEIO -->
+  <main>
+    <div class="roleta-wrap">
+      <div class="ponteiro"></div>
+      <canvas id="wheel" width="1000" height="1000"></canvas>
+      <div class="hub">🎯</div>
+    </div>
+    <!-- ABAIXO -->
+    <button class="girar" id="btnGirar">Sortear</button>
+  </main>
+
+  <!-- OVERLAY SENHA -->
+  <div class="overlay" id="pwOverlay">
+    <div class="modal" style="max-width:380px; text-align:center;">
+      <div style="font-size:44px; line-height:1; margin-bottom:6px;">🔒</div>
+      <h2>Acesso restrito</h2>
+      <p class="sub" style="text-align:center;">Digite a senha para abrir as configurações.</p>
+      <input type="password" id="pwInput" inputmode="numeric" placeholder="Senha"
+        style="width:100%; text-align:center; letter-spacing:4px; font-size:20px;
+               background:#12162f; border:1px solid var(--line); color:var(--txt);
+               border-radius:10px; padding:12px;">
+      <div id="pwErro" style="color:#ff8aa3; font-size:13px; height:18px; margin-top:8px;"></div>
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn ghost" id="btnPwCancel">Cancelar</button>
+        <button class="btn" id="btnPwOk">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY CONFIG -->
+  <div class="overlay" id="cfgOverlay">
+    <div class="modal">
+      <h2>Configurações</h2>
+      <p class="sub">Defina os prêmios, a <b>quantidade</b> em estoque e a <b>% de chance</b> de cada um sair.
+      Quando o estoque de um prêmio zera, ele some da roleta e os espaços são preenchidos pelos que ainda têm saldo.</p>
+
+      <div class="cols">
+        <div style="width:38px"></div>
+        <div class="col-nome">Prêmio</div>
+        <div class="col-qtd">Qtd.</div>
+        <div class="col-pct">% chance</div>
+        <div class="col-del"></div>
+      </div>
+
+      <div id="prizesBox"></div>
+
+      <div class="soma" id="somaChances"></div>
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn ghost" id="btnAddPrize">＋ Adicionar prêmio</button>
+      </div>
+
+      <p class="hint">As chances não precisam somar 100 — o sistema calcula a proporção automaticamente entre
+      os prêmios que ainda têm estoque. Um prêmio com <b>0%</b> ou <b>estoque 0</b> não aparece na roleta.</p>
+
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn ghost" id="btnCancelar">Cancelar</button>
+        <button class="btn" id="btnSalvar">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY RESULTADO -->
+  <div class="overlay" id="resOverlay">
+    <div class="modal resultado">
+      <div class="emoji">🎉</div>
+      <div style="color:var(--muted); font-weight:600;">O prêmio sorteado foi</div>
+      <div class="premio" id="resPremio">—</div>
+      <div class="estoque" id="resEstoque"></div>
+      <div class="actions" style="margin-top:18px;">
+        <button class="btn" id="btnFecharRes" style="flex:1">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================== CONFIG / ESTADO ================== */
+const STORAGE = 'roleta_config_v2';
+const PALETTE = ['#ff5470','#4d8cff','#ffcc33','#38d39f','#c06bff','#ff8a3d','#2dd4bf','#f45d9c'];
+
+const DEFAULT = {
+  prizes: [
+    {name:'Boné',                color:PALETTE[0], qtd:20, chance:22},
+    {name:'Boia',                color:PALETTE[1], qtd:20, chance:22},
+    {name:'Copo',                color:PALETTE[2], qtd:20, chance:22},
+    {name:'Abridor',             color:PALETTE[3], qtd:20, chance:22},
+    {name:'Hospedagem Trindade', color:PALETTE[4], qtd:2,  chance:6 },
+    {name:'Hospedagem Iguapo',   color:PALETTE[5], qtd:2,  chance:6 },
+  ]
+};
+
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+function loadCfg(){
+  try{
+    const c = JSON.parse(localStorage.getItem(STORAGE));
+    if(c && Array.isArray(c.prizes)) return c;
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function saveCfg(){ try{ localStorage.setItem(STORAGE, JSON.stringify(config)); }catch(e){} }
+
+let config = loadCfg();
+
+/* ================== MONTAGEM DA RODA ================== */
+/* slots = índice do prêmio em cada fatia; drawItems = pesos p/ o sorteio */
+let slots = [];
+let drawItems = [];
+const TOTAL_FATIAS = 14;
+
+function buildWheel(){
+  const pool = config.prizes.map((p,i)=>i).filter(i => num(config.prizes[i].qtd) > 0);
+  let weights = pool.map(i => Math.max(0, num(config.prizes[i].chance)));
+  let sumW = weights.reduce((a,b)=>a+b, 0);
+  if(sumW <= 0){ weights = pool.map(()=>1); sumW = pool.length || 1; }
+
+  let items = [];
+  pool.forEach((idx,k)=>{
+    const w = weights[k];
+    const cnt = w > 0 ? Math.max(1, Math.round(w / sumW * TOTAL_FATIAS)) : 0;
+    if(cnt > 0) items.push({idx, cnt, weight:w});
+  });
+
+  // intercala (round-robin) pra não agrupar o mesmo prêmio
+  slots = [];
+  let rem = items.map(it => it.cnt);
+  let guard = 0;
+  while(rem.some(r => r > 0) && guard < 2000){
+    items.forEach((it,k)=>{ if(rem[k] > 0){ slots.push(it.idx); rem[k]--; } });
+    guard++;
+  }
+  drawItems = items.map(it => ({idx:it.idx, weight:it.weight}));
+}
+
+function temEstoque(){ return slots.length > 0; }
+
+function escolherVencedor(){
+  if(!drawItems.length) return -1;
+  const total = drawItems.reduce((a,it)=>a+it.weight, 0);
+  let r = Math.random() * total;
+  for(const it of drawItems){ r -= it.weight; if(r <= 0) return it.idx; }
+  return drawItems[drawItems.length-1].idx;
+}
+
+/* ================== DESENHO ================== */
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const SIZE = 1000;
+canvas.width = canvas.height = SIZE;
+const R = SIZE/2;
+let rotation = -Math.PI/2;
+
+function drawWheel(){
+  const N = slots.length;
+  ctx.clearRect(0,0,SIZE,SIZE);
+
+  if(N === 0){
+    ctx.fillStyle = '#232a55';
+    ctx.beginPath(); ctx.arc(R,R,R-6,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle = '#8b93c0';
+    ctx.font = 'bold 42px system-ui, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Estoque', R, R-26);
+    ctx.fillText('esgotado', R, R+26);
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(R,R);
+  ctx.rotate(rotation);
+  const seg = 2*Math.PI/N;
+
+  for(let i=0;i<N;i++){
+    const p = config.prizes[slots[i]];
+    const a0 = i*seg, a1 = (i+1)*seg;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,R-6, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = (p && p.color) || '#888';
+    ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(a0 + seg/2);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#141838';
+    let txt = (p && p.name) || '';
+    // fonte inicial limitada pela ABERTURA da fatia (não invade as vizinhas)
+    let fs = Math.min(46, Math.max(14, seg * R * 0.42));
+    // espaço radial disponível pro texto (da borda até perto do eixo)
+    const maxW = (R - 38) - 0.20*R;
+    ctx.font = `700 ${fs}px system-ui, sans-serif`;
+    // ENCOLHE a fonte até o nome caber (até um mínimo)
+    while(fs > 12 && ctx.measureText(txt).width > maxW){
+      fs -= 1; ctx.font = `700 ${fs}px system-ui, sans-serif`;
+    }
+    // só corta se, mesmo no menor tamanho, ainda estourar
+    if(ctx.measureText(txt).width > maxW){
+      while(txt.length > 1 && ctx.measureText(txt + '…').width > maxW) txt = txt.slice(0,-1);
+      txt += '…';
+    }
+    ctx.fillText(txt, R-38, 0);
+    ctx.restore();
+  }
+
+  ctx.beginPath(); ctx.arc(0,0,R-6,0,2*Math.PI);
+  ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.stroke();
+  ctx.restore();
+}
+
+/* ================== SORTEIO / ANIMAÇÃO ================== */
+let spinning = false;
+let lastTickSeg = -1;
+
+function segmentoNoPonteiro(){
+  const N = slots.length; if(!N) return -1;
+  const seg = 2*Math.PI/N;
+  const pointer = -Math.PI/2;
+  let rel = (pointer - rotation) % (2*Math.PI);
+  if(rel < 0) rel += 2*Math.PI;
+  return Math.floor(rel/seg) % N;
+}
+
+function tick(){
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    if(!window._ac) window._ac = new AC();
+    const ac = window._ac;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type='triangle'; o.frequency.value=880;
+    g.gain.setValueAtTime(.05, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime+.06);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime+.06);
+  }catch(e){}
+}
+
+function spin(){
+  const N = slots.length;
+  if(spinning || N === 0) return;
+  spinning = true;
+  document.getElementById('btnGirar').disabled = true;
+
+  const seg = 2*Math.PI/N;
+  const winnerPrize = escolherVencedor();
+  const opcoes = slots.map((p,i)=>i).filter(i => slots[i] === winnerPrize);
+  const winSlot = opcoes[Math.floor(Math.random()*opcoes.length)];
+
+  const pointer = -Math.PI/2;
+  let target = pointer - (winSlot + 0.5)*seg;
+  const turns = 6 + Math.floor(Math.random()*3);
+  const minEnd = rotation + turns*2*Math.PI;
+  target += Math.ceil((minEnd - target)/(2*Math.PI))*2*Math.PI;
+
+  const start = rotation, delta = target - start, dur = 5200;
+  const t0 = performance.now();
+  lastTickSeg = segmentoNoPonteiro();
+
+  function frame(now){
+    let t = (now - t0)/dur; if(t > 1) t = 1;
+    const ease = 1 - Math.pow(1 - t, 3);
+    rotation = start + delta*ease;
+    drawWheel();
+    const cur = segmentoNoPonteiro();
+    if(cur !== lastTickSeg){ lastTickSeg = cur; tick(); }
+    if(t < 1){ requestAnimationFrame(frame); }
+    else{
+      spinning = false;
+      // baixa 1 do estoque do vencedor
+      config.prizes[winnerPrize].qtd = Math.max(0, num(config.prizes[winnerPrize].qtd) - 1);
+      saveCfg();
+      mostrarResultado(winnerPrize);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ================== RESULTADO ================== */
+function mostrarResultado(prizeIdx){
+  const p = config.prizes[prizeIdx];
+  const el = document.getElementById('resPremio');
+  el.textContent = (p && p.name) || 'Prêmio';
+  el.style.background = ((p && p.color) || '#ffcc33');
+  document.getElementById('resEstoque').textContent =
+    'Estoque restante deste prêmio: ' + num(p.qtd) + (num(p.qtd)===0 ? ' — esgotou!' : '');
+  document.getElementById('resOverlay').classList.add('show');
+  confete();
+}
+
+function fecharResultado(){
+  document.getElementById('resOverlay').classList.remove('show');
+  buildWheel(); drawWheel(); atualizarDisponibilidade();
+}
+
+function confete(){
+  const c = document.createElement('canvas');
+  c.className='confete'; c.width=innerWidth; c.height=innerHeight;
+  document.body.appendChild(c);
+  const cx = c.getContext('2d');
+  const parts = Array.from({length:140}, ()=>({
+    x:Math.random()*c.width, y:-20-Math.random()*c.height*0.4,
+    r:4+Math.random()*6, vx:(Math.random()-.5)*3, vy:2+Math.random()*4,
+    col:PALETTE[(Math.random()*PALETTE.length)|0], a:Math.random()*6
+  }));
+  const start = performance.now();
+  (function loop(now){
+    cx.clearRect(0,0,c.width,c.height);
+    parts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.a+=.1;
+      cx.save(); cx.translate(p.x,p.y); cx.rotate(p.a);
+      cx.fillStyle=p.col; cx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6); cx.restore();
+    });
+    if(now-start < 2600) requestAnimationFrame(loop); else c.remove();
+  })(start);
+}
+
+/* ================== TELA DE CONFIG ================== */
+const cfgOverlay = document.getElementById('cfgOverlay');
+const prizesBox = document.getElementById('prizesBox');
+
+function renderPrizes(){
+  prizesBox.innerHTML = '';
+  config.prizes.forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.className='prize-row';
+    row.innerHTML = `
+      <input type="color" value="${p.color}" data-color="${i}">
+      <input type="text" class="inp-nome" value="${(p.name||'').replace(/"/g,'&quot;')}" data-name="${i}" placeholder="Nome do prêmio">
+      <input type="number" class="inp-qtd" min="0" step="1" value="${num(p.qtd)}" data-qtd="${i}">
+      <input type="number" class="inp-pct" min="0" step="1" value="${num(p.chance)}" data-chance="${i}">
+      <button class="del" data-del="${i}" title="Remover prêmio">✕</button>`;
+    prizesBox.appendChild(row);
+  });
+  prizesBox.querySelectorAll('[data-name]').forEach(el=>el.oninput=e=>{ config.prizes[+e.target.dataset.name].name = e.target.value; });
+  prizesBox.querySelectorAll('[data-color]').forEach(el=>el.oninput=e=>{ config.prizes[+e.target.dataset.color].color = e.target.value; });
+  prizesBox.querySelectorAll('[data-qtd]').forEach(el=>el.oninput=e=>{ config.prizes[+e.target.dataset.qtd].qtd = Math.max(0, Math.floor(num(e.target.value))); atualizarSoma(); });
+  prizesBox.querySelectorAll('[data-chance]').forEach(el=>el.oninput=e=>{ config.prizes[+e.target.dataset.chance].chance = Math.max(0, num(e.target.value)); atualizarSoma(); });
+  prizesBox.querySelectorAll('[data-del]').forEach(el=>el.onclick=e=>{ config.prizes.splice(+e.target.dataset.del,1); renderPrizes(); atualizarSoma(); });
+  atualizarSoma();
+}
+
+function atualizarSoma(){
+  const soma = config.prizes.reduce((a,p)=>a+Math.max(0,num(p.chance)),0);
+  const totalEstoque = config.prizes.reduce((a,p)=>a+Math.max(0,num(p.qtd)),0);
+  document.getElementById('somaChances').innerHTML =
+    `Soma das chances: <b>${(+soma.toFixed(1))}%</b> &nbsp;·&nbsp; Estoque total: <b>${totalEstoque}</b> brindes`;
+}
+
+document.getElementById('btnAddPrize').onclick = ()=>{
+  const i = config.prizes.length;
+  config.prizes.push({name:'Novo prêmio', color:PALETTE[i % PALETTE.length], qtd:10, chance:10});
+  renderPrizes();
+};
+
+function abrirConfig(){ renderPrizes(); cfgOverlay.classList.add('show'); }
+function fecharConfig(){ cfgOverlay.classList.remove('show'); }
+
+/* ---- senha de acesso às configurações ---- */
+const CONFIG_SENHA = '12345678';
+const pwOverlay = document.getElementById('pwOverlay');
+const pwInput   = document.getElementById('pwInput');
+const pwErro    = document.getElementById('pwErro');
+
+function abrirSenha(){
+  pwInput.value = ''; pwErro.textContent = '';
+  pwOverlay.classList.add('show');
+  setTimeout(()=>pwInput.focus(), 50);
+}
+function fecharSenha(){ pwOverlay.classList.remove('show'); }
+function validarSenha(){
+  if(pwInput.value === CONFIG_SENHA){ fecharSenha(); abrirConfig(); }
+  else{ pwErro.textContent = 'Senha incorreta.'; pwInput.value=''; pwInput.focus(); }
+}
+document.getElementById('btnPwOk').onclick = validarSenha;
+document.getElementById('btnPwCancel').onclick = fecharSenha;
+pwInput.addEventListener('keydown', e=>{ if(e.key==='Enter') validarSenha(); });
+pwOverlay.addEventListener('click', e=>{ if(e.target===pwOverlay) fecharSenha(); });
+
+document.getElementById('btnConfig').onclick = abrirSenha;
+document.getElementById('btnCancelar').onclick = ()=>{ config = loadCfg(); fecharConfig(); buildWheel(); drawWheel(); atualizarDisponibilidade(); };
+document.getElementById('btnSalvar').onclick = ()=>{
+  saveCfg(); fecharConfig();
+  rotation = -Math.PI/2;
+  buildWheel(); drawWheel(); atualizarDisponibilidade();
+};
+cfgOverlay.addEventListener('click', e=>{ if(e.target===cfgOverlay){ config=loadCfg(); fecharConfig(); buildWheel(); drawWheel(); atualizarDisponibilidade(); } });
+
+/* ================== GERAL ================== */
+function atualizarDisponibilidade(){
+  document.getElementById('btnGirar').disabled = !temEstoque();
+}
+document.getElementById('btnGirar').onclick = spin;
+document.getElementById('btnFecharRes').onclick = fecharResultado;
+
+/* deixa a roleta SEMPRE quadrada, mesmo em Safari antigo (sem aspect-ratio) */
+function ajustarTamanhoRoleta(){
+  const wrap = document.querySelector('.roleta-wrap');
+  if(wrap) wrap.style.height = wrap.clientWidth + 'px';
+  drawWheel();
+}
+window.addEventListener('resize', ajustarTamanhoRoleta);
+window.addEventListener('orientationchange', ()=>setTimeout(ajustarTamanhoRoleta,150));
+
+/* start */
+buildWheel();
+ajustarTamanhoRoleta();
+drawWheel();
+atualizarDisponibilidade();
+</script>
+</body>
+</html>
